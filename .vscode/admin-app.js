@@ -1,4 +1,4 @@
-// admin-app.js - Bennet Salon (VERSIÓN COMPLETA CON FUNCIONES ASYNC CORREGIDAS)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON FUNCIONES ASYNC CORREGIDAS)
 
 // 🔥 CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://torwzztbyeryptydytwr.supabase.co';
@@ -130,7 +130,7 @@ function AdminApp() {
                 await loadClientesPendientes();
                 await loadClientesAutorizados();
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
-                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a Bennet Salon ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
                 window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(mensaje)}`, '_blank');
             }
         } catch (error) {
@@ -255,7 +255,7 @@ function AdminApp() {
                 
                 {/* ===== HEADER ===== */}
                 <div className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
-                    <h1 className="text-xl font-bold">Panel Admin - Bennet Salon</h1>
+                    <h1 className="text-xl font-bold">Panel Admin - LAG.barberia</h1>
                     <div className="flex gap-2">
                         <button 
                             onClick={fetchBookings} 

@@ -23,7 +23,7 @@ function Header({ cliente, onLogout }) {
                     <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-600">
                         <div className="icon-sparkles text-lg"></div>
                     </div>
-                    <h1 className="text-xl font-bold text-gray-800">Bennet Salon</h1>
+                    <h1 className="text-xl font-bold text-gray-800">LAG.barberia</h1>
                 </div>
                 
                 <div className="flex items-center gap-3">
