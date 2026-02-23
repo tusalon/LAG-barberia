@@ -335,7 +335,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                         verificarNumero(value);
                                     }}
                                     className="w-full px-4 py-3 rounded-r-lg border border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
-                                    placeholder="53357234"
+                                    placeholder="51111111"
                                     required
                                 />
                             </div>
