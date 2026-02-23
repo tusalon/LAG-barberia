@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Bennet Salon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 to-purple-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 animate-fade-in">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div class="icon-shield-check text-3xl text-pink-600">🔒</div>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Bennet Salon</h1>
+            <p class="text-gray-500">Acceso al Panel</p>
+        </div>
+        
+        <div id="mensaje" class="mb-4 text-sm text-center hidden"></div>
+        
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Usuario / Teléfono</label>
+                <input type="text" id="username" required
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
+                       placeholder="bennet o 54242576">
+                <p class="text-xs text-gray-400 mt-1">Si sos trabajador, usá tu número de teléfono</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                <input type="password" id="password" required
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
+                       placeholder="••••••••">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-105">
+                Entrar
+            </button>
+        </form>
+        
+        <div id="errorMsg" class="mt-4 text-red-500 text-sm text-center hidden"></div>
+        
+        <div class="mt-6 text-center text-xs text-gray-400">
+            <p>👑 Dueño: usuario <strong>bennet</strong></p>
+            <p class="mt-1">👩‍🎨 Trabajadoras: usá tu teléfono</p>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SCRIPTS - RUTAS RELATIVAS (SIN /bennet.salon/) -->
+    <!-- ============================================ -->
+
+    <!-- PRIMERO: Configuración central de Supabase -->
+    <script type="text/javascript" src="utils/supabase-config.js"></script>
+    <script type="text/javascript" src="utils/storage.js"></script>
+
+    <!-- Script de verificación inmediata -->
+    <script type="text/javascript">
+        console.log('🔍 VERIFICACIÓN INICIAL LOGIN:');
+        console.log('  window.location.pathname:', window.location.pathname);
+        console.log('  window.location.origin:', window.location.origin);
+        console.log('  SUPABASE_URL:', window.SUPABASE_URL);
+        console.log('  SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? '✓ Definida' : '✗ Undefined');
+        
+        if (!window.SUPABASE_URL) {
+            console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida en login');
+            console.error('   Intentando cargar con ruta alternativa...');
+            
+            // Intentar cargar con ruta absoluta como fallback
+            const script = document.createElement('script');
+            script.src = '/bennet.salon/utils/supabase-config.js';
+            script.onload = () => console.log('✅ supabase-config.js cargado con ruta absoluta');
+            script.onerror = () => console.error('❌ No se pudo cargar supabase-config.js');
+            document.head.appendChild(script);
+        } else {
+            console.log('✅ Supabase configurado correctamente en login');
+        }
+    </script>
+
+    <!-- SEGUNDO: Utilidades sin JSX -->
+    <script type="text/javascript" src="utils/api.js"></script>
+    <script type="text/javascript" src="utils/timeLogic.js"></script>
+    <script type="text/javascript" src="utils/auth-clients.js"></script>
+    <script type="text/javascript" src="utils/auth-trabajadores.js"></script>
+    <script type="text/javascript" src="utils/config.js"></script>
+    <script type="text/javascript" src="utils/servicios.js"></script>
+    <script type="text/javascript" src="utils/trabajadoras.js"></script>
+
+    <!-- Script de verificación de carga -->
+    <script type="text/javascript">
+        console.log('🔍 VERIFICACIÓN DE CARGA LOGIN:');
+        console.log(' ✅ supabase-config:', window.SUPABASE_URL ? 'OK' : 'FALTA');
+        console.log(' ✅ SUPABASE_URL:', window.SUPABASE_URL);
+        console.log(' ✅ auth-trabajadores:', typeof window.verificarTrabajadoraPorTelefono);
+        console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
+        console.log(' ✅ loginTrabajadora:', typeof window.loginTrabajadora);
+        console.log(' ✅ salonConfig:', typeof window.salonConfig);
+        console.log(' ✅ salonServicios:', typeof window.salonServicios);
+        console.log(' ✅ salonTrabajadoras:', typeof window.salonTrabajadoras);
+    </script>
+
+    <script>
+        // Credenciales del dueño
+        const ADMIN_USERNAME = 'bennet';
+        const ADMIN_PASSWORD = 'bennet2025';
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const mensaje = document.getElementById('mensaje');
+            
+            errorMsg.classList.add('hidden');
+            mensaje.classList.add('hidden');
+            
+            // Mostrar mensaje de carga
+            mensaje.textContent = 'Verificando...';
+            mensaje.classList.remove('hidden');
+            mensaje.classList.add('text-blue-600', 'bg-blue-50', 'p-2', 'rounded-lg');
+            
+            try {
+                console.log('🔐 Intentando login con:', { username, password: '***' });
+                console.log('🔐 SUPABASE_URL en login:', window.SUPABASE_URL);
+                
+                // CASO 1: Es el dueño?
+                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                    console.log('✅ Login exitoso como dueño');
+                    
+                    // Guardar sesión de admin
+                    localStorage.setItem('adminAuth', 'true');
+                    localStorage.setItem('adminUser', username);
+                    localStorage.setItem('adminLoginTime', Date.now());
+                    localStorage.setItem('userRole', 'admin');
+                    
+                    // Limpiar cualquier sesión de trabajadora
+                    localStorage.removeItem('trabajadoraAuth');
+                    
+                    mensaje.classList.add('hidden');
+                    window.location.href = 'admin.html';
+                    return;
+                }
+                
+                // CASO 2: Podría ser una trabajadora (el username parece un número)
+                if (/^\d+$/.test(username)) {
+                    console.log('🔍 Intentando login como trabajadora:', username);
+                    
+                    // Verificar que loginTrabajadora esté disponible
+                    if (typeof window.loginTrabajadora !== 'function') {
+                        console.error('❌ loginTrabajadora no está disponible');
+                        errorMsg.textContent = 'Error: Sistema de autenticación no disponible';
+                        errorMsg.classList.remove('hidden');
+                        mensaje.classList.add('hidden');
+                        return;
+                    }
+                    
+                    // Intentar login como trabajadora
+                    const trabajadora = await window.loginTrabajadora(username, password);
+                    
+                    if (trabajadora) {
+                        console.log('✅ Login exitoso como trabajadora:', trabajadora.nombre);
+                        
+                        // Guardar sesión de trabajadora (NO de admin)
+                        localStorage.setItem('trabajadoraAuth', JSON.stringify({
+                            id: trabajadora.id,
+                            nombre: trabajadora.nombre,
+                            telefono: trabajadora.telefono,
+                            nivel: trabajadora.nivel || 1
+                        }));
+                        localStorage.setItem('userRole', 'trabajadora');
+                        
+                        // Limpiar cualquier sesión de admin previa
+                        localStorage.removeItem('adminAuth');
+                        localStorage.removeItem('adminUser');
+                        
+                        mensaje.classList.add('hidden');
+                        window.location.href = 'admin.html';
+                        return;
+                    } else {
+                        console.log('❌ Login falló - credenciales incorrectas');
+                    }
+                }
+                
+                // Si llegamos aquí, las credenciales son incorrectas
+                errorMsg.textContent = 'Usuario o contraseña incorrectos';
+                errorMsg.classList.remove('hidden');
+                mensaje.classList.add('hidden');
+                
+            } catch (error) {
+                console.error('❌ Error en login:', error);
+                errorMsg.textContent = 'Error al conectar. Intentá de nuevo.';
+                errorMsg.classList.remove('hidden');
+                mensaje.classList.add('hidden');
+            }
+        });
+
+        // Verificación de carga de scripts
+        setTimeout(() => {
+            console.log('🔍 VERIFICACIÓN FINAL LOGIN:');
+            console.log('  SUPABASE_URL:', window.SUPABASE_URL);
+            console.log('  loginTrabajadora:', typeof window.loginTrabajadora);
+            console.log('  verificarTrabajadoraPorTelefono:', typeof window.verificarTrabajadoraPorTelefono);
+            
+            if (typeof window.loginTrabajadora === 'function') {
+                console.log('✅ loginTrabajadora está disponible');
+            } else {
+                console.error('❌ loginTrabajadora NO está disponible');
+            }
+            
+            if (window.SUPABASE_URL) {
+                console.log('✅ SUPABASE_URL configurada correctamente');
+            } else {
+                console.error('❌ SUPABASE_URL sigue siendo undefined');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
