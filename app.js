@@ -3,6 +3,9 @@
 function App() {
     const [showWelcome, setShowWelcome] = React.useState(true);
     const [clienteAutorizado, setClienteAutorizado] = React.useState(null);
+    // 🔥 PASO 1: Agregar este estado (al inicio, con los otros estados)
+    const [userRol, setUserRol] = React.useState('cliente');
+    
     const [bookingData, setBookingData] = React.useState({
         service: null,
         worker: null,
@@ -39,10 +42,18 @@ function App() {
         }, 100);
     };
 
-    const handleAccessGranted = (nombre, whatsapp) => {
+    // 🔥 PASO 2: Modificar esta función para incluir la obtención del rol
+    const handleAccessGranted = async (nombre, whatsapp) => {
         const cliente = { nombre, whatsapp };
         setClienteAutorizado(cliente);
         localStorage.setItem('cliente_autorizado', JSON.stringify(cliente));
+        
+        // Obtener el rol del usuario
+        if (window.obtenerRolUsuario) {
+            const rolInfo = await window.obtenerRolUsuario(whatsapp);
+            setUserRol(rolInfo.rol);
+        }
+        
         setShowWelcome(false);
     };
 
@@ -112,7 +123,7 @@ function App() {
     if (showWelcome) {
         return (
             <div data-name="app-container">
-                <WelcomeScreen onStart={() => setShowWelcome(false)} cliente={clienteAutorizado} />
+                <WelcomeScreen onStart={() => setShowWelcome(false)} />
                 <WhatsAppButton />
             </div>
         );
@@ -121,7 +132,12 @@ function App() {
     if (bookingData.confirmedBooking) {
         return (
             <div className="min-h-screen bg-[#faf8f7] flex flex-col" data-name="app-container">
-                <Header cliente={clienteAutorizado} onLogout={handleLogout} />
+                {/* 🔥 PASO 3: Aquí se pasa userRol al Header */}
+                <Header 
+                    cliente={clienteAutorizado} 
+                    onLogout={handleLogout}
+                    userRol={userRol}
+                />
                 <main className="flex-grow p-4">
                     <div className="max-w-xl mx-auto">
                         <Confirmation booking={bookingData.confirmedBooking} onReset={resetBooking} />
@@ -134,14 +150,19 @@ function App() {
 
     return (
         <div className="min-h-screen bg-[#faf8f7] flex flex-col pb-20" data-name="app-container">
-            <Header cliente={clienteAutorizado} onLogout={handleLogout} />
+            {/* 🔥 PASO 3: Aquí también se pasa userRol al Header */}
+            <Header 
+                cliente={clienteAutorizado} 
+                onLogout={handleLogout}
+                userRol={userRol}
+            />
             
             <main className="flex-grow p-4 space-y-8 max-w-4xl mx-auto w-full">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="icon-check-circle text-green-600"></div>
                         <span className="text-sm text-green-700">
-                            Bienvenida, <strong>{clienteAutorizado.nombre}</strong>
+                            Bienvenido, <strong>{clienteAutorizado.nombre}</strong>
                         </span>
                     </div>
                     <button 
