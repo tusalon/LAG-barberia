@@ -1,11 +1,11 @@
-// components/WelcomeScreen.js - Para LAG.barberia con logo desde icons y fondo con eslogan
+// components/WelcomeScreen.js - Para LAG.barberia con logo desde icons y fondo corregido
 
 function WelcomeScreen({ onStart }) {
     const [imagenCargada, setImagenCargada] = React.useState(false);
 
     React.useEffect(() => {
         const img = new Image();
-        img.src = '../images/LAG.barberia.jpg';
+        img.src = '/LAG-barberia/images/LAG.barberia.jpg';  // ✅ Ruta absoluta corregida
         img.onload = () => setImagenCargada(true);
     }, []);
 
@@ -17,7 +17,7 @@ function WelcomeScreen({ onStart }) {
                     <div className="w-full h-full bg-white animate-pulse"></div>
                 )}
                 <img 
-                    src="../images/LAG.barberia.jpg"
+                    src="/LAG-barberia/images/LAG.barberia.jpg"  // ✅ Ruta absoluta corregida
                     alt="Barbería LAG.barberia" 
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                 />
@@ -28,16 +28,22 @@ function WelcomeScreen({ onStart }) {
             <div className="relative z-10 flex flex-col justify-end h-full min-h-screen p-8 pb-20 sm:justify-center sm:items-center sm:text-center sm:p-12 sm:pb-12">
                 <div className="animate-fade-in space-y-4 max-w-2xl">
                     
-                    {/* 🔥 LOGO DESDE LA CARPETA ICONS */}
+                    {/* 🔥 LOGO DESDE LA CARPETA ICONS - RUTA ABSOLUTA */}
                     <div className="flex justify-center mb-6">
                         <img 
-                            src="../icons/icon-192x192.png" 
+                            src="/LAG-barberia/icons/icon-192x192.png"  // ✅ Ruta absoluta corregida
                             alt="LAG.barberia Logo"
                             className="w-24 h-24 rounded-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300 border-2 border-amber-400/30"
+                            onError={(e) => {
+                                console.error('Error cargando logo:', e);
+                                // Fallback a un icono de tijera si no carga la imagen
+                                e.target.onerror = null;
+                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23c49b63\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'6\' cy=\'6\' r=\'3\'/%3E%3Ccircle cx=\'6\' cy=\'18\' r=\'3\'/%3E%3Cline x1=\'20\' y1=\'4\' x2=\'8.12\' y2=\'15.88\'/%3E%3Cline x1=\'14.47\' y1=\'14.48\' x2=\'20\' y2=\'20\'/%3E%3Cline x1=\'8.12\' y1=\'8.12\' x2=\'12\' y2=\'12\'/%3E%3C/svg%3E';
+                            }}
                         />
                     </div>
 
-                    {/* 🔥 ESLÓGAN PROFESIONAL Y VISTOSO */}
+                    {/* ESLÓGAN PROFESIONAL Y VISTOSO */}
                     <div className="mb-4">
                         <h2 className="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 drop-shadow-2xl tracking-tight leading-tight">
                             Nivel que
@@ -54,7 +60,7 @@ function WelcomeScreen({ onStart }) {
                     </h1>
                     
                     <p className="text-gray-200 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed drop-shadow">
-                        Descubrí el arte del grooming profesional. Cortes de cabello, arreglo de barba y tratamientos capilares diseñados especialmente para vos.
+                        NIVEL QUE SE NOTA.
                     </p>
 
                     <div className="pt-6">
