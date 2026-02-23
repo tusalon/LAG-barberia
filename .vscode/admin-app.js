@@ -365,7 +365,7 @@ function AdminApp() {
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        {cliente.whatsapp !== '5354066204' && (
+                                                        {cliente.whatsapp !== '5353357234' && (
                                                             <button
                                                                 onClick={() => handleEliminarAutorizado(cliente.whatsapp)}
                                                                 className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition transform hover:scale-105 shadow-sm flex items-center gap-1"
@@ -375,7 +375,7 @@ function AdminApp() {
                                                                 Quitar
                                                             </button>
                                                         )}
-                                                        {cliente.whatsapp === '5354066204' && (
+                                                        {cliente.whatsapp === '5353357234' && (
                                                             <span className="px-3 py-1 bg-gray-200 text-gray-600 rounded-lg text-sm">
                                                                 Dueño
                                                             </span>

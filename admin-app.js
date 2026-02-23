@@ -953,7 +953,7 @@ function AdminApp() {
                                                             <p className="font-bold text-gray-800">{cliente.nombre}</p>
                                                             <p className="text-sm text-gray-600">📱 +{cliente.whatsapp}</p>
                                                         </div>
-                                                        {(userRole === 'admin' || userNivel >= 3) && cliente.whatsapp !== '5354066204' && (
+                                                        {(userRole === 'admin' || userNivel >= 3) && cliente.whatsapp !== '5353357234' && (
                                                             <button
                                                                 onClick={() => handleEliminarAutorizado(cliente.whatsapp)}
                                                                 className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"

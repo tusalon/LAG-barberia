@@ -147,7 +147,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
                 console.log('✅ Solicitud actualizada a pendiente:', updated);
                 
                 // Notificar al admin
-                const adminPhone = "5354066204";
+                const adminPhone = "5353357234";
                 const text = `🔄 REENVÍO DE SOLICITUD (estaba rechazada)\n\n👤 ${nombre}\n📱 +${whatsapp}`;
                 window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
                 
@@ -193,7 +193,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         console.log('✅ Solicitud creada:', newSolicitud);
         
         // Notificar al admin
-        const adminPhone = "5354066204";
+        const adminPhone = "5353357234";
         const text = `🆕 NUEVA SOLICITUD\n\n👤 ${nombre}\n📱 +${whatsapp}`;
         window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
         

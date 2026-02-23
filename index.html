@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bennet Salon - Reserva de Turnos</title>
-    <meta name="description" content="Reserva tu turno en Bennet Salon fácil y rápido">
+    <title>LAG.barberia - Reserva de Turnos</title>
+    <meta name="description" content="Reservá tu turno en LAG.barberia fácil y rápido">
     
-    <!-- PWA con rutas Bennet Salon -->
-    <link rel="manifest" href="/bennet.salon/manifest.json">
-    <meta name="theme-color" content="#db2777">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#c49b63">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Bennet Salon">
-    <link rel="apple-touch-icon" href="/bennet.salon/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/bennet.salon/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/bennet.salon/icons/icon-512x512.png">
+    <meta name="apple-mobile-web-app-title" content="LAG.barberia">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
     
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -41,8 +41,8 @@
             bottom: 20px;
             left: 20px;
             right: 20px;
-            background: #2563eb;
-            color: white;
+            background: #c49b63;
+            color: #1a1a1a;
             padding: 16px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -68,14 +68,14 @@
             opacity: 0.9;
         }
         .banner-button {
-            background: white;
+            background: #1a1a1a;
             border: none;
             padding: 8px 16px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             font-size: 14px;
-            color: #2563eb;
+            color: #c49b63;
         }
         @keyframes slideUp {
             from { transform: translateY(100px); opacity: 0; }
@@ -87,7 +87,7 @@
     <div id="root"></div>
 
     <!-- ============================================ -->
-    <!-- SCRIPTS - ORDEN CORRECTO (VERSIÓN FINAL)    -->
+    <!-- SCRIPTS - VERSIÓN COMPLETA CON VERIFICACIONES -->
     <!-- ============================================ -->
 
     <!-- PRIMERO: Configuración central de Supabase y Storage -->
@@ -102,6 +102,8 @@
         
         if (!window.SUPABASE_URL) {
             console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida');
+        } else {
+            console.log('✅ LAG.barberia conectado a Supabase correctamente');
         }
     </script>
 
@@ -145,9 +147,9 @@
             let updateNotificationShown = false;
 
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/bennet.salon/sw.js')
+                navigator.serviceWorker.register('/sw.js')
                     .then(registration => {
-                        console.log('✅ Service Worker registrado');
+                        console.log('✅ Service Worker registrado para LAG.barberia');
 
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
@@ -187,10 +189,10 @@
             notification.className = 'update-banner';
             notification.innerHTML = `
                 <div class="banner-content">
-                    <div class="banner-icon">✨</div>
+                    <div class="banner-icon">✂️</div>
                     <div class="banner-text">
                         <div class="banner-title">¡Nueva versión disponible!</div>
-                        <div class="banner-subtitle">Actualizamos la app con mejoras</div>
+                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
                     </div>
                     <button onclick="updateApp()" class="banner-button">Actualizar</button>
                 </div>

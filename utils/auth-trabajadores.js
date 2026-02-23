@@ -1,4 +1,4 @@
-// utils/auth-trabajadores.js - Versión completa
+// utils/auth-trabajadores.js - Versión completa con número del dueño actualizado
 
 console.log('👤 auth-trabajadores.js cargado');
 
@@ -6,7 +6,6 @@ console.log('👤 auth-trabajadores.js cargado');
 // FUNCIONES DE AUTENTICACIÓN PARA TRABAJADORAS
 // ============================================
 
-// Login de trabajadora por teléfono y contraseña
 window.loginTrabajadora = async function(telefono, password) {
     try {
         console.log('🔐 Intentando login de trabajadora:', telefono);
@@ -41,7 +40,6 @@ window.loginTrabajadora = async function(telefono, password) {
     }
 };
 
-// 🔥 FUNCIÓN IMPORTANTE: Verificar si un número pertenece a una trabajadora (SIN CONTRASEÑA)
 window.verificarTrabajadoraPorTelefono = async function(telefono) {
     try {
         console.log('🔍 Verificando si es trabajadora (solo teléfono):', telefono);
@@ -66,7 +64,7 @@ window.verificarTrabajadoraPorTelefono = async function(telefono) {
         console.log('📋 Resultado verificación:', data);
         
         if (data && data.length > 0) {
-            return data[0]; // Devolver la primera trabajadora encontrada
+            return data[0];
         }
         return null;
     } catch (error) {
@@ -75,7 +73,6 @@ window.verificarTrabajadoraPorTelefono = async function(telefono) {
     }
 };
 
-// Obtener trabajadora autenticada desde localStorage
 window.getTrabajadoraAutenticada = function() {
     const auth = localStorage.getItem('trabajadoraAuth');
     if (auth) {
@@ -89,26 +86,27 @@ window.getTrabajadoraAutenticada = function() {
 };
 
 // ============================================
-// FUNCIONES PARA OBTENER ROL
+// FUNCIONES PARA OBTENER ROL - DUEÑO ACTUALIZADO
 // ============================================
 
-// Obtener el rol de un usuario (dueño, trabajadora o cliente)
 window.obtenerRolUsuario = async function(telefono) {
     try {
         console.log('🔍 Obteniendo rol para:', telefono);
         
-        // Caso 1: Es el dueño? (hardcodeado)
-        if (telefono === '5354066204') {
-            console.log('👑 Es el dueño');
+        const telefonoLimpio = telefono.replace(/\D/g, '');
+        
+        // 🔥 CASO 1: Es el dueño? (NUEVO NÚMERO)
+        if (telefonoLimpio === '53357234' || telefono === '53357234') {
+            console.log('👑 Es el dueño de LAG.barberia');
             return {
                 rol: 'admin',
                 nombre: 'Dueño'
             };
         }
         
-        // Caso 2: Es una trabajadora?
+        // Caso 2: Es un barbero?
         const trabajadoraRes = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/trabajadoras?telefono=eq.${telefono}&activo=eq.true&select=id,nombre`,
+            `${window.SUPABASE_URL}/rest/v1/trabajadoras?telefono=eq.${telefonoLimpio}&activo=eq.true&select=id,nombre`,
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
@@ -121,7 +119,7 @@ window.obtenerRolUsuario = async function(telefono) {
         if (trabajadoraRes.ok) {
             const trabajadoras = await trabajadoraRes.json();
             if (trabajadoras && trabajadoras.length > 0) {
-                console.log('👩‍🎨 Es trabajadora:', trabajadoras[0].nombre);
+                console.log('👨‍🎨 Es barbero:', trabajadoras[0].nombre);
                 return {
                     rol: 'trabajadora',
                     id: trabajadoras[0].id,
@@ -130,7 +128,6 @@ window.obtenerRolUsuario = async function(telefono) {
             }
         }
         
-        // Caso 3: Es un cliente normal
         return {
             rol: 'cliente',
             nombre: null
@@ -142,13 +139,11 @@ window.obtenerRolUsuario = async function(telefono) {
     }
 };
 
-// Verificar si tiene acceso al panel (para el header)
 window.tieneAccesoPanel = async function(telefono) {
     const rol = await window.obtenerRolUsuario(telefono);
     return rol.rol === 'admin' || rol.rol === 'trabajadora';
 };
 
-// Obtener reservas por trabajadora
 window.getReservasPorTrabajadora = async function(trabajadoraId, soloActivas = true) {
     try {
         console.log(`📋 Obteniendo reservas para trabajadora ${trabajadoraId}`);
