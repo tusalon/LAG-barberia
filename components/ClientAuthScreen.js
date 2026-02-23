@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN COMPLETA PARA LAG.barberia
+// components/ClientAuthScreen.js - VERSIÓN COMPLETA PARA LAG.barberia (CON LOGO Y SIN EMOJIS)
 
 function ClientAuthScreen({ onAccessGranted }) {
     const [nombre, setNombre] = React.useState('');
@@ -279,9 +279,21 @@ function ClientAuthScreen({ onAccessGranted }) {
         <div className="min-h-screen bg-gradient-to-b from-amber-50 to-gray-900 flex flex-col items-center justify-center p-6 animate-fade-in">
             <div className="max-w-md w-full">
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <div className="icon-scissors text-3xl text-white"></div>
+                    {/* 🔥 NUEVO: Logo de LAG.barberia (reemplaza la tijera) */}
+                    <div className="flex justify-center mb-4">
+                        <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <span className="text-3xl font-black text-white tracking-tighter">
+                                LAG
+                            </span>
+                        </div>
                     </div>
+                    
+                    {/* Eslogan */}
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/30 backdrop-blur-sm border border-amber-500/50 text-amber-300 text-sm font-medium mb-2">
+                        <div className="icon-scissors text-xs"></div>
+                        <span>Nivel que se nota</span>
+                    </div>
+                    
                     <h1 className="text-3xl font-bold text-white">LAG.barberia</h1>
                     <p className="text-gray-400 mt-2">Acceso para clientes y barberos</p>
                 </div>
@@ -335,7 +347,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                         verificarNumero(value);
                                     }}
                                     className="w-full px-4 py-3 rounded-r-lg border border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
-                                    placeholder="51111111"
+                                    placeholder="53357234"
                                     required
                                 />
                             </div>
@@ -349,12 +361,12 @@ function ClientAuthScreen({ onAccessGranted }) {
                             </div>
                         )}
 
-                        {/* BANNER PARA DUEÑO */}
+                        {/* BANNER PARA DUEÑO - SIN EMOJIS */}
                         {esDuenno && !verificando && (
                             <div className="bg-gradient-to-r from-amber-900 to-amber-800 border-2 border-amber-500 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl">
-                                        👑
+                                    <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                        D
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-amber-300 font-bold text-xl">
@@ -368,12 +380,12 @@ function ClientAuthScreen({ onAccessGranted }) {
                             </div>
                         )}
 
-                        {/* BANNER PARA BARBERO */}
+                        {/* BANNER PARA BARBERO - SIN EMOJIS */}
                         {esBarbero && barberoInfo && !verificando && (
                             <div className="bg-gradient-to-r from-amber-900 to-amber-800 border-2 border-amber-500 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl">
-                                        👨‍🎨
+                                    <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                        B
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-amber-300 font-bold text-xl">
@@ -387,12 +399,12 @@ function ClientAuthScreen({ onAccessGranted }) {
                             </div>
                         )}
 
-                        {/* BANNER PARA CLIENTE AUTORIZADO */}
+                        {/* BANNER PARA CLIENTE AUTORIZADO - SIN EMOJIS */}
                         {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
                             <div className="bg-gradient-to-r from-green-900 to-green-800 border-2 border-green-500 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-2xl">
-                                        👤
+                                    <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                        C
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-green-300 font-bold text-xl">
@@ -418,7 +430,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                             </div>
                         )}
 
-                        {/* BOTONES DE ACCIÓN */}
+                        {/* BOTONES DE ACCIÓN - SIN EMOJIS */}
                         <div className="space-y-3 pt-2">
                             {/* BOTÓN PARA DUEÑO */}
                             {esDuenno && !verificando && (
@@ -427,7 +439,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     onClick={handleAccesoDuenno}
                                     className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-yellow-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
-                                    <span className="text-2xl">👑</span>
+                                    <span className="text-xl">⚡</span>
                                     Ingresar como Dueño
                                 </button>
                             )}
@@ -439,7 +451,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     onClick={handleAccesoBarbero}
                                     className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-4 rounded-xl font-bold hover:from-amber-800 hover:to-amber-900 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
-                                    <span className="text-2xl">👨‍🎨</span>
+                                    <span className="text-xl">✂️</span>
                                     Ingresar como Barbero
                                 </button>
                             )}
@@ -451,7 +463,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     onClick={handleAccesoDirecto}
                                     className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
-                                    <span className="text-2xl">👤</span>
+                                    <span className="text-xl">📱</span>
                                     Ingresar como Cliente
                                 </button>
                             )}
@@ -463,27 +475,14 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     disabled={verificando || (yaTieneSolicitud && !estadoRechazado)}
                                     className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-amber-800 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
-                                    <span className="text-2xl">📱</span>
+                                    <span className="text-xl">📱</span>
                                     {verificando ? 'Verificando...' : 'Solicitar Acceso como Cliente'}
                                 </button>
                             )}
                         </div>
                     </form>
 
-                    {/* Leyenda de colores */}
-                    <div className="mt-6 text-xs text-center text-gray-400 border-t border-gray-700 pt-4">
-                        <div className="grid grid-cols-3 gap-1 text-center">
-                            <div className="bg-amber-900/50 p-1 rounded">
-                                <span className="font-bold text-amber-400">👑 Dueño</span>
-                            </div>
-                            <div className="bg-amber-800/50 p-1 rounded">
-                                <span className="font-bold text-amber-400">👨‍🎨 Barbero</span>
-                            </div>
-                            <div className="bg-green-900/50 p-1 rounded">
-                                <span className="font-bold text-green-400">👤 Cliente</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Leyenda de colores - QUITADA COMPLETAMENTE */}
                 </div>
             </div>
         </div>

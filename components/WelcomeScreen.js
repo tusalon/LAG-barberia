@@ -1,4 +1,4 @@
-// components/WelcomeScreen.js - Para LAG.barberia con imagen local
+// components/WelcomeScreen.js - Para LAG.barberia con imagen local, logo y eslogan
 
 function WelcomeScreen({ onStart }) {
     const [imagenCargada, setImagenCargada] = React.useState(false);
@@ -27,9 +27,20 @@ function WelcomeScreen({ onStart }) {
             {/* Content */}
             <div className="relative z-10 flex flex-col justify-end h-full min-h-screen p-8 pb-20 sm:justify-center sm:items-center sm:text-center sm:p-12 sm:pb-12">
                 <div className="animate-fade-in space-y-4 max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/20 backdrop-blur-md border border-amber-500/30 text-amber-200 text-sm font-medium mb-2">
+                    
+                    {/* 🔥 NUEVO: Logo de LAG.barberia (reemplaza la tijera) */}
+                    <div className="flex justify-center mb-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <span className="text-4xl font-black text-white tracking-tighter">
+                                LAG
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Eslogan */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-600/30 backdrop-blur-md border border-amber-500/50 text-amber-300 text-sm font-medium mb-2 mx-auto">
                         <div className="icon-scissors text-xs"></div>
-                        <span>Estilo y tradición</span>
+                        <span>Nivel que se nota</span>
                     </div>
                     
                     <h1 className="text-5xl sm:text-6xl font-bold text-white leading-tight">
