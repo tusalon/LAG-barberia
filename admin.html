@@ -3,24 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Bennet Salon</title>
+    <title>Admin - LAG.barberia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js"></script>
+    <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
     <div id="root"></div>
 
-    <!-- ============================================ -->
-    <!-- SCRIPTS - RUTAS RELATIVAS (SIN /bennet.salon/) -->
-    <!-- ============================================ -->
-
-    <!-- PRIMERO: Configuración central de Supabase -->
+    <!-- Scripts con rutas relativas -->
     <script type="text/javascript" src="utils/supabase-config.js"></script>
     <script type="text/javascript" src="utils/storage.js"></script>
 
-    <!-- Script de verificación inmediata -->
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN INICIAL ADMIN:');
         console.log('  window.SUPABASE_URL:', window.SUPABASE_URL);
@@ -30,58 +26,44 @@
         
         if (!window.SUPABASE_URL) {
             console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida en admin.html');
-            console.error('   Intentando cargar script nuevamente...');
-            
-            // Intentar cargar con ruta absoluta
-            const script = document.createElement('script');
-            script.src = '/bennet.salon/utils/supabase-config.js';
-            script.onload = () => console.log('✅ supabase-config.js cargado con ruta absoluta');
-            script.onerror = () => console.error('❌ No se pudo cargar supabase-config.js');
-            document.head.appendChild(script);
         } else {
             console.log('✅ Supabase configurado correctamente en admin.html');
         }
     </script>
 
-    <!-- SEGUNDO: Utilidades sin JSX -->
     <script type="text/javascript" src="utils/api.js"></script>
     <script type="text/javascript" src="utils/timeLogic.js"></script>
     <script type="text/javascript" src="utils/auth-clients.js"></script>
-    <script type="text/javascript" src="utils/auth-trabajadores.js"></script>
+    <script type="text/javascript" src="utils/auth-barberos.js"></script>  <!-- ✅ Cambiado -->
     <script type="text/javascript" src="utils/config.js"></script>
     <script type="text/javascript" src="utils/servicios.js"></script>
-    <script type="text/javascript" src="utils/trabajadoras.js"></script>
+    <script type="text/javascript" src="utils/barberos.js"></script>  <!-- ✅ Cambiado -->
 
-    <!-- Script de verificación de carga -->
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA ADMIN:');
         console.log(' ✅ supabase-config:', window.SUPABASE_URL ? 'OK' : 'FALTA');
         console.log(' ✅ SUPABASE_URL:', window.SUPABASE_URL);
-        console.log(' ✅ auth-trabajadores:', typeof window.verificarTrabajadoraPorTelefono);
+        console.log(' ✅ auth-barberos:', typeof window.verificarBarberoPorTelefono);
         console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
         console.log(' ✅ salonConfig:', typeof window.salonConfig);
         console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonTrabajadoras:', typeof window.salonTrabajadoras);
+        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
         console.log(' ✅ storage:', typeof window.subirImagenServicio);
     </script>
 
-    <!-- TERCERO: Componentes con JSX -->
     <script type="text/babel" src="components/admin/ConfigPanel.js"></script>
     <script type="text/babel" src="components/admin/ServiciosPanel.js"></script>
-    <script type="text/babel" src="components/admin/TrabajadorasPanel.js"></script>
+    <script type="text/babel" src="components/admin/BarberosPanel.js"></script>  <!-- ✅ Cambiado -->
     <script type="text/babel" src="admin-app.js"></script>
 
     <script>
-        // Autenticación (ahora maneja ambos roles)
         (function() {
-            // Verificar si hay sesión de admin O de trabajadora
             const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            const trabajadoraAuth = localStorage.getItem('trabajadoraAuth');
+            const barberoAuth = localStorage.getItem('barberoAuth');
             
-            console.log('🔐 Verificando autenticación:', { isAdmin, trabajadoraAuth: !!trabajadoraAuth });
+            console.log('🔐 Verificando autenticación:', { isAdmin, barberoAuth: !!barberoAuth });
             console.log('🔐 SUPABASE_URL en auth:', window.SUPABASE_URL);
             
-            // Si hay sesión de admin, verificar tiempo
             if (isAdmin) {
                 const loginTime = localStorage.getItem('adminLoginTime');
                 const isValidSession = loginTime && (Date.now() - parseInt(loginTime)) < 8 * 60 * 60 * 1000;
@@ -92,17 +74,14 @@
                     localStorage.removeItem('adminLoginTime');
                     window.location.href = 'admin-login.html';
                 }
-                // Si es admin válido, continúa
                 return;
             }
             
-            // Si hay sesión de trabajadora, permitir acceso
-            if (trabajadoraAuth) {
-                console.log('👤 Acceso como trabajadora');
+            if (barberoAuth) {
+                console.log('👤 Acceso como barbero');
                 return;
             }
             
-            // Si no hay ninguna sesión, redirigir al login
             console.log('🚫 No hay sesión, redirigiendo a login');
             window.location.href = 'admin-login.html';
         })();

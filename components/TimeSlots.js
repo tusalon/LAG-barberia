@@ -1,14 +1,13 @@
-// components/TimeSlots.js - Versión corregida (con manejo correcto de fechas locales)
+// components/TimeSlots.js - Versión para LAG.barberia
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
-    const [horariosTrabajadora, setHorariosTrabajadora] = React.useState(null);
+    const [horariosBarbero, setHorariosBarbero] = React.useState(null);
     const [diaTrabaja, setDiaTrabaja] = React.useState(true);
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
 
-    // Cargar horarios de la trabajadora
     React.useEffect(() => {
         if (!worker) return;
         
@@ -16,21 +15,20 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
             setVerificacionCompleta(false);
             try {
                 console.log(`📅 Cargando horarios de ${worker.nombre}...`);
-                const horarios = await window.salonConfig.getHorariosTrabajadora(worker.id);
+                const horarios = await window.salonConfig.getHorariosBarbero(worker.id);
                 console.log(`✅ Horarios de ${worker.nombre}:`, horarios);
-                setHorariosTrabajadora(horarios);
+                setHorariosBarbero(horarios);
             } catch (error) {
                 console.error('Error cargando horarios:', error);
-                setHorariosTrabajadora({ horas: [], dias: [] });
+                setHorariosBarbero({ horas: [], dias: [] });
             }
         };
         
         cargarHorarios();
     }, [worker]);
 
-    // Verificar si trabaja este día (VERSIÓN CORREGIDA)
     React.useEffect(() => {
-        if (!worker || !horariosTrabajadora || !date) {
+        if (!worker || !horariosBarbero || !date) {
             setVerificacionCompleta(false);
             return;
         }
@@ -38,39 +36,32 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         console.log('🔍 Verificando disponibilidad para:', {
             worker: worker.nombre,
             fecha: date,
-            horarios: horariosTrabajadora
+            horarios: horariosBarbero
         });
 
-        // 🔥 CORREGIDO: Crear fecha local correctamente
         const [año, mes, día] = date.split('-').map(Number);
-        const fechaLocal = new Date(año, mes - 1, día); // mes-1 porque enero es 0
+        const fechaLocal = new Date(año, mes - 1, día);
         
         const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
         const diaSemana = diasSemana[fechaLocal.getDay()];
-        const numeroDia = fechaLocal.getDay();
         
-        console.log(`📆 Fecha: ${date} → Día local: ${diaSemana} (${numeroDia})`);
-        console.log(`📋 Días laborales de ${worker.nombre}:`, horariosTrabajadora.dias);
-        
-        // Si no hay configuración de días, asumir que todos los días son laborales
-        if (!horariosTrabajadora.dias || horariosTrabajadora.dias.length === 0) {
+        if (!horariosBarbero.dias || horariosBarbero.dias.length === 0) {
             console.log('⚠️ No hay configuración de días, se asumen todos disponibles');
             setDiaTrabaja(true);
             setVerificacionCompleta(true);
             return;
         }
         
-        const trabaja = horariosTrabajadora.dias.includes(diaSemana);
+        const trabaja = horariosBarbero.dias.includes(diaSemana);
         console.log(`🎯 ¿${worker.nombre} trabaja el ${diaSemana}?`, trabaja);
         
         setDiaTrabaja(trabaja);
         setVerificacionCompleta(true);
         
-    }, [worker, horariosTrabajadora, date]);
+    }, [worker, horariosBarbero, date]);
 
-    // Cargar slots disponibles
     React.useEffect(() => {
-        if (!service || !date || !worker || !horariosTrabajadora || !verificacionCompleta) return;
+        if (!service || !date || !worker || !horariosBarbero || !verificacionCompleta) return;
         
         if (!diaTrabaja) {
             setSlots([]);
@@ -81,31 +72,26 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
             setLoading(true);
             setError(null);
             try {
-                // Verificar si hay horas configuradas
-                if (!horariosTrabajadora.horas || horariosTrabajadora.horas.length === 0) {
-                    console.log('⚠️ No hay horas configuradas para esta trabajadora');
+                if (!horariosBarbero.horas || horariosBarbero.horas.length === 0) {
+                    console.log('⚠️ No hay horas configuradas para este barbero');
                     setSlots([]);
                     setLoading(false);
                     return;
                 }
                 
-                // Generar slots basados en las horas configuradas
-                const baseSlots = horariosTrabajadora.horas.map(h => 
+                const baseSlots = horariosBarbero.horas.map(h => 
                     `${h.toString().padStart(2, '0')}:00`
                 );
                 
                 const todayStr = getCurrentLocalDate();
                 const isToday = date === todayStr;
                 
-                // Obtener reservas existentes de la trabajadora
                 const bookings = await getBookingsByDateAndWorker(date, worker.id);
                 
-                // Filtrar slots disponibles
                 let availableSlots = baseSlots.filter(slotStartStr => {
                     const slotStart = timeToMinutes(slotStartStr);
                     const slotEnd = slotStart + service.duracion;
 
-                    // Verificar conflictos
                     const hasConflict = bookings.some(booking => {
                         const bookingStart = timeToMinutes(booking.hora_inicio);
                         const bookingEnd = timeToMinutes(booking.hora_fin);
@@ -131,32 +117,30 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         };
 
         loadSlots();
-    }, [service, date, worker, horariosTrabajadora, diaTrabaja, verificacionCompleta]);
+    }, [service, date, worker, horariosBarbero, diaTrabaja, verificacionCompleta]);
 
     if (!service || !date || !worker) return null;
 
-    // Mostrar estado de carga mientras se verifica
     if (!verificacionCompleta) {
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="icon-clock text-pink-500"></div>
-                    3. Elegí un horario con {worker.nombre}
+                    <div className="icon-clock text-amber-500"></div>
+                    4. Elegí un horario con {worker.nombre}
                 </h2>
                 <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
                 </div>
             </div>
         );
     }
 
-    // Si no trabaja este día
     if (!diaTrabaja) {
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="icon-clock text-pink-500"></div>
-                    3. Elegí un horario con {worker.nombre}
+                    <div className="icon-clock text-amber-500"></div>
+                    4. Elegí un horario con {worker.nombre}
                 </h2>
                 <div className="text-center p-8 bg-yellow-50 rounded-xl border border-yellow-200">
                     <div className="icon-calendar-off text-4xl text-yellow-400 mb-3 mx-auto"></div>
@@ -172,8 +156,8 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     return (
         <div className="space-y-4 animate-fade-in">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div className="icon-clock text-pink-500"></div>
-                3. Elegí un horario con {worker.nombre}
+                <div className="icon-clock text-amber-500"></div>
+                4. Elegí un horario con {worker.nombre}
                 {selectedTime && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full ml-2">
                         ✓ Horario seleccionado
@@ -183,7 +167,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
 
             {loading ? (
                 <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
                 </div>
             ) : error ? (
                 <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
@@ -197,9 +181,9 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 </div>
             ) : (
                 <>
-                    <div className="text-sm bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-                        <div className="flex items-center gap-2 text-blue-700">
-                            <div className="icon-clock text-blue-500"></div>
+                    <div className="text-sm bg-gradient-to-r from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200">
+                        <div className="flex items-center gap-2 text-amber-700">
+                            <div className="icon-clock text-amber-500"></div>
                             <span className="font-medium">
                                 Horarios disponibles de {worker.nombre} para {new Date(date).toLocaleDateString()}:
                             </span>
@@ -225,8 +209,8 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                                     className={`
                                         py-3 px-2 rounded-lg text-base font-semibold transition-all transform
                                         ${isSelected
-                                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-105 ring-2 ring-pink-300'
-                                            : 'bg-white text-gray-700 border-2 border-pink-200 hover:border-pink-400 hover:bg-pink-50 hover:scale-105 hover:shadow-md'}
+                                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg scale-105 ring-2 ring-amber-300'
+                                            : 'bg-white text-gray-700 border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 hover:scale-105 hover:shadow-md'}
                                     `}
                                 >
                                     {time12h}

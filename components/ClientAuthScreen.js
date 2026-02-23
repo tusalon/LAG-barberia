@@ -9,11 +9,11 @@ function ClientAuthScreen({ onAccessGranted }) {
     const [verificando, setVerificando] = React.useState(false);
     const [yaTieneSolicitud, setYaTieneSolicitud] = React.useState(false);
     const [estadoRechazado, setEstadoRechazado] = React.useState(false);
-    const [esTrabajadora, setEsTrabajadora] = React.useState(false);
-    const [trabajadoraInfo, setTrabajadoraInfo] = React.useState(null);
+    const [esBarbero, setEsBarbero] = React.useState(false);
+    const [barberoInfo, setBarberoInfo] = React.useState(null);
     const [esDuenno, setEsDuenno] = React.useState(false);
 
-    // 🔥 FUNCIÓN PARA VERIFICAR SI YA EXISTE SOLICITUD (COMPLETA)
+    // FUNCIÓN PARA VERIFICAR SI YA EXISTE SOLICITUD
     const clienteYaTieneSolicitud = async (whatsapp) => {
         try {
             console.log('🔍 Verificando si ya existe solicitud para:', whatsapp);
@@ -44,8 +44,8 @@ function ClientAuthScreen({ onAccessGranted }) {
             setClienteAutorizado(null);
             setYaTieneSolicitud(false);
             setEstadoRechazado(false);
-            setEsTrabajadora(false);
-            setTrabajadoraInfo(null);
+            setEsBarbero(false);
+            setBarberoInfo(null);
             setEsDuenno(false);
             setError('');
             return;
@@ -59,28 +59,28 @@ function ClientAuthScreen({ onAccessGranted }) {
         try {
             console.log('🔍 Verificando número:', numeroCompleto);
             
-            // 🔥 PASO 1: Verificar si es el DUEÑO
+            // PASO 1: Verificar si es el DUEÑO
             if (numeroLimpio === '53357234') {
                 console.log('👑 ES EL DUEÑO DE LAG.barberia');
                 setEsDuenno(true);
-                setEsTrabajadora(false);
-                setTrabajadoraInfo(null);
+                setEsBarbero(false);
+                setBarberoInfo(null);
                 setClienteAutorizado(null);
                 setError('👑 Acceso como dueño detectado');
                 setVerificando(false);
                 return;
             }
             
-            // 🔥 PASO 2: Verificar si es barbero
-            if (window.verificarTrabajadoraPorTelefono) {
+            // PASO 2: Verificar si es barbero
+            if (window.verificarBarberoPorTelefono) {
                 console.log('👨‍🎨 Verificando si es barbero...');
-                const trabajadora = await window.verificarTrabajadoraPorTelefono(numeroLimpio);
-                console.log('📋 Resultado barbero:', trabajadora);
+                const barbero = await window.verificarBarberoPorTelefono(numeroLimpio);
+                console.log('📋 Resultado barbero:', barbero);
                 
-                if (trabajadora) {
-                    console.log('✅ ES BARBERO:', trabajadora.nombre);
-                    setEsTrabajadora(true);
-                    setTrabajadoraInfo(trabajadora);
+                if (barbero) {
+                    console.log('✅ ES BARBERO:', barbero.nombre);
+                    setEsBarbero(true);
+                    setBarberoInfo(barbero);
                     setEsDuenno(false);
                     setClienteAutorizado(null);
                     setError('👨‍🎨 Acceso como barbero detectado');
@@ -89,7 +89,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                 }
             }
             
-            // 🔥 PASO 3: Verificar si ya existe solicitud (cualquier estado)
+            // PASO 3: Verificar si ya existe solicitud (cualquier estado)
             const yaExiste = await clienteYaTieneSolicitud(numeroCompleto);
             if (yaExiste) {
                 console.log('❌ Cliente ya tiene una solicitud registrada');
@@ -106,8 +106,8 @@ function ClientAuthScreen({ onAccessGranted }) {
             // PASO 4: Verificar como cliente autorizado
             console.log('👤 No es dueño ni barbero, verificando como cliente...');
             setEsDuenno(false);
-            setEsTrabajadora(false);
-            setTrabajadoraInfo(null);
+            setEsBarbero(false);
+            setBarberoInfo(null);
             
             const existe = await window.verificarAccesoCliente(numeroCompleto);
             console.log('📋 Resultado autorizado cliente:', existe);
@@ -120,7 +120,6 @@ function ClientAuthScreen({ onAccessGranted }) {
             } else {
                 setClienteAutorizado(null);
                 
-                // Verificar solicitudes de cliente
                 if (window.obtenerEstadoSolicitud) {
                     const estado = await window.obtenerEstadoSolicitud(numeroCompleto);
                     console.log('📋 Estado de solicitud cliente:', estado);
@@ -163,7 +162,7 @@ function ClientAuthScreen({ onAccessGranted }) {
             return;
         }
         
-        if (esDuenno || esTrabajadora) {
+        if (esDuenno || esBarbero) {
             setError('El dueño y los barberos deben usar el botón de acceso especial.');
             return;
         }
@@ -174,7 +173,6 @@ function ClientAuthScreen({ onAccessGranted }) {
         const numeroCompleto = `53${numeroLimpio}`;
         
         try {
-            // Verificar si ya está autorizado como cliente
             const autorizado = await window.verificarAccesoCliente(numeroCompleto);
             
             if (autorizado) {
@@ -183,7 +181,6 @@ function ClientAuthScreen({ onAccessGranted }) {
                 return;
             }
             
-            // Verificar si ya existe solicitud
             const yaExiste = await clienteYaTieneSolicitud(numeroCompleto);
             if (yaExiste) {
                 const pendiente = await window.isClientePendiente?.(numeroCompleto);
@@ -196,7 +193,6 @@ function ClientAuthScreen({ onAccessGranted }) {
                 return;
             }
             
-            // Agregar solicitud como cliente
             const agregado = await window.agregarClientePendiente(nombre, numeroCompleto);
             
             if (agregado) {
@@ -219,14 +215,14 @@ function ClientAuthScreen({ onAccessGranted }) {
         window.location.href = 'admin.html';
     };
 
-    const handleAccesoTrabajadora = () => {
-        if (trabajadoraInfo) {
-            console.log('👨‍🎨 Accediendo como barbero:', trabajadoraInfo);
-            localStorage.setItem('trabajadoraAuth', JSON.stringify({
-                id: trabajadoraInfo.id,
-                nombre: trabajadoraInfo.nombre,
-                telefono: trabajadoraInfo.telefono,
-                nivel: trabajadoraInfo.nivel || 1
+    const handleAccesoBarbero = () => {
+        if (barberoInfo) {
+            console.log('👨‍🎨 Accediendo como barbero:', barberoInfo);
+            localStorage.setItem('barberoAuth', JSON.stringify({
+                id: barberoInfo.id,
+                nombre: barberoInfo.nombre,
+                telefono: barberoInfo.telefono,
+                nivel: barberoInfo.nivel || 1
             }));
             window.location.href = 'admin.html';
         }
@@ -306,15 +302,15 @@ function ClientAuthScreen({ onAccessGranted }) {
                                 value={nombre}
                                 onChange={(e) => setNombre(e.target.value)}
                                 className={`w-full px-4 py-3 rounded-lg border ${
-                                    esDuenno || esTrabajadora 
+                                    esDuenno || esBarbero 
                                         ? 'bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed' 
                                         : 'bg-gray-700 border-gray-600 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500'
                                 } outline-none transition`}
                                 placeholder="Ej: Juan Pérez"
-                                disabled={esDuenno || esTrabajadora}
-                                required={!esDuenno && !esTrabajadora}
+                                disabled={esDuenno || esBarbero}
+                                required={!esDuenno && !esBarbero}
                             />
-                            {(esDuenno || esTrabajadora) && (
+                            {(esDuenno || esBarbero) && (
                                 <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                                     <span className="icon-info"></span>
                                     El personal no necesita nombre
@@ -373,7 +369,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                         )}
 
                         {/* BANNER PARA BARBERO */}
-                        {esTrabajadora && trabajadoraInfo && !verificando && (
+                        {esBarbero && barberoInfo && !verificando && (
                             <div className="bg-gradient-to-r from-amber-900 to-amber-800 border-2 border-amber-500 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
                                     <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl">
@@ -381,7 +377,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-amber-300 font-bold text-xl">
-                                            ¡Hola {trabajadoraInfo.nombre}!
+                                            ¡Hola {barberoInfo.nombre}!
                                         </p>
                                         <p className="text-amber-400 text-sm">
                                             Bienvenido a tu panel de trabajo.
@@ -392,7 +388,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                         )}
 
                         {/* BANNER PARA CLIENTE AUTORIZADO */}
-                        {clienteAutorizado && !verificando && !esDuenno && !esTrabajadora && (
+                        {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
                             <div className="bg-gradient-to-r from-green-900 to-green-800 border-2 border-green-500 rounded-lg p-4">
                                 <div className="flex items-start gap-3">
                                     <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-2xl">
@@ -411,7 +407,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                         )}
 
                         {/* ERRORES SOLO PARA CLIENTES */}
-                        {error && !esDuenno && !esTrabajadora && (
+                        {error && !esDuenno && !esBarbero && (
                             <div className={`text-sm p-3 rounded-lg flex items-start gap-2 ${
                                 estadoRechazado 
                                     ? 'bg-yellow-900 text-yellow-300 border border-yellow-700' 
@@ -437,10 +433,10 @@ function ClientAuthScreen({ onAccessGranted }) {
                             )}
 
                             {/* BOTÓN PARA BARBERO */}
-                            {esTrabajadora && trabajadoraInfo && !verificando && (
+                            {esBarbero && barberoInfo && !verificando && (
                                 <button
                                     type="button"
-                                    onClick={handleAccesoTrabajadora}
+                                    onClick={handleAccesoBarbero}
                                     className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-4 rounded-xl font-bold hover:from-amber-800 hover:to-amber-900 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
                                     <span className="text-2xl">👨‍🎨</span>
@@ -449,7 +445,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                             )}
 
                             {/* BOTÓN PARA CLIENTE AUTORIZADO */}
-                            {clienteAutorizado && !verificando && !esDuenno && !esTrabajadora && (
+                            {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
                                 <button
                                     type="button"
                                     onClick={handleAccesoDirecto}
@@ -461,7 +457,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                             )}
 
                             {/* BOTÓN PARA SOLICITAR ACCESO */}
-                            {!clienteAutorizado && !esDuenno && !esTrabajadora && !verificando && (
+                            {!clienteAutorizado && !esDuenno && !esBarbero && !verificando && (
                                 <button
                                     type="submit"
                                     disabled={verificando || (yaTieneSolicitud && !estadoRechazado)}

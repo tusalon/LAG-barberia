@@ -1,35 +1,47 @@
-// admin-app.js - Bennet Salon (VERSIÓN COMPLETA CON CALENDARIO VISUAL)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA Y CORREGIDA)
 
 // ============================================
 // FUNCIONES DE SUPABASE
 // ============================================
 async function getAllBookings() {
-    const res = await fetch(
-        `${window.SUPABASE_URL}/rest/v1/${window.TABLE_NAME || 'benettsalon'}?select=*&order=fecha.desc,hora_inicio.asc`,
-        {
-            headers: {
-                'apikey': window.SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+    try {
+        const res = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas?select=*&order=fecha.desc,hora_inicio.asc`,
+            {
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                }
             }
-        }
-    );
-    return await res.json();
+        );
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        return [];
+    }
 }
 
 async function cancelBooking(id) {
-    const res = await fetch(
-        `${window.SUPABASE_URL}/rest/v1/${window.TABLE_NAME || 'benettsalon'}?id=eq.${id}`,
-        {
-            method: 'PATCH',
-            headers: {
-                'apikey': window.SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ estado: 'Cancelado' })
-        }
-    );
-    return res.ok;
+    try {
+        const res = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas?id=eq.${id}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estado: 'Cancelado' })
+            }
+        );
+        return res.ok;
+    } catch (error) {
+        console.error('Error cancel booking:', error);
+        return false;
+    }
 }
 
 // ============================================
@@ -45,7 +57,7 @@ function AdminApp() {
     // Detectar rol del usuario y nivel
     const [userRole, setUserRole] = React.useState('admin');
     const [userNivel, setUserNivel] = React.useState(3);
-    const [trabajadora, setTrabajadora] = React.useState(null);
+    const [barbero, setBarbero] = React.useState(null);
     
     // Pestaña activa
     const [tabActivo, setTabActivo] = React.useState('reservas');
@@ -66,17 +78,14 @@ function AdminApp() {
         cliente_nombre: '',
         cliente_whatsapp: '',
         servicio: '',
-        trabajador_id: '',
+        barbero_id: '',
         fecha: '',
         hora_inicio: ''
     });
 
-    // Cargar servicios y trabajadoras para el modal
     const [serviciosList, setServiciosList] = React.useState([]);
-    const [trabajadorasList, setTrabajadorasList] = React.useState([]);
+    const [barberosList, setBarberosList] = React.useState([]);
     const [horariosDisponibles, setHorariosDisponibles] = React.useState([]);
-    
-    // Estados para el calendario
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [diasLaborales, setDiasLaborales] = React.useState([]);
     const [fechasConHorarios, setFechasConHorarios] = React.useState({});
@@ -85,16 +94,16 @@ function AdminApp() {
     // DETECTAR ROL Y NIVEL DEL USUARIO AL INICIAR
     // ============================================
     React.useEffect(() => {
-        const trabajadoraAuth = window.getTrabajadoraAutenticada?.();
-        if (trabajadoraAuth) {
-            console.log('👤 Usuario detectado como trabajadora:', trabajadoraAuth);
-            setUserRole('trabajadora');
-            setTrabajadora(trabajadoraAuth);
-            setUserNivel(trabajadoraAuth.nivel || 1);
+        const barberoAuth = window.getBarberoAutenticado?.();
+        if (barberoAuth) {
+            console.log('👤 Usuario detectado como barbero:', barberoAuth);
+            setUserRole('barbero');
+            setBarbero(barberoAuth);
+            setUserNivel(barberoAuth.nivel || 1);
             
             setNuevaReservaData(prev => ({
                 ...prev,
-                trabajador_id: trabajadoraAuth.id
+                barbero_id: barberoAuth.id
             }));
         } else {
             console.log('👑 Usuario detectado como admin');
@@ -110,24 +119,24 @@ function AdminApp() {
                 const servicios = await window.salonServicios.getAll(true);
                 setServiciosList(servicios || []);
             }
-            if (window.salonTrabajadoras) {
-                const trabajadoras = await window.salonTrabajadoras.getAll(true);
-                setTrabajadorasList(trabajadoras || []);
+            if (window.salonBarberos) {
+                const barberos = await window.salonBarberos.getAll(true);
+                setBarberosList(barberos || []);
             }
         };
         cargarDatosModal();
     }, []);
 
-    // Cargar días laborales cuando se selecciona trabajadora
+    // Cargar días laborales cuando se selecciona barbero
     React.useEffect(() => {
         const cargarDiasLaborales = async () => {
-            if (nuevaReservaData.trabajador_id) {
+            if (nuevaReservaData.barbero_id) {
                 try {
-                    const horarios = await window.salonConfig.getHorariosTrabajadora(nuevaReservaData.trabajador_id);
+                    const horarios = await window.salonConfig.getHorariosBarbero(nuevaReservaData.barbero_id);
                     setDiasLaborales(horarios.dias || []);
                     
                     // Cargar disponibilidad para el mes actual
-                    await cargarDisponibilidadMes(currentDate, nuevaReservaData.trabajador_id);
+                    await cargarDisponibilidadMes(currentDate, nuevaReservaData.barbero_id);
                 } catch (error) {
                     console.error('Error cargando días laborales:', error);
                     setDiasLaborales([]);
@@ -135,18 +144,18 @@ function AdminApp() {
             }
         };
         cargarDiasLaborales();
-    }, [nuevaReservaData.trabajador_id]);
+    }, [nuevaReservaData.barbero_id]);
 
     // Función para cargar disponibilidad de un mes completo
-    const cargarDisponibilidadMes = async (fecha, trabajadorId) => {
-        if (!trabajadorId) return;
+    const cargarDisponibilidadMes = async (fecha, barberoId) => {
+        if (!barberoId) return;
         
         try {
             const year = fecha.getFullYear();
             const month = fecha.getMonth();
             
-            // Obtener horarios de la trabajadora
-            const horarios = await window.salonConfig.getHorariosTrabajadora(trabajadorId);
+            // Obtener horarios del barbero
+            const horarios = await window.salonConfig.getHorariosBarbero(barberoId);
             const horasTrabajo = horarios.horas || [];
             
             if (horasTrabajo.length === 0) {
@@ -162,7 +171,7 @@ function AdminApp() {
             const fechaFin = ultimoDia.toISOString().split('T')[0];
             
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/${window.TABLE_NAME || 'benettsalon'}?fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&trabajador_id=eq.${trabajadorId}&estado=neq.Cancelado&select=fecha,hora_inicio,hora_fin`,
+                `${window.SUPABASE_URL}/rest/v1/reservas?fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&barbero_id=eq.${barberoId}&estado=neq.Cancelado&select=fecha,hora_inicio,hora_fin`,
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
@@ -175,7 +184,7 @@ function AdminApp() {
             
             // Agrupar reservas por fecha
             const reservasPorFecha = {};
-            reservas.forEach(r => {
+            (reservas || []).forEach(r => {
                 if (!reservasPorFecha[r.fecha]) {
                     reservasPorFecha[r.fecha] = [];
                 }
@@ -219,8 +228,8 @@ function AdminApp() {
         nuevaFecha.setMonth(currentDate.getMonth() + direccion);
         setCurrentDate(nuevaFecha);
         
-        if (nuevaReservaData.trabajador_id) {
-            cargarDisponibilidadMes(nuevaFecha, nuevaReservaData.trabajador_id);
+        if (nuevaReservaData.barbero_id) {
+            cargarDisponibilidadMes(nuevaFecha, nuevaReservaData.barbero_id);
         }
     };
 
@@ -255,7 +264,7 @@ function AdminApp() {
 
     // Función para verificar si una fecha está disponible
     const isDateAvailable = (date) => {
-        if (!date || !nuevaReservaData.trabajador_id) return false;
+        if (!date || !nuevaReservaData.barbero_id) return false;
         
         const fechaStr = formatDate(date);
         const diaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][date.getDay()];
@@ -280,10 +289,10 @@ function AdminApp() {
     // Cargar horarios cuando se selecciona fecha
     React.useEffect(() => {
         const cargarHorarios = async () => {
-            if (nuevaReservaData.trabajador_id && nuevaReservaData.fecha) {
+            if (nuevaReservaData.barbero_id && nuevaReservaData.fecha) {
                 try {
-                    const horarios = await window.salonConfig.getHorariosTrabajadora(nuevaReservaData.trabajador_id);
-                    const bookings = await window.getBookingsByDateAndWorker(nuevaReservaData.fecha, nuevaReservaData.trabajador_id);
+                    const horarios = await window.salonConfig.getHorariosBarbero(nuevaReservaData.barbero_id);
+                    const bookings = await window.getBookingsByDateAndWorker(nuevaReservaData.fecha, nuevaReservaData.barbero_id);
                     
                     const baseSlots = (horarios.horas || []).map(h => 
                         `${h.toString().padStart(2, '0')}:00`
@@ -315,11 +324,11 @@ function AdminApp() {
             }
         };
         cargarHorarios();
-    }, [nuevaReservaData.trabajador_id, nuevaReservaData.fecha, nuevaReservaData.servicio]);
+    }, [nuevaReservaData.barbero_id, nuevaReservaData.fecha, nuevaReservaData.servicio]);
 
     const handleCrearReservaManual = async () => {
         if (!nuevaReservaData.cliente_nombre || !nuevaReservaData.cliente_whatsapp || 
-            !nuevaReservaData.servicio || !nuevaReservaData.trabajador_id || 
+            !nuevaReservaData.servicio || !nuevaReservaData.barbero_id || 
             !nuevaReservaData.fecha || !nuevaReservaData.hora_inicio) {
             alert('Completá todos los campos');
             return;
@@ -327,7 +336,7 @@ function AdminApp() {
 
         try {
             const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
-            const trabajadora = trabajadorasList.find(t => t.id === parseInt(nuevaReservaData.trabajador_id));
+            const barbero = barberosList.find(b => b.id === parseInt(nuevaReservaData.barbero_id));
             
             const endTime = calculateEndTime(nuevaReservaData.hora_inicio, servicio.duracion);
             
@@ -336,8 +345,8 @@ function AdminApp() {
                 cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
                 servicio: nuevaReservaData.servicio,
                 duracion: servicio.duracion,
-                trabajador_id: nuevaReservaData.trabajador_id,
-                trabajador_nombre: trabajadora.nombre,
+                trabajador_id: nuevaReservaData.barbero_id,
+                trabajador_nombre: barbero.nombre,
                 fecha: nuevaReservaData.fecha,
                 hora_inicio: nuevaReservaData.hora_inicio,
                 hora_fin: endTime,
@@ -354,7 +363,7 @@ function AdminApp() {
                     cliente_nombre: '',
                     cliente_whatsapp: '',
                     servicio: '',
-                    trabajador_id: userRole === 'trabajadora' ? trabajadora?.id : '',
+                    barbero_id: userRole === 'barbero' ? barbero?.id : '',
                     fecha: '',
                     hora_inicio: ''
                 });
@@ -439,7 +448,7 @@ function AdminApp() {
                 await loadClientesPendientes();
                 await loadClientesAutorizados();
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
-                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a Bennet Salon ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
                 window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(mensaje)}`, '_blank');
             }
         } catch (error) {
@@ -493,15 +502,19 @@ function AdminApp() {
         try {
             let data;
             
-            if (userRole === 'trabajadora' && trabajadora) {
-                console.log(`📋 Cargando reservas de trabajadora ${trabajadora.id}...`);
-                data = await window.getReservasPorTrabajadora?.(trabajadora.id, false) || [];
+            if (userRole === 'barbero' && barbero) {
+                console.log(`📋 Cargando reservas de barbero ${barbero.id}...`);
+                data = await window.getReservasPorBarbero?.(barbero.id, false) || [];
             } else {
                 data = await getAllBookings();
             }
             
-            data.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora_inicio.localeCompare(b.hora_inicio));
-            setBookings(data);
+            if (Array.isArray(data)) {
+                data.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora_inicio.localeCompare(b.hora_inicio));
+                setBookings(data);
+            } else {
+                setBookings([]);
+            }
         } catch (error) {
             console.error('Error fetching bookings:', error);
             alert('Error al cargar las reservas');
@@ -513,16 +526,16 @@ function AdminApp() {
     React.useEffect(() => {
         fetchBookings();
         
-        if (userRole === 'admin' || (userRole === 'trabajadora' && userNivel >= 2)) {
+        if (userRole === 'admin' || (userRole === 'barbero' && userNivel >= 2)) {
             loadClientesAutorizados();
         }
         
         console.log('🔍 Verificando auth:', {
             userRole,
             userNivel,
-            trabajadora
+            barbero
         });
-    }, [userRole, userNivel, trabajadora]);
+    }, [userRole, userNivel, barbero]);
 
     const handleCancel = async (id, bookingData) => {
         if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
@@ -542,7 +555,7 @@ function AdminApp() {
             localStorage.removeItem('adminAuth');
             localStorage.removeItem('adminUser');
             localStorage.removeItem('adminLoginTime');
-            localStorage.removeItem('trabajadoraAuth');
+            localStorage.removeItem('barberoAuth');
             localStorage.removeItem('userRole');
             window.location.href = 'admin-login.html';
         }
@@ -571,16 +584,16 @@ function AdminApp() {
 
     const getTabsDisponibles = () => {
         const tabs = [];
-        tabs.push({ id: 'reservas', icono: '📅', label: userRole === 'trabajadora' ? 'Mis Reservas' : 'Reservas' });
+        tabs.push({ id: 'reservas', icono: '📅', label: userRole === 'barbero' ? 'Mis Reservas' : 'Reservas' });
         
-        if (userRole === 'admin' || (userRole === 'trabajadora' && userNivel >= 2)) {
+        if (userRole === 'admin' || (userRole === 'barbero' && userNivel >= 2)) {
             tabs.push({ id: 'configuracion', icono: '⚙️', label: 'Configuración' });
             tabs.push({ id: 'clientes', icono: '👤', label: 'Clientes' });
         }
         
-        if (userRole === 'admin' || (userRole === 'trabajadora' && userNivel >= 3)) {
-            tabs.push({ id: 'servicios', icono: '💅', label: 'Servicios' });
-            tabs.push({ id: 'trabajadoras', icono: '👥', label: 'Trabajadoras' });
+        if (userRole === 'admin' || (userRole === 'barbero' && userNivel >= 3)) {
+            tabs.push({ id: 'servicios', icono: '💈', label: 'Servicios' });
+            tabs.push({ id: 'barberos', icono: '👥', label: 'Barberos' });
         }
         
         return tabs;
@@ -591,7 +604,7 @@ function AdminApp() {
             cliente_nombre: '',
             cliente_whatsapp: '',
             servicio: '',
-            trabajador_id: userRole === 'trabajadora' ? trabajadora?.id : '',
+            barbero_id: userRole === 'barbero' ? barbero?.id : '',
             fecha: '',
             hora_inicio: ''
         });
@@ -613,12 +626,12 @@ function AdminApp() {
                 <div className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center flex-wrap gap-2">
                     <div>
                         <h1 className="text-xl font-bold">
-                            {userRole === 'trabajadora' 
-                                ? `Panel de ${trabajadora?.nombre}`
-                                : 'Panel Admin - Bennet Salon'
+                            {userRole === 'barbero' 
+                                ? `Panel de ${barbero?.nombre}`
+                                : 'Panel Admin - LAG.barberia'
                             }
                         </h1>
-                        {userRole === 'trabajadora' && (
+                        {userRole === 'barbero' && (
                             <p className="text-xs mt-1">
                                 <span className={`px-2 py-0.5 rounded-full ${
                                     userNivel === 1 ? 'bg-gray-100 text-gray-600' :
@@ -704,7 +717,7 @@ function AdminApp() {
                                                 setNuevaReservaData({...nuevaReservaData, cliente_whatsapp: value});
                                             }}
                                             className="w-full px-4 py-2 rounded-r-lg border border-gray-300"
-                                            placeholder="54242576"
+                                            placeholder="53357234"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-400 mt-1">8 dígitos después del +53</p>
@@ -729,27 +742,27 @@ function AdminApp() {
                                     </select>
                                 </div>
 
-                                {/* Selección de trabajadora */}
+                                {/* Selección de barbero */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Trabajadora *
+                                        Barbero *
                                     </label>
-                                    {userRole === 'trabajadora' && userNivel <= 2 ? (
+                                    {userRole === 'barbero' && userNivel <= 2 ? (
                                         <div className="bg-blue-50 p-3 rounded-lg">
                                             <p className="text-sm text-blue-700">
-                                                Reserva asignada a vos: <strong>{trabajadora?.nombre}</strong>
+                                                Reserva asignada a vos: <strong>{barbero?.nombre}</strong>
                                             </p>
                                         </div>
                                     ) : (
                                         <select
-                                            value={nuevaReservaData.trabajador_id}
-                                            onChange={(e) => setNuevaReservaData({...nuevaReservaData, trabajador_id: e.target.value})}
+                                            value={nuevaReservaData.barbero_id}
+                                            onChange={(e) => setNuevaReservaData({...nuevaReservaData, barbero_id: e.target.value})}
                                             className="w-full border rounded-lg px-3 py-2"
                                         >
-                                            <option value="">Seleccionar trabajadora</option>
-                                            {trabajadorasList.map(t => (
-                                                <option key={t.id} value={t.id}>
-                                                    {t.nombre} - {t.especialidad}
+                                            <option value="">Seleccionar barbero</option>
+                                            {barberosList.map(b => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.nombre} - {b.especialidad}
                                                 </option>
                                             ))}
                                         </select>
@@ -757,7 +770,7 @@ function AdminApp() {
                                 </div>
 
                                 {/* Calendario de fechas */}
-                                {nuevaReservaData.trabajador_id && (
+                                {nuevaReservaData.barbero_id && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Fecha *
@@ -801,11 +814,11 @@ function AdminApp() {
                                                         let className = "h-10 w-full flex items-center justify-center rounded-lg text-sm font-medium transition-all relative";
                                                         
                                                         if (selected) {
-                                                            className += " bg-pink-600 text-white shadow-md ring-2 ring-pink-300";
+                                                            className += " bg-amber-600 text-white shadow-md ring-2 ring-amber-300";
                                                         } else if (!available) {
                                                             className += " text-gray-300 cursor-not-allowed bg-gray-50";
                                                         } else {
-                                                            className += " text-gray-700 hover:bg-pink-50 hover:text-pink-600 hover:scale-105 cursor-pointer";
+                                                            className += " text-gray-700 hover:bg-amber-50 hover:text-amber-600 hover:scale-105 cursor-pointer";
                                                         }
                                                         
                                                         return (
@@ -840,7 +853,7 @@ function AdminApp() {
                                                         onClick={() => setNuevaReservaData({...nuevaReservaData, hora_inicio: hora})}
                                                         className={`py-2 px-3 rounded-lg text-sm font-medium transition ${
                                                             nuevaReservaData.hora_inicio === hora
-                                                                ? 'bg-pink-600 text-white'
+                                                                ? 'bg-amber-600 text-white'
                                                                 : 'bg-gray-100 hover:bg-gray-200'
                                                         }`}
                                                     >
@@ -884,7 +897,7 @@ function AdminApp() {
                             onClick={() => setTabActivo(tab.id)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                                 tabActivo === tab.id 
-                                    ? 'bg-pink-600 text-white shadow-md scale-105' 
+                                    ? 'bg-amber-600 text-white shadow-md scale-105' 
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
@@ -897,8 +910,8 @@ function AdminApp() {
                 {/* CONTENIDO */}
                 {tabActivo === 'configuracion' && (
                     <ConfigPanel 
-                        trabajadoraId={userRole === 'trabajadora' ? trabajadora?.id : null}
-                        modoRestringido={userRole === 'trabajadora' && userNivel === 2}
+                        barberoId={userRole === 'barbero' ? barbero?.id : null}
+                        modoRestringido={userRole === 'barbero' && userNivel === 2}
                     />
                 )}
 
@@ -906,8 +919,8 @@ function AdminApp() {
                     <ServiciosPanel />
                 )}
 
-                {tabActivo === 'trabajadoras' && (userRole === 'admin' || userNivel >= 3) && (
-                    <TrabajadorasPanel />
+                {tabActivo === 'barberos' && (userRole === 'admin' || userNivel >= 3) && (
+                    <BarberosPanel />
                 )}
 
                 {tabActivo === 'clientes' && (userRole === 'admin' || userNivel >= 2) && (
@@ -953,7 +966,7 @@ function AdminApp() {
                                                             <p className="font-bold text-gray-800">{cliente.nombre}</p>
                                                             <p className="text-sm text-gray-600">📱 +{cliente.whatsapp}</p>
                                                         </div>
-                                                        {(userRole === 'admin' || userNivel >= 3) && cliente.whatsapp !== '5353357234' && (
+                                                        {(userRole === 'admin' || userNivel >= 3) && cliente.whatsapp !== '53357234' && (
                                                             <button
                                                                 onClick={() => handleEliminarAutorizado(cliente.whatsapp)}
                                                                 className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
@@ -1036,10 +1049,10 @@ function AdminApp() {
                 {/* RESERVAS */}
                 {tabActivo === 'reservas' && (
                     <>
-                        {userRole === 'trabajadora' && trabajadora && (
+                        {userRole === 'barbero' && barbero && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-blue-800 font-medium">
-                                    Hola {trabajadora.nombre} 👋 - Mostrando tus reservas ({bookings.length})
+                                    Hola {barbero.nombre} 👋 - Mostrando tus reservas ({bookings.length})
                                 </p>
                             </div>
                         )}
@@ -1095,7 +1108,7 @@ function AdminApp() {
 
                         {loading ? (
                             <div className="text-center py-12">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto"></div>
                                 <p className="text-gray-500 mt-4">Cargando reservas...</p>
                             </div>
                         ) : (
@@ -1104,15 +1117,15 @@ function AdminApp() {
                                     <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm">
                                         <div className="flex justify-between mb-2">
                                             <span className="font-semibold">{b.fecha}</span>
-                                            <span className="text-sm bg-pink-100 text-pink-700 px-2 py-1 rounded-full">
+                                            <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
                                                 {formatTo12Hour(b.hora_inicio)}
                                             </span>
                                         </div>
                                         <div className="text-sm space-y-1">
                                             <p>👤 {b.cliente_nombre}</p>
                                             <p>📱 {b.cliente_whatsapp}</p>
-                                            <p>💅 {b.servicio}</p>
-                                            <p>👩‍🎨 {b.trabajador_nombre}</p>
+                                            <p>💈 {b.servicio}</p>
+                                            <p>👨‍🎨 {b.barbero_nombre}</p>
                                         </div>
                                         <div className="flex justify-between items-center mt-3 pt-2 border-t">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold

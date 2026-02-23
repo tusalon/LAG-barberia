@@ -1,8 +1,8 @@
-// components/admin/ConfigPanel.js - Versión con horarios por trabajadora (con modo restringido)
+// components/admin/ConfigPanel.js - Versión para LAG.barberia
 
-function ConfigPanel({ trabajadoraId, modoRestringido }) {
-    const [trabajadoras, setTrabajadoras] = React.useState([]);
-    const [trabajadoraSeleccionada, setTrabajadoraSeleccionada] = React.useState(null);
+function ConfigPanel({ barberoId, modoRestringido }) {
+    const [barberos, setBarberos] = React.useState([]);
+    const [barberoSeleccionado, setBarberoSeleccionado] = React.useState(null);
     const [horarios, setHorarios] = React.useState({});
     const [configGlobal, setConfigGlobal] = React.useState({});
     const [cargando, setCargando] = React.useState(true);
@@ -13,7 +13,6 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
         jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
     };
 
-    // Generar horas disponibles (0-23)
     const horas = Array.from({ length: 24 }, (_, i) => ({
         value: i,
         label: `${i.toString().padStart(2, '0')}:00`
@@ -24,27 +23,23 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     }, []);
 
     React.useEffect(() => {
-        // Si está en modo restringido, forzar selección de la trabajadora actual
-        if (modoRestringido && trabajadoraId) {
-            setTrabajadoraSeleccionada(trabajadoraId);
+        if (modoRestringido && barberoId) {
+            setBarberoSeleccionado(barberoId);
         }
-    }, [modoRestringido, trabajadoraId]);
+    }, [modoRestringido, barberoId]);
 
     const cargarDatos = async () => {
         setCargando(true);
         try {
-            // Cargar trabajadoras
-            if (window.salonTrabajadoras) {
-                const lista = await window.salonTrabajadoras.getAll(true);
-                setTrabajadoras(lista || []);
+            if (window.salonBarberos) {
+                const lista = await window.salonBarberos.getAll(true);
+                setBarberos(lista || []);
                 
-                // Si no está en modo restringido, seleccionar primera por defecto
                 if (!modoRestringido && lista && lista.length > 0) {
-                    setTrabajadoraSeleccionada(lista[0].id);
+                    setBarberoSeleccionado(lista[0].id);
                 }
             }
             
-            // Cargar configuración global (solo si no está en modo restringido)
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
                 setConfigGlobal(config || {});
@@ -57,17 +52,17 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     };
 
     React.useEffect(() => {
-        if (trabajadoraSeleccionada) {
-            cargarHorariosTrabajadora(trabajadoraSeleccionada);
+        if (barberoSeleccionado) {
+            cargarHorariosBarbero(barberoSeleccionado);
         }
-    }, [trabajadoraSeleccionada]);
+    }, [barberoSeleccionado]);
 
-    const cargarHorariosTrabajadora = async (id) => {
+    const cargarHorariosBarbero = async (id) => {
         try {
-            const horariosTrabajadora = await window.salonConfig.getHorariosTrabajadora(id);
+            const horariosBarbero = await window.salonConfig.getHorariosBarbero(id);
             setHorarios(prev => ({
                 ...prev,
-                [id]: horariosTrabajadora
+                [id]: horariosBarbero
             }));
         } catch (error) {
             console.error('Error cargando horarios:', error);
@@ -75,9 +70,9 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     };
 
     const toggleDia = (dia) => {
-        if (!trabajadoraSeleccionada) return;
+        if (!barberoSeleccionado) return;
         
-        const horariosActuales = horarios[trabajadoraSeleccionada] || { horas: [], dias: [] };
+        const horariosActuales = horarios[barberoSeleccionado] || { horas: [], dias: [] };
         const diasActuales = horariosActuales.dias || [];
         
         const nuevosDias = diasActuales.includes(dia)
@@ -86,7 +81,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
         
         setHorarios({
             ...horarios,
-            [trabajadoraSeleccionada]: {
+            [barberoSeleccionado]: {
                 ...horariosActuales,
                 dias: nuevosDias
             }
@@ -94,9 +89,9 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     };
 
     const toggleHora = (hora) => {
-        if (!trabajadoraSeleccionada) return;
+        if (!barberoSeleccionado) return;
         
-        const horariosActuales = horarios[trabajadoraSeleccionada] || { horas: [], dias: [] };
+        const horariosActuales = horarios[barberoSeleccionado] || { horas: [], dias: [] };
         const horasActuales = horariosActuales.horas || [];
         
         const nuevasHoras = horasActuales.includes(hora)
@@ -105,7 +100,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
         
         setHorarios({
             ...horarios,
-            [trabajadoraSeleccionada]: {
+            [barberoSeleccionado]: {
                 ...horariosActuales,
                 horas: nuevasHoras
             }
@@ -113,7 +108,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     };
 
     const handleGuardarConfigGlobal = async () => {
-        if (modoRestringido) return; // No permitir en modo restringido
+        if (modoRestringido) return;
         
         try {
             await window.salonConfig.guardar(configGlobal);
@@ -123,16 +118,16 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
         }
     };
 
-    const handleGuardarHorariosTrabajadora = async () => {
-        if (!trabajadoraSeleccionada) return;
+    const handleGuardarHorariosBarbero = async () => {
+        if (!barberoSeleccionado) return;
         
         try {
-            const horariosAGuardar = horarios[trabajadoraSeleccionada] || { horas: [], dias: [] };
-            await window.salonConfig.guardarHorariosTrabajadora(
-                trabajadoraSeleccionada, 
+            const horariosAGuardar = horarios[barberoSeleccionado] || { horas: [], dias: [] };
+            await window.salonConfig.guardarHorariosBarbero(
+                barberoSeleccionado, 
                 horariosAGuardar
             );
-            alert('✅ Horarios guardados para la trabajadora');
+            alert('✅ Horarios guardados para el barbero');
         } catch (error) {
             alert('Error al guardar horarios');
         }
@@ -142,7 +137,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
         return (
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto"></div>
                     <p className="text-gray-500 mt-4">Cargando configuración...</p>
                 </div>
             </div>
@@ -152,10 +147,9 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
     return (
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
             <h2 className="text-xl font-bold mb-6">
-                {modoRestringido ? '⚙️ Mi Configuración' : '⚙️ Configuración del Salón'}
+                {modoRestringido ? '⚙️ Mi Configuración' : '⚙️ Configuración de la Barbería'}
             </h2>
             
-            {/* Configuración Global - Solo visible si NO está en modo restringido */}
             {!modoRestringido && (
                 <div className="mb-8 p-4 bg-gray-50 rounded-lg border">
                     <h3 className="font-semibold text-lg mb-4">⚙️ Configuración General</h3>
@@ -205,7 +199,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                                     ...configGlobal, 
                                     modo24h: e.target.checked
                                 })}
-                                className="w-5 h-5 text-pink-600"
+                                className="w-5 h-5 text-amber-600"
                             />
                             <span className="text-sm text-gray-700">Modo 24 horas</span>
                         </label>
@@ -213,33 +207,31 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                     
                     <button
                         onClick={handleGuardarConfigGlobal}
-                        className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition text-sm"
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition text-sm"
                     >
                         Guardar Configuración Global
                     </button>
                 </div>
             )}
             
-            {/* Selector de trabajadora - Solo visible si NO está en modo restringido */}
             {!modoRestringido && (
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Seleccionar Trabajadora
+                        Seleccionar Barbero
                     </label>
                     <select
-                        value={trabajadoraSeleccionada || ''}
-                        onChange={(e) => setTrabajadoraSeleccionada(parseInt(e.target.value))}
+                        value={barberoSeleccionado || ''}
+                        onChange={(e) => setBarberoSeleccionado(parseInt(e.target.value))}
                         className="w-full border rounded-lg px-3 py-2"
                     >
-                        <option value="">Seleccione una trabajadora</option>
-                        {trabajadoras.map(t => (
-                            <option key={t.id} value={t.id}>{t.nombre}</option>
+                        <option value="">Seleccione un barbero</option>
+                        {barberos.map(b => (
+                            <option key={b.id} value={b.id}>{b.nombre}</option>
                         ))}
                     </select>
                 </div>
             )}
             
-            {/* En modo restringido, mostrar mensaje */}
             {modoRestringido && (
                 <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
                     <div className="flex items-center gap-2">
@@ -249,23 +241,21 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                 </div>
             )}
             
-            {/* Horarios por trabajadora */}
-            {trabajadoraSeleccionada && (
+            {barberoSeleccionado && (
                 <div className="space-y-6">
                     <h3 className="font-semibold text-lg">
                         📅 Horarios de {
                             modoRestringido 
                                 ? 'mi trabajo'
-                                : trabajadoras.find(t => t.id === trabajadoraSeleccionada)?.nombre
+                                : barberos.find(b => b.id === barberoSeleccionado)?.nombre
                         }
                     </h3>
                     
-                    {/* Días de la semana */}
                     <div className="space-y-4">
                         <h4 className="font-medium text-gray-700">Días laborales</h4>
                         <div className="flex flex-wrap gap-2">
                             {dias.map(dia => {
-                                const activo = horarios[trabajadoraSeleccionada]?.dias?.includes(dia) || false;
+                                const activo = horarios[barberoSeleccionado]?.dias?.includes(dia) || false;
                                 return (
                                     <button
                                         key={dia}
@@ -273,7 +263,7 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                                         className={`
                                             px-3 py-2 rounded-lg text-sm font-medium transition
                                             ${activo 
-                                                ? 'bg-pink-600 text-white shadow-md' 
+                                                ? 'bg-amber-600 text-white shadow-md' 
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
                                         `}
                                     >
@@ -284,12 +274,11 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                         </div>
                     </div>
                     
-                    {/* Horas disponibles */}
                     <div className="space-y-4">
                         <h4 className="font-medium text-gray-700">Horas disponibles</h4>
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                             {horas.map(hora => {
-                                const activa = horarios[trabajadoraSeleccionada]?.horas?.includes(hora.value) || false;
+                                const activa = horarios[barberoSeleccionado]?.horas?.includes(hora.value) || false;
                                 return (
                                     <button
                                         key={hora.value}
@@ -297,8 +286,8 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                                         className={`
                                             px-2 py-1 text-xs font-medium rounded transition-all
                                             ${activa 
-                                                ? 'bg-pink-600 text-white shadow-md hover:bg-pink-700' 
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-pink-400 hover:bg-pink-50'}
+                                                ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700' 
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'}
                                         `}
                                     >
                                         {hora.label}
@@ -309,10 +298,10 @@ function ConfigPanel({ trabajadoraId, modoRestringido }) {
                     </div>
                     
                     <button
-                        onClick={handleGuardarHorariosTrabajadora}
-                        className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition"
+                        onClick={handleGuardarHorariosBarbero}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition"
                     >
-                        Guardar {modoRestringido ? 'Mis Horarios' : `Horarios de ${trabajadoras.find(t => t.id === trabajadoraSeleccionada)?.nombre}`}
+                        Guardar {modoRestringido ? 'Mis Horarios' : `Horarios de ${barberos.find(b => b.id === barberoSeleccionado)?.nombre}`}
                     </button>
                 </div>
             )}

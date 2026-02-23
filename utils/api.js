@@ -1,10 +1,10 @@
-// utils/api.js - VERSIÓN COMPLETA
+// utils/api.js - VERSIÓN COMPLETA para LAG.barberia
 
 console.log('📡 api.js cargado');
 
 // Usar variable global o definir si no existe
 if (typeof window.TABLE_NAME === 'undefined') {
-    window.TABLE_NAME = 'benettsalon';
+    window.TABLE_NAME = 'reservas'; // ✅ Cambiado de 'benettsalon' a 'reservas'
 }
 const TABLE_NAME = window.TABLE_NAME;
 
@@ -30,7 +30,7 @@ async function getBookingsByDate(dateStr) {
         if (!response.ok) throw new Error('Error fetching bookings');
         
         const data = await response.json();
-        return data;
+        return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Error fetching bookings:', error);
         return [];
@@ -42,9 +42,9 @@ async function getBookingsByDate(dateStr) {
  */
 async function getBookingsByDateAndWorker(dateStr, workerId) {
     try {
-        console.log(`🌐 Solicitando turnos para ${dateStr} del trabajador ${workerId}`);
+        console.log(`🌐 Solicitando turnos para ${dateStr} del barbero ${workerId}`);
         const response = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/${TABLE_NAME}?fecha=eq.${dateStr}&trabajador_id=eq.${workerId}&estado=neq.Cancelado&select=*`,
+            `${window.SUPABASE_URL}/rest/v1/${TABLE_NAME}?fecha=eq.${dateStr}&barbero_id=eq.${workerId}&estado=neq.Cancelado&select=*`,
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
@@ -59,7 +59,7 @@ async function getBookingsByDateAndWorker(dateStr, workerId) {
         if (!response.ok) throw new Error('Error fetching bookings');
         
         const data = await response.json();
-        return data;
+        return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Error fetching bookings:', error);
         return [];
@@ -76,8 +76,8 @@ async function createBooking(bookingData) {
             cliente_whatsapp: bookingData.cliente_whatsapp,
             servicio: bookingData.servicio,
             duracion: bookingData.duracion,
-            trabajador_id: bookingData.trabajador_id,
-            trabajador_nombre: bookingData.trabajador_nombre,
+            barbero_id: bookingData.trabajador_id, // ✅ Cambiado
+            barbero_nombre: bookingData.trabajador_nombre, // ✅ Cambiado
             fecha: bookingData.fecha,
             hora_inicio: bookingData.hora_inicio,
             hora_fin: bookingData.hora_fin,
@@ -141,7 +141,7 @@ async function getAllBookings() {
         if (!response.ok) throw new Error('Error fetching all bookings');
         
         const data = await response.json();
-        return data;
+        return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Error fetching all bookings:', error);
         return [];

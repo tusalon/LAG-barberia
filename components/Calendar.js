@@ -1,18 +1,17 @@
-// components/Calendar.js - Versión con días laborales por trabajadora
+// components/Calendar.js - Versión para LAG.barberia
 
 function Calendar({ onDateSelect, selectedDate, worker }) {
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [diasLaborales, setDiasLaborales] = React.useState([]);
     const [cargandoHorarios, setCargandoHorarios] = React.useState(false);
 
-    // Cargar días laborales de la trabajadora
     React.useEffect(() => {
         if (!worker) return;
         
         const cargarDiasLaborales = async () => {
             setCargandoHorarios(true);
             try {
-                const horarios = await window.salonConfig.getHorariosTrabajadora(worker.id);
+                const horarios = await window.salonConfig.getHorariosBarbero(worker.id);
                 console.log(`📅 Días laborales de ${worker.nombre}:`, horarios.dias);
                 setDiasLaborales(horarios.dias || []);
             } catch (error) {
@@ -26,7 +25,6 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
         cargarDiasLaborales();
     }, [worker]);
 
-    // Función para obtener fecha en formato YYYY-MM-DD
     const formatDate = (date) => {
         const y = date.getFullYear();
         const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -34,7 +32,6 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
         return `${y}-${m}-${d}`;
     };
 
-    // Obtener fecha local
     const getTodayLocalString = () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -43,7 +40,6 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
         return `${year}-${month}-${day}`;
     };
 
-    // Verificar si una fecha NO está disponible (por fecha pasada)
     const isPastDate = (date) => {
         const now = new Date();
         const today = new Date();
@@ -58,8 +54,7 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
             const currentHour = now.getHours();
             const currentMinutes = now.getMinutes();
             
-            // Por defecto, último turno 2:00 PM
-            const LAST_SLOT_HOUR = 14;
+            const LAST_SLOT_HOUR = 20;
             const LAST_SLOT_MINUTES = 0;
             
             if (currentHour > LAST_SLOT_HOUR) return true;
@@ -69,14 +64,12 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
         return false;
     };
 
-    // Verificar si es domingo (cerrado general)
     const isSunday = (date) => {
         return date.getDay() === 0;
     };
 
-    // Verificar si la trabajadora trabaja este día
-    const trabajadoraTrabajaEsteDia = (date) => {
-        if (!worker || diasLaborales.length === 0) return true; // Si no hay configuración, permitir todo
+    const barberoTrabajaEsteDia = (date) => {
+        if (!worker || diasLaborales.length === 0) return true;
         
         const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
         const diaSemana = diasSemana[date.getDay()];
@@ -104,12 +97,10 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
         
         const days = [];
         
-        // Días vacíos al inicio (para alinear con día de la semana)
         for (let i = 0; i < firstDay.getDay(); i++) {
             days.push(null);
         }
         
-        // Días del mes
         for (let i = 1; i <= lastDay.getDate(); i++) {
             days.push(new Date(year, month, i));
         }
@@ -120,25 +111,20 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
     const days = getDaysInMonth();
     const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const isAfterLastSlot = (currentHour > 14) || (currentHour === 14 && currentMinutes > 0);
-
     if (cargandoHorarios) {
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="icon-calendar text-pink-500"></div>
+                    <div className="icon-calendar text-amber-500"></div>
                     3. Seleccioná una fecha
                     {worker && (
-                        <span className="text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded-full ml-2">
+                        <span className="text-sm bg-amber-100 text-amber-700 px-3 py-1 rounded-full ml-2">
                             con {worker.nombre}
                         </span>
                     )}
                 </h2>
                 <div className="text-center py-8">
-                    <div className="animate-spin h-8 w-8 border-b-2 border-pink-600 rounded-full mx-auto"></div>
+                    <div className="animate-spin h-8 w-8 border-b-2 border-amber-600 rounded-full mx-auto"></div>
                     <p className="text-gray-500 mt-4">Cargando disponibilidad...</p>
                 </div>
             </div>
@@ -148,10 +134,10 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
     return (
         <div className="space-y-4 animate-fade-in">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div className="icon-calendar text-pink-500"></div>
+                <div className="icon-calendar text-amber-500"></div>
                 3. Seleccioná una fecha
                 {worker && (
-                    <span className="text-sm bg-pink-100 text-pink-700 px-3 py-1 rounded-full ml-2">
+                    <span className="text-sm bg-amber-100 text-amber-700 px-3 py-1 rounded-full ml-2">
                         con {worker.nombre}
                     </span>
                 )}
@@ -164,70 +150,44 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
             
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
-                    <button 
-                        onClick={prevMonth} 
-                        className="p-2 hover:bg-white rounded-full transition-colors text-gray-600"
-                        title="Mes anterior"
-                    >
-                        <div className="icon-chevron-left"></div>
-                    </button>
+                    <button onClick={prevMonth} className="p-2 hover:bg-white rounded-full transition-colors text-gray-600">◀</button>
                     <span className="font-bold text-gray-800 text-lg capitalize">
                         {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </span>
-                    <button 
-                        onClick={nextMonth} 
-                        className="p-2 hover:bg-white rounded-full transition-colors text-gray-600"
-                        title="Mes siguiente"
-                    >
-                        <div className="icon-chevron-right"></div>
-                    </button>
+                    <button onClick={nextMonth} className="p-2 hover:bg-white rounded-full transition-colors text-gray-600">▶</button>
                 </div>
 
                 <div className="p-4">
-                    {/* Días de la semana */}
                     <div className="grid grid-cols-7 mb-2 text-center">
                         {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
-                            <div 
-                                key={i} 
-                                className={`text-xs font-medium py-1 ${d === 'D' ? 'text-red-400' : 'text-gray-400'}`}
-                            >
+                            <div key={i} className={`text-xs font-medium py-1 ${d === 'D' ? 'text-red-400' : 'text-gray-400'}`}>
                                 {d}
                             </div>
                         ))}
                     </div>
                     
-                    {/* Días del mes */}
                     <div className="grid grid-cols-7 gap-1">
                         {days.map((date, idx) => {
-                            if (!date) {
-                                return <div key={idx} className="h-10" />;
-                            }
+                            if (!date) return <div key={idx} className="h-10" />;
 
                             const dateStr = formatDate(date);
                             const past = isPastDate(date);
                             const sunday = isSunday(date);
                             const selected = selectedDate === dateStr;
                             
-                            // Verificar disponibilidad
-                            const trabajadoraTrabaja = trabajadoraTrabajaEsteDia(date);
-                            const available = !past && !sunday && trabajadoraTrabaja;
+                            const barberoTrabaja = barberoTrabajaEsteDia(date);
+                            const available = !past && !sunday && barberoTrabaja;
                             
                             let className = "h-10 w-full flex items-center justify-center rounded-lg text-sm font-medium transition-all relative";
                             
                             if (selected) {
-                                className += " bg-pink-600 text-white shadow-md scale-105 ring-2 ring-pink-300";
+                                className += " bg-amber-600 text-white shadow-md scale-105 ring-2 ring-amber-300";
                             } else if (!available) {
-                                className += " text-gray-300 cursor-not-allowed";
-                                if (!trabajadoraTrabaja && !past && !sunday) {
-                                    className += " bg-gray-100";
-                                } else {
-                                    className += " bg-gray-50";
-                                }
+                                className += " text-gray-300 cursor-not-allowed bg-gray-50";
                             } else {
-                                className += " text-gray-700 hover:bg-pink-50 hover:text-pink-600 hover:scale-105 cursor-pointer";
+                                className += " text-gray-700 hover:bg-amber-50 hover:text-amber-600 hover:scale-105 cursor-pointer";
                             }
                             
-                            // Determinar el título (tooltip)
                             let title = "";
                             if (past && dateStr === getTodayLocalString()) {
                                 title = "Hoy ya no hay horarios disponibles";
@@ -235,7 +195,7 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
                                 title = "Fecha pasada";
                             } else if (sunday) {
                                 title = "Domingo cerrado";
-                            } else if (!trabajadoraTrabaja && worker) {
+                            } else if (!barberoTrabaja && worker) {
                                 title = `${worker.nombre} no trabaja este día`;
                             } else {
                                 title = "Disponible";
@@ -260,7 +220,6 @@ function Calendar({ onDateSelect, selectedDate, worker }) {
                 </div>
             </div>
 
-            {/* Leyenda de disponibilidad */}
             {worker && (
                 <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
                     <div className="flex items-center gap-2">

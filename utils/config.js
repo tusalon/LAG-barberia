@@ -1,4 +1,4 @@
-// utils/config.js - Configuración del salón CON SUPABASE (CORREGIDO)
+// utils/config.js - Configuración para LAG.barberia
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
@@ -8,13 +8,9 @@ let configuracionGlobal = {
     modo24h: false
 };
 
-let horariosTrabajadoras = {};
+let horariosBarberos = {};
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
-
-// ============================================
-// FUNCIONES CON SUPABASE
-// ============================================
 
 async function cargarConfiguracionGlobal() {
     try {
@@ -31,9 +27,6 @@ async function cargarConfiguracionGlobal() {
         );
         
         if (!response.ok) {
-            if (response.status === 404) {
-                return null;
-            }
             return null;
         }
         
@@ -48,11 +41,11 @@ async function cargarConfiguracionGlobal() {
     }
 }
 
-async function cargarHorariosTrabajadoras() {
+async function cargarHorariosBarberos() {
     try {
-        console.log('🌐 Cargando horarios de trabajadoras desde Supabase...');
+        console.log('🌐 Cargando horarios de barberos desde Supabase...');
         const response = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/horarios_trabajadoras?select=*`,
+            `${window.SUPABASE_URL}/rest/v1/horarios_barberos?select=*`,
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
@@ -63,9 +56,6 @@ async function cargarHorariosTrabajadoras() {
         );
         
         if (!response.ok) {
-            if (response.status === 404) {
-                return {};
-            }
             return {};
         }
         
@@ -73,15 +63,15 @@ async function cargarHorariosTrabajadoras() {
         
         const horarios = {};
         data.forEach(item => {
-            if (!horarios[item.trabajadora_id]) {
-                horarios[item.trabajadora_id] = {
+            if (!horarios[item.barbero_id]) {
+                horarios[item.barbero_id] = {
                     horas: item.horas || [],
                     dias: item.dias || []
                 };
             }
         });
         
-        horariosTrabajadoras = horarios;
+        horariosBarberos = horarios;
         return horarios;
     } catch (error) {
         console.error('Error cargando horarios:', error);
@@ -89,7 +79,6 @@ async function cargarHorariosTrabajadoras() {
     }
 }
 
-// Funciones globales
 window.salonConfig = {
     get: async function() {
         if (Date.now() - ultimaActualizacion < CACHE_DURATION) {
@@ -166,10 +155,10 @@ window.salonConfig = {
         }
     },
     
-    getHorariosTrabajadora: async function(trabajadoraId) {
+    getHorariosBarbero: async function(barberoId) {
         try {
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/horarios_trabajadoras?trabajadora_id=eq.${trabajadoraId}&select=*`,
+                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=*`,
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
@@ -195,12 +184,12 @@ window.salonConfig = {
         }
     },
     
-    guardarHorariosTrabajadora: async function(trabajadoraId, horarios) {
+    guardarHorariosBarbero: async function(barberoId, horarios) {
         try {
-            console.log(`💾 Guardando horarios para trabajadora ${trabajadoraId}:`, horarios);
+            console.log(`💾 Guardando horarios para barbero ${barberoId}:`, horarios);
             
             const checkResponse = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/horarios_trabajadoras?trabajadora_id=eq.${trabajadoraId}&select=id`,
+                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id`,
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
@@ -215,7 +204,7 @@ window.salonConfig = {
             let response;
             if (existe && existe.length > 0) {
                 response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/horarios_trabajadoras?id=eq.${existe[0].id}`,
+                    `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`,
                     {
                         method: 'PATCH',
                         headers: {
@@ -232,7 +221,7 @@ window.salonConfig = {
                 );
             } else {
                 response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/horarios_trabajadoras`,
+                    `${window.SUPABASE_URL}/rest/v1/horarios_barberos`,
                     {
                         method: 'POST',
                         headers: {
@@ -242,7 +231,7 @@ window.salonConfig = {
                             'Prefer': 'return=representation'
                         },
                         body: JSON.stringify({
-                            trabajadora_id: trabajadoraId,
+                            barbero_id: barberoId,
                             horas: horarios.horas || [],
                             dias: horarios.dias || []
                         })
@@ -258,7 +247,7 @@ window.salonConfig = {
             
             const data = await response.json();
             
-            horariosTrabajadoras[trabajadoraId] = {
+            horariosBarberos[barberoId] = {
                 horas: horarios.horas || [],
                 dias: horarios.dias || []
             };
@@ -269,16 +258,15 @@ window.salonConfig = {
             
             return Array.isArray(data) ? data[0] : data;
         } catch (error) {
-            console.error('Error en guardarHorariosTrabajadora:', error);
+            console.error('Error en guardarHorariosBarbero:', error);
             return null;
         }
     }
 };
 
-// Cargar datos al inicio
 setTimeout(async () => {
     await window.salonConfig.get();
-    await cargarHorariosTrabajadoras();
+    await cargarHorariosBarberos();
 }, 1000);
 
 console.log('✅ salonConfig inicializado');

@@ -58,11 +58,10 @@
         </div>
     </div>
 
-    <!-- Scripts en el orden correcto (igual que el original) -->
+    <!-- Scripts -->
     <script type="text/javascript" src="utils/supabase-config.js"></script>
     <script type="text/javascript" src="utils/storage.js"></script>
 
-    <!-- Script de verificación inmediata (copia exacta del original) -->
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN INICIAL LOGIN:');
         console.log('  window.location.pathname:', window.location.pathname);
@@ -72,13 +71,6 @@
         
         if (!window.SUPABASE_URL) {
             console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida en login');
-            console.error('   Intentando cargar con ruta alternativa...');
-            
-            const script = document.createElement('script');
-            script.src = '/bennet.salon/utils/supabase-config.js';
-            script.onload = () => console.log('✅ supabase-config.js cargado con ruta absoluta');
-            script.onerror = () => console.error('❌ No se pudo cargar supabase-config.js');
-            document.head.appendChild(script);
         } else {
             console.log('✅ Supabase configurado correctamente en login');
         }
@@ -87,26 +79,25 @@
     <script type="text/javascript" src="utils/api.js"></script>
     <script type="text/javascript" src="utils/timeLogic.js"></script>
     <script type="text/javascript" src="utils/auth-clients.js"></script>
-    <script type="text/javascript" src="utils/auth-trabajadores.js"></script>
+    <script type="text/javascript" src="utils/auth-barberos.js"></script>  <!-- ✅ Cambiado -->
     <script type="text/javascript" src="utils/config.js"></script>
     <script type="text/javascript" src="utils/servicios.js"></script>
-    <script type="text/javascript" src="utils/trabajadoras.js"></script>
+    <script type="text/javascript" src="utils/barberos.js"></script>  <!-- ✅ Cambiado -->
 
-    <!-- Script de verificación de carga -->
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA LOGIN:');
         console.log(' ✅ supabase-config:', window.SUPABASE_URL ? 'OK' : 'FALTA');
         console.log(' ✅ SUPABASE_URL:', window.SUPABASE_URL);
-        console.log(' ✅ auth-trabajadores:', typeof window.verificarTrabajadoraPorTelefono);
+        console.log(' ✅ auth-barberos:', typeof window.verificarBarberoPorTelefono);
         console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
-        console.log(' ✅ loginTrabajadora:', typeof window.loginTrabajadora);
+        console.log(' ✅ loginBarbero:', typeof window.loginBarbero);
         console.log(' ✅ salonConfig:', typeof window.salonConfig);
         console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonTrabajadoras:', typeof window.salonTrabajadoras);
+        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
     </script>
 
     <script>
-        // Credenciales del dueño actualizadas
+        // Credenciales del dueño
         const ADMIN_USERNAME = 'LAG.barberia';
         const ADMIN_PASSWORD = 'lag2026';
         
@@ -137,7 +128,7 @@
                     localStorage.setItem('adminLoginTime', Date.now());
                     localStorage.setItem('userRole', 'admin');
                     
-                    localStorage.removeItem('trabajadoraAuth');
+                    localStorage.removeItem('barberoAuth');
                     
                     mensaje.classList.add('hidden');
                     window.location.href = 'admin.html';
@@ -147,26 +138,26 @@
                 if (/^\d+$/.test(username)) {
                     console.log('🔍 Intentando login como barbero:', username);
                     
-                    if (typeof window.loginTrabajadora !== 'function') {
-                        console.error('❌ loginTrabajadora no está disponible');
+                    if (typeof window.loginBarbero !== 'function') {
+                        console.error('❌ loginBarbero no está disponible');
                         errorMsg.textContent = 'Error: Sistema de autenticación no disponible';
                         errorMsg.classList.remove('hidden');
                         mensaje.classList.add('hidden');
                         return;
                     }
                     
-                    const trabajadora = await window.loginTrabajadora(username, password);
+                    const barbero = await window.loginBarbero(username, password);
                     
-                    if (trabajadora) {
-                        console.log('✅ Login exitoso como barbero:', trabajadora.nombre);
+                    if (barbero) {
+                        console.log('✅ Login exitoso como barbero:', barbero.nombre);
                         
-                        localStorage.setItem('trabajadoraAuth', JSON.stringify({
-                            id: trabajadora.id,
-                            nombre: trabajadora.nombre,
-                            telefono: trabajadora.telefono,
-                            nivel: trabajadora.nivel || 1
+                        localStorage.setItem('barberoAuth', JSON.stringify({
+                            id: barbero.id,
+                            nombre: barbero.nombre,
+                            telefono: barbero.telefono,
+                            nivel: barbero.nivel || 1
                         }));
-                        localStorage.setItem('userRole', 'trabajadora');
+                        localStorage.setItem('userRole', 'barbero');
                         
                         localStorage.removeItem('adminAuth');
                         localStorage.removeItem('adminUser');
@@ -191,17 +182,16 @@
             }
         });
 
-        // Verificación de carga de scripts
         setTimeout(() => {
             console.log('🔍 VERIFICACIÓN FINAL LOGIN:');
             console.log('  SUPABASE_URL:', window.SUPABASE_URL);
-            console.log('  loginTrabajadora:', typeof window.loginTrabajadora);
-            console.log('  verificarTrabajadoraPorTelefono:', typeof window.verificarTrabajadoraPorTelefono);
+            console.log('  loginBarbero:', typeof window.loginBarbero);
+            console.log('  verificarBarberoPorTelefono:', typeof window.verificarBarberoPorTelefono);
             
-            if (typeof window.loginTrabajadora === 'function') {
-                console.log('✅ loginTrabajadora está disponible');
+            if (typeof window.loginBarbero === 'function') {
+                console.log('✅ loginBarbero está disponible');
             } else {
-                console.error('❌ loginTrabajadora NO está disponible');
+                console.error('❌ loginBarbero NO está disponible');
             }
             
             if (window.SUPABASE_URL) {

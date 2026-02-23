@@ -1,71 +1,70 @@
-// components/admin/TrabajadorasPanel.js - CON TELÉFONO, CONTRASEÑA Y NIVELES
+// components/admin/BarberosPanel.js - Para LAG.barberia
 
-function TrabajadorasPanel() {
-    const [trabajadoras, setTrabajadoras] = React.useState([]);
+function BarberosPanel() {
+    const [barberos, setBarberos] = React.useState([]);
     const [mostrarForm, setMostrarForm] = React.useState(false);
     const [editando, setEditando] = React.useState(null);
     const [cargando, setCargando] = React.useState(true);
 
     React.useEffect(() => {
-        cargarTrabajadoras();
+        cargarBarberos();
     }, []);
 
-    const cargarTrabajadoras = async () => {
+    const cargarBarberos = async () => {
         setCargando(true);
         try {
-            console.log('📋 Cargando trabajadoras...');
-            if (window.salonTrabajadoras) {
-                const lista = await window.salonTrabajadoras.getAll(false);
-                console.log('✅ Trabajadoras obtenidas:', lista);
-                setTrabajadoras(lista || []);
+            console.log('📋 Cargando barberos...');
+            if (window.salonBarberos) {
+                const lista = await window.salonBarberos.getAll(false);
+                console.log('✅ Barberos obtenidos:', lista);
+                setBarberos(lista || []);
             }
         } catch (error) {
-            console.error('Error cargando trabajadoras:', error);
+            console.error('Error cargando barberos:', error);
         } finally {
             setCargando(false);
         }
     };
 
-    const handleGuardar = async (trabajadora) => {
+    const handleGuardar = async (barbero) => {
         try {
-            console.log('💾 Guardando trabajadora:', trabajadora);
+            console.log('💾 Guardando barbero:', barbero);
             if (editando) {
-                await window.salonTrabajadoras.actualizar(editando.id, trabajadora);
+                await window.salonBarberos.actualizar(editando.id, barbero);
             } else {
-                await window.salonTrabajadoras.crear(trabajadora);
+                await window.salonBarberos.crear(barbero);
             }
-            await cargarTrabajadoras();
+            await cargarBarberos();
             setMostrarForm(false);
             setEditando(null);
         } catch (error) {
-            console.error('Error guardando trabajadora:', error);
-            alert('Error al guardar la trabajadora');
+            console.error('Error guardando barbero:', error);
+            alert('Error al guardar el barbero');
         }
     };
 
     const handleEliminar = async (id) => {
-        if (!confirm('¿Eliminar esta trabajadora?')) return;
+        if (!confirm('¿Eliminar este barbero?')) return;
         try {
-            console.log('🗑️ Eliminando trabajadora:', id);
-            await window.salonTrabajadoras.eliminar(id);
-            await cargarTrabajadoras();
+            console.log('🗑️ Eliminando barbero:', id);
+            await window.salonBarberos.eliminar(id);
+            await cargarBarberos();
         } catch (error) {
-            console.error('Error eliminando trabajadora:', error);
-            alert('Error al eliminar la trabajadora');
+            console.error('Error eliminando barbero:', error);
+            alert('Error al eliminar el barbero');
         }
     };
 
     const toggleActivo = async (id) => {
-        const trabajadora = trabajadoras.find(t => t.id === id);
+        const barbero = barberos.find(b => b.id === id);
         try {
-            await window.salonTrabajadoras.actualizar(id, { activo: !trabajadora.activo });
-            await cargarTrabajadoras();
+            await window.salonBarberos.actualizar(id, { activo: !barbero.activo });
+            await cargarBarberos();
         } catch (error) {
             console.error('Error cambiando estado:', error);
         }
     };
 
-    // Función para obtener el nombre del nivel
     const getNivelNombre = (nivel) => {
         switch(nivel) {
             case 1: return '🔰 Básico';
@@ -79,8 +78,8 @@ function TrabajadorasPanel() {
         return (
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
-                    <p className="text-gray-500 mt-4">Cargando trabajadoras...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto"></div>
+                    <p className="text-gray-500 mt-4">Cargando barberos...</p>
                 </div>
             </div>
         );
@@ -89,21 +88,21 @@ function TrabajadorasPanel() {
     return (
         <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">👥 Trabajadoras</h2>
+                <h2 className="text-xl font-bold">👥 Barberos</h2>
                 <button
                     onClick={() => {
                         setEditando(null);
                         setMostrarForm(true);
                     }}
-                    className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+                    className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700"
                 >
-                    + Nueva Trabajadora
+                    + Nuevo Barbero
                 </button>
             </div>
 
             {mostrarForm && (
-                <TrabajadoraForm
-                    trabajadora={editando}
+                <BarberoForm
+                    barbero={editando}
                     onGuardar={handleGuardar}
                     onCancelar={() => {
                         setMostrarForm(false);
@@ -113,49 +112,47 @@ function TrabajadorasPanel() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {trabajadoras.length === 0 ? (
+                {barberos.length === 0 ? (
                     <div className="col-span-2 text-center py-8 text-gray-500">
-                        No hay trabajadoras cargadas
+                        No hay barberos cargados
                     </div>
                 ) : (
-                    trabajadoras.map(t => (
-                        <div key={t.id} className={`border rounded-lg p-4 ${t.activo ? '' : 'opacity-50 bg-gray-50'}`}>
+                    barberos.map(b => (
+                        <div key={b.id} className={`border rounded-lg p-4 ${b.activo ? '' : 'opacity-50 bg-gray-50'}`}>
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-12 h-12 ${t.color} rounded-full flex items-center justify-center text-2xl`}>
-                                        {t.avatar}
+                                    <div className={`w-12 h-12 ${b.color || 'bg-amber-600'} rounded-full flex items-center justify-center text-2xl`}>
+                                        {b.avatar || '👨‍🎨'}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold text-lg">{t.nombre}</h3>
+                                            <h3 className="font-semibold text-lg">{b.nombre}</h3>
                                             <button
-                                                onClick={() => toggleActivo(t.id)}
+                                                onClick={() => toggleActivo(b.id)}
                                                 className={`text-xs px-2 py-1 rounded-full ${
-                                                    t.activo 
+                                                    b.activo 
                                                         ? 'bg-green-100 text-green-700' 
                                                         : 'bg-gray-200 text-gray-600'
                                                 }`}
                                             >
-                                                {t.activo ? 'Activa' : 'Inactiva'}
+                                                {b.activo ? 'Activo' : 'Inactivo'}
                                             </button>
                                         </div>
-                                        <p className="text-sm text-gray-600">{t.especialidad}</p>
+                                        <p className="text-sm text-gray-600">{b.especialidad}</p>
                                         
-                                        {/* 🔥 NUEVO: Mostrar nivel */}
                                         <p className="text-xs mt-1">
                                             <span className={`px-2 py-0.5 rounded-full ${
-                                                t.nivel === 1 ? 'bg-gray-100 text-gray-600' :
-                                                t.nivel === 2 ? 'bg-blue-100 text-blue-600' :
+                                                b.nivel === 1 ? 'bg-gray-100 text-gray-600' :
+                                                b.nivel === 2 ? 'bg-blue-100 text-blue-600' :
                                                 'bg-purple-100 text-purple-600'
                                             }`}>
-                                                {getNivelNombre(t.nivel)}
+                                                {getNivelNombre(b.nivel)}
                                             </span>
                                         </p>
                                         
-                                        {/* Mostrar teléfono si existe */}
-                                        {t.telefono && (
+                                        {b.telefono && (
                                             <p className="text-xs text-gray-500 mt-1">
-                                                📱 {t.telefono}
+                                                📱 {b.telefono}
                                             </p>
                                         )}
                                     </div>
@@ -163,7 +160,7 @@ function TrabajadorasPanel() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => {
-                                            setEditando(t);
+                                            setEditando(b);
                                             setMostrarForm(true);
                                         }}
                                         className="text-blue-600 hover:text-blue-800"
@@ -171,7 +168,7 @@ function TrabajadorasPanel() {
                                         ✏️
                                     </button>
                                     <button
-                                        onClick={() => handleEliminar(t.id)}
+                                        onClick={() => handleEliminar(b.id)}
                                         className="text-red-600 hover:text-red-800"
                                     >
                                         🗑️
@@ -186,28 +183,27 @@ function TrabajadorasPanel() {
     );
 }
 
-function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
-    const [form, setForm] = React.useState(trabajadora || {
+function BarberoForm({ barbero, onGuardar, onCancelar }) {
+    const [form, setForm] = React.useState(barbero || {
         nombre: '',
         especialidad: '',
         telefono: '',
         password: '',
-        nivel: 1, // 🔥 NUEVO: nivel por defecto 1
-        color: 'bg-pink-500',
-        avatar: '👩‍🎨'
+        nivel: 1,
+        color: 'bg-amber-600',
+        avatar: '👨‍🎨'
     });
 
-    const avatares = ['👩‍🎨', '💅', '✨', '🌸', '💖', '👑'];
+    const avatares = ['👨‍🎨', '💈', '✂️', '👑', '⭐', '🔰'];
     const colores = [
-        { value: 'bg-pink-500', label: 'Rosa' },
-        { value: 'bg-purple-500', label: 'Púrpura' },
-        { value: 'bg-indigo-500', label: 'Índigo' },
-        { value: 'bg-blue-500', label: 'Azul' },
-        { value: 'bg-green-500', label: 'Verde' },
-        { value: 'bg-orange-500', label: 'Naranja' }
+        { value: 'bg-amber-600', label: 'Ámbar' },
+        { value: 'bg-amber-700', label: 'Ámbar Oscuro' },
+        { value: 'bg-amber-800', label: 'Marrón' },
+        { value: 'bg-gray-600', label: 'Gris' },
+        { value: 'bg-blue-600', label: 'Azul' },
+        { value: 'bg-green-600', label: 'Verde' }
     ];
     
-    // 🔥 NUEVO: Opciones de nivel
     const niveles = [
         { value: 1, label: '🔰 Básico - Solo ver reservas', desc: 'Acceso limitado a reservas' },
         { value: 2, label: '⭐ Intermedio - Reservas + Configuración propia + Clientes', desc: 'Puede ver configuración (solo sus horarios) y clientes' },
@@ -222,7 +218,7 @@ function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
     return (
         <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="font-semibold mb-4">
-                {trabajadora ? '✏️ Editar Trabajadora' : '➕ Nueva Trabajadora'}
+                {barbero ? '✏️ Editar Barbero' : '➕ Nuevo Barbero'}
             </h3>
             
             <div className="space-y-3">
@@ -244,10 +240,9 @@ function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
                     required
                 />
                 
-                {/* 🔥 NUEVO: Selector de nivel */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nivel de Acceso <span className="text-xs text-gray-400">(define permisos)</span>
+                        Nivel de Acceso
                     </label>
                     <select
                         value={form.nivel}
@@ -263,10 +258,9 @@ function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
                     </p>
                 </div>
                 
-                {/* Campo teléfono */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Teléfono <span className="text-xs text-gray-400">(para acceder al panel)</span>
+                        Teléfono
                     </label>
                     <div className="flex">
                         <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
@@ -279,17 +273,16 @@ function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
                                 const value = e.target.value.replace(/\D/g, '');
                                 setForm({...form, telefono: value});
                             }}
-                            className="w-full px-4 py-2 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
-                            placeholder="Ej: 51111111"
+                            className="w-full px-4 py-2 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
+                            placeholder="53357234"
                         />
                     </div>
                     <p className="text-xs text-gray-400 mt-1">8 dígitos después del +53</p>
                 </div>
                 
-                {/* Campo contraseña */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contraseña <span className="text-xs text-gray-400">(para acceder al panel)</span>
+                        Contraseña
                     </label>
                     <input
                         type="password"
@@ -330,19 +323,8 @@ function TrabajadoraForm({ trabajadora, onGuardar, onCancelar }) {
             </div>
             
             <div className="flex justify-end gap-2 mt-4">
-                <button
-                    type="button"
-                    onClick={onCancelar}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-100"
-                >
-                    Cancelar
-                </button>
-                <button
-                    type="submit"
-                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
-                >
-                    Guardar
-                </button>
+                <button type="button" onClick={onCancelar} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancelar</button>
+                <button type="submit" className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">Guardar</button>
             </div>
         </form>
     );

@@ -1,17 +1,16 @@
-// utils/trabajadoras.js - Gestión de trabajadoras CON SUPABASE (CORREGIDO)
+// utils/barberos.js - Gestión de barberos para LAG.barberia
 
-console.log('👥 trabajadoras.js cargado (modo Supabase)');
+console.log('👥 barberos.js cargado (modo Supabase)');
 
-let trabajadorasCache = [];
-let ultimaActualizacionTrabajadoras = 0;
-// 🔥 CAMBIADO: usar nombre diferente para evitar conflicto
-const CACHE_DURATION_TRABAJADORAS = 5 * 60 * 1000;
+let barberosCache = [];
+let ultimaActualizacionBarberos = 0;
+const CACHE_DURATION_BARBEROS = 5 * 60 * 1000;
 
-async function cargarTrabajadorasDesdeDB() {
+async function cargarBarberosDesdeDB() {
     try {
-        console.log('🌐 Cargando trabajadoras desde Supabase...');
+        console.log('🌐 Cargando barberos desde Supabase...');
         const response = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/trabajadoras?select=*&order=id.asc`,
+            `${window.SUPABASE_URL}/rest/v1/barberos?select=*&order=id.asc`,
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
@@ -27,49 +26,47 @@ async function cargarTrabajadorasDesdeDB() {
         }
         
         const data = await response.json();
-        console.log('✅ Trabajadoras cargadas desde Supabase:', data);
-        trabajadorasCache = data;
-        ultimaActualizacionTrabajadoras = Date.now();
+        console.log('✅ Barberos cargados desde Supabase:', data);
+        barberosCache = data;
+        ultimaActualizacionBarberos = Date.now();
         return data;
     } catch (error) {
-        console.error('Error cargando trabajadoras:', error);
+        console.error('Error cargando barberos:', error);
         return null;
     }
 }
 
-window.salonTrabajadoras = {
-    getAll: async function(activas = true) {
-        // 🔥 Usar la constante renombrada
-        if (Date.now() - ultimaActualizacionTrabajadoras < CACHE_DURATION_TRABAJADORAS && trabajadorasCache.length > 0) {
-            if (activas) {
-                return trabajadorasCache.filter(t => t.activo === true);
+window.salonBarberos = {
+    getAll: async function(activos = true) {
+        if (Date.now() - ultimaActualizacionBarberos < CACHE_DURATION_BARBEROS && barberosCache.length > 0) {
+            if (activos) {
+                return barberosCache.filter(b => b.activo === true);
             }
-            return [...trabajadorasCache];
+            return [...barberosCache];
         }
         
-        const datos = await cargarTrabajadorasDesdeDB();
+        const datos = await cargarBarberosDesdeDB();
         if (datos) {
-            if (activas) {
-                return datos.filter(t => t.activo === true);
+            if (activos) {
+                return datos.filter(b => b.activo === true);
             }
             return datos;
         }
         
-        // Fallback
         const defaultData = [
-            { id: 1, nombre: "Ana", especialidad: "Manicura y Pedicura", color: "bg-pink-500", avatar: "👩‍🎨", activo: true, nivel: 1 },
-            { id: 2, nombre: "Laura", especialidad: "Uñas de Gel y Press On", color: "bg-purple-500", avatar: "💅", activo: true, nivel: 2 },
-            { id: 3, nombre: "Carla", especialidad: "Diseños y Decoración", color: "bg-indigo-500", avatar: "✨", activo: true, nivel: 3 }
+            { id: 1, nombre: "Carlos", especialidad: "Cortes clásicos", color: "bg-amber-600", avatar: "👨‍🎨", activo: true, nivel: 3 },
+            { id: 2, nombre: "Miguel", especialidad: "Barba y diseños", color: "bg-amber-700", avatar: "👨‍🎨", activo: true, nivel: 2 },
+            { id: 3, nombre: "Javier", especialidad: "Cortes modernos", color: "bg-amber-800", avatar: "👨‍🎨", activo: true, nivel: 1 }
         ];
-        trabajadorasCache = defaultData;
-        ultimaActualizacionTrabajadoras = Date.now();
+        barberosCache = defaultData;
+        ultimaActualizacionBarberos = Date.now();
         return activas ? defaultData : defaultData;
     },
     
     getById: async function(id) {
         try {
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/trabajadoras?id=eq.${id}&select=*`,
+                `${window.SUPABASE_URL}/rest/v1/barberos?id=eq.${id}&select=*`,
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
@@ -82,15 +79,15 @@ window.salonTrabajadoras = {
             const data = await response.json();
             return data[0] || null;
         } catch (error) {
-            console.error('Error obteniendo trabajadora:', error);
+            console.error('Error obteniendo barbero:', error);
             return null;
         }
     },
     
-    crear: async function(trabajadora) {
+    crear: async function(barbero) {
         try {
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/trabajadoras`,
+                `${window.SUPABASE_URL}/rest/v1/barberos`,
                 {
                     method: 'POST',
                     headers: {
@@ -100,34 +97,34 @@ window.salonTrabajadoras = {
                         'Prefer': 'return=representation'
                     },
                     body: JSON.stringify({
-                        nombre: trabajadora.nombre,
-                        especialidad: trabajadora.especialidad,
-                        color: trabajadora.color || 'bg-pink-500',
-                        avatar: trabajadora.avatar || '👩‍🎨',
+                        nombre: barbero.nombre,
+                        especialidad: barbero.especialidad,
+                        color: barbero.color || 'bg-amber-600',
+                        avatar: barbero.avatar || '👨‍🎨',
                         activo: true,
-                        telefono: trabajadora.telefono || null,
-                        password: trabajadora.password || null,
-                        nivel: trabajadora.nivel || 1
+                        telefono: barbero.telefono || null,
+                        password: barbero.password || null,
+                        nivel: barbero.nivel || 1
                     })
                 }
             );
             
             if (!response.ok) {
                 const error = await response.text();
-                console.error('Error al crear trabajadora:', error);
+                console.error('Error al crear barbero:', error);
                 return null;
             }
             
-            const nueva = await response.json();
-            console.log('✅ Trabajadora creada:', nueva);
+            const nuevo = await response.json();
+            console.log('✅ Barbero creado:', nuevo);
             
-            trabajadorasCache = await cargarTrabajadorasDesdeDB() || trabajadorasCache;
+            barberosCache = await cargarBarberosDesdeDB() || barberosCache;
             
             if (window.dispatchEvent) {
-                window.dispatchEvent(new Event('trabajadorasActualizadas'));
+                window.dispatchEvent(new Event('barberosActualizados'));
             }
             
-            return nueva[0];
+            return nuevo[0];
         } catch (error) {
             console.error('Error en crear:', error);
             return null;
@@ -137,7 +134,7 @@ window.salonTrabajadoras = {
     actualizar: async function(id, cambios) {
         try {
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/trabajadoras?id=eq.${id}`,
+                `${window.SUPABASE_URL}/rest/v1/barberos?id=eq.${id}`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -152,20 +149,20 @@ window.salonTrabajadoras = {
             
             if (!response.ok) {
                 const error = await response.text();
-                console.error('Error al actualizar trabajadora:', error);
+                console.error('Error al actualizar barbero:', error);
                 return null;
             }
             
-            const actualizada = await response.json();
-            console.log('✅ Trabajadora actualizada:', actualizada);
+            const actualizado = await response.json();
+            console.log('✅ Barbero actualizado:', actualizado);
             
-            trabajadorasCache = await cargarTrabajadorasDesdeDB() || trabajadorasCache;
+            barberosCache = await cargarBarberosDesdeDB() || barberosCache;
             
             if (window.dispatchEvent) {
-                window.dispatchEvent(new Event('trabajadorasActualizadas'));
+                window.dispatchEvent(new Event('barberosActualizados'));
             }
             
-            return actualizada[0];
+            return actualizado[0];
         } catch (error) {
             console.error('Error en actualizar:', error);
             return null;
@@ -175,7 +172,7 @@ window.salonTrabajadoras = {
     eliminar: async function(id) {
         try {
             const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/trabajadoras?id=eq.${id}`,
+                `${window.SUPABASE_URL}/rest/v1/barberos?id=eq.${id}`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -188,16 +185,16 @@ window.salonTrabajadoras = {
             
             if (!response.ok) {
                 const error = await response.text();
-                console.error('Error al eliminar trabajadora:', error);
+                console.error('Error al eliminar barbero:', error);
                 return false;
             }
             
-            console.log('✅ Trabajadora eliminada');
+            console.log('✅ Barbero eliminado');
             
-            trabajadorasCache = await cargarTrabajadorasDesdeDB() || trabajadorasCache;
+            barberosCache = await cargarBarberosDesdeDB() || barberosCache;
             
             if (window.dispatchEvent) {
-                window.dispatchEvent(new Event('trabajadorasActualizadas'));
+                window.dispatchEvent(new Event('barberosActualizados'));
             }
             
             return true;
@@ -208,9 +205,8 @@ window.salonTrabajadoras = {
     }
 };
 
-// Cargar al inicio
 setTimeout(async () => {
-    await window.salonTrabajadoras.getAll(false);
+    await window.salonBarberos.getAll(false);
 }, 1000);
 
-console.log('✅ salonTrabajadoras inicializado');
+console.log('✅ salonBarberos inicializado');
