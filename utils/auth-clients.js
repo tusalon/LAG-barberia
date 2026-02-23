@@ -1,4 +1,4 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (permite reenvío si está rechazado)
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (ELIMINA solicitud al aprobar)
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -289,12 +289,12 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// Aprobar cliente (mover de pendientes a autorizados)
+// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud, NO la deja como aprobada)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
     try {
-        // Obtener la solicitud pendiente
+        // PASO 1: Obtener la solicitud pendiente
         const response = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&estado=eq.pendiente&select=*`,
             {
@@ -313,21 +313,7 @@ window.aprobarCliente = async function(whatsapp) {
         
         const solicitud = solicitudes[0];
         
-        // Actualizar estado de la solicitud
-        await fetch(
-            `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'apikey': window.SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ estado: 'aprobado' })
-            }
-        );
-        
-        // Insertar en clientes autorizados
+        // PASO 2: Insertar en clientes autorizados
         const insertResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/clientes_autorizados`,
             {
@@ -345,11 +331,52 @@ window.aprobarCliente = async function(whatsapp) {
             }
         );
         
-        if (!insertResponse.ok) return null;
+        if (!insertResponse.ok) {
+            // Si el error es por duplicado, el cliente ya existe - podemos continuar
+            if (insertResponse.status !== 409) {
+                console.error('Error al insertar en autorizados:', await insertResponse.text());
+                return null;
+            } else {
+                console.log('ℹ️ Cliente ya existía en autorizados');
+            }
+        }
         
-        const nuevoAutorizado = await insertResponse.json();
-        console.log('✅ Cliente aprobado:', nuevoAutorizado);
-        return nuevoAutorizado[0];
+        // PASO 3: ELIMINAR la solicitud pendiente (NO cambiar estado a aprobado)
+        const deleteResponse = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        if (!deleteResponse.ok) {
+            console.error('Error al eliminar solicitud:', await deleteResponse.text());
+            // No retornamos null porque el cliente ya se insertó en autorizados
+        } else {
+            console.log('✅ Solicitud eliminada correctamente');
+        }
+        
+        // PASO 4: Obtener el cliente autorizado para devolverlo
+        const getResponse = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/clientes_autorizados?whatsapp=eq.${whatsapp}&select=*`,
+            {
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        const autorizado = await getResponse.json();
+        console.log('✅ Cliente aprobado exitosamente:', autorizado[0]);
+        return autorizado[0] || null;
+        
     } catch (error) {
         console.error('Error aprobando cliente:', error);
         return null;

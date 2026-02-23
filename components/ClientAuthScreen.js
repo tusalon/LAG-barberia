@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN COMPLETA PARA LAG.barberia (CON LOGO Y SIN EMOJIS)
+// components/ClientAuthScreen.js - VERSIÓN COMPLETA PARA LAG.barberia (CON LOGO COMO ICONO Y SIN EMOJIS)
 
 function ClientAuthScreen({ onAccessGranted }) {
     const [nombre, setNombre] = React.useState('');
@@ -279,18 +279,16 @@ function ClientAuthScreen({ onAccessGranted }) {
         <div className="min-h-screen bg-gradient-to-b from-amber-50 to-gray-900 flex flex-col items-center justify-center p-6 animate-fade-in">
             <div className="max-w-md w-full">
                 <div className="text-center mb-8">
-                    {/* 🔥 NUEVO: Logo de LAG.barberia (reemplaza la tijera) */}
+                    {/* 🔥 LOGO COMO ICONO (CUADRADO CON GRADIENTE) */}
                     <div className="flex justify-center mb-4">
                         <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                            <span className="text-3xl font-black text-white tracking-tighter">
-                                LAG
-                            </span>
+                            <i className="icon-scissors text-4xl text-white"></i>
                         </div>
                     </div>
                     
                     {/* Eslogan */}
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/30 backdrop-blur-sm border border-amber-500/50 text-amber-300 text-sm font-medium mb-2">
-                        <div className="icon-scissors text-xs"></div>
+                        <i className="icon-star text-xs"></i>
                         <span>Nivel que se nota</span>
                     </div>
                     
@@ -300,7 +298,7 @@ function ClientAuthScreen({ onAccessGranted }) {
 
                 <div className="bg-gray-800 p-6 rounded-2xl shadow-xl border border-amber-700">
                     <h2 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
-                        <div className="icon-user-plus"></div>
+                        <i className="icon-user-plus"></i>
                         Ingresá con tu número
                     </h2>
                     
@@ -324,7 +322,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                             />
                             {(esDuenno || esBarbero) && (
                                 <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                    <span className="icon-info"></span>
+                                    <i className="icon-info text-xs"></i>
                                     El personal no necesita nombre
                                 </p>
                             )}
@@ -425,7 +423,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                                     ? 'bg-yellow-900 text-yellow-300 border border-yellow-700' 
                                     : 'bg-red-900 text-red-300 border border-red-700'
                             }`}>
-                                <div className={`${estadoRechazado ? 'icon-alert-circle' : 'icon-triangle-alert'} mt-0.5`}></div>
+                                <i className={`${estadoRechazado ? 'icon-alert-circle' : 'icon-triangle-alert'} mt-0.5`}></i>
                                 {error}
                             </div>
                         )}
@@ -481,8 +479,6 @@ function ClientAuthScreen({ onAccessGranted }) {
                             )}
                         </div>
                     </form>
-
-                    {/* Leyenda de colores - QUITADA COMPLETAMENTE */}
                 </div>
             </div>
         </div>
