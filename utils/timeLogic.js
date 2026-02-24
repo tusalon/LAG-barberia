@@ -1,4 +1,4 @@
-// utils/timeLogic.js - Versión con horarios cada 30 minutos
+// utils/timeLogic.js - Versión con límite de 2 horas
 
 // Helper to convert "HH:mm" to minutes since midnight
 function timeToMinutes(timeStr) {
@@ -32,38 +32,67 @@ function getCurrentLocalDate() {
     return `${year}-${month}-${day}`;
 }
 
-// Verificar si una hora ya pasó (para el día actual)
+// 🔥 NUEVA FUNCIÓN: Obtener la hora mínima permitida (actual + 2 horas)
+function getMinAllowedTime() {
+    const now = new Date();
+    // Sumar 2 horas
+    now.setHours(now.getHours() + 2);
+    
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Redondear hacia arriba al próximo múltiplo de 30 minutos
+    let totalMinutes = hours * 60 + minutes;
+    // Redondear hacia arriba al próximo bloque de 30 minutos
+    totalMinutes = Math.ceil(totalMinutes / 30) * 30;
+    
+    const resultHours = Math.floor(totalMinutes / 60);
+    const resultMinutes = totalMinutes % 60;
+    
+    return {
+        hours: resultHours,
+        minutes: resultMinutes,
+        timeStr: `${resultHours.toString().padStart(2, '0')}:${resultMinutes.toString().padStart(2, '0')}`,
+        totalMinutes: totalMinutes
+    };
+}
+
+// 🔥 FUNCIÓN MODIFICADA: Verificar si una hora ya pasó (considerando +2 horas)
 function isTimePassedToday(timeStr24) {
     const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const minAllowed = getMinAllowedTime();
     
     const [slotHour, slotMinute] = timeStr24.split(':').map(Number);
+    const slotTotalMinutes = slotHour * 60 + slotMinute;
     
-    if (slotHour < currentHour) return true;
-    if (slotHour === currentHour && slotMinute < currentMinute) return true;
-    return false;
+    // Si el slot es menor que la hora mínima permitida, está pasado
+    return slotTotalMinutes < minAllowed.totalMinutes;
 }
 
-// 🔥 CONVERTIR ÍNDICE DE 30 MIN A HORA (0 = 00:00, 1 = 00:30, 2 = 01:00, etc.)
-function indiceToHora(indice) {
-    const horas = Math.floor(indice / 2);
-    const minutos = indice % 2 === 0 ? '00' : '30';
-    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+// 🔥 NUEVA FUNCIÓN: Obtener el próximo horario disponible
+function getNextAvailableTime() {
+    const minAllowed = getMinAllowedTime();
+    return minAllowed.timeStr;
 }
 
-// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
-function horaToIndice(horaStr) {
-    const [hours, minutes] = horaStr.split(':').map(Number);
-    return hours * 2 + (minutes === 30 ? 1 : 0);
-}
-
-// Filtrar slots disponibles considerando reservas existentes
-function filterAvailableSlots(baseSlots, durationMinutes, existingBookings) {
+// Filtrar slots disponibles considerando reservas existentes y hora mínima
+function filterAvailableSlots(baseSlots, durationMinutes, existingBookings, date) {
+    const todayStr = getCurrentLocalDate();
+    const isToday = date === todayStr;
+    
     return baseSlots.filter(slotStartStr => {
         const slotStart = timeToMinutes(slotStartStr);
         const slotEnd = slotStart + durationMinutes;
+        
+        // Si es hoy, verificar que no sea antes de la hora mínima
+        if (isToday) {
+            const minAllowed = getMinAllowedTime();
+            if (slotStart < minAllowed.totalMinutes) {
+                return false; // Descartar slots antes de la hora mínima
+            }
+        }
 
+        // Verificar conflictos con reservas existentes
         const hasConflict = existingBookings.some(booking => {
             const bookingStart = timeToMinutes(booking.hora_inicio);
             const bookingEnd = timeToMinutes(booking.hora_fin);
@@ -78,4 +107,17 @@ function filterAvailableSlots(baseSlots, durationMinutes, existingBookings) {
 function calculateEndTime(startTimeStr, durationMinutes) {
     const startMins = timeToMinutes(startTimeStr);
     return minutesToTime(startMins + durationMinutes);
+}
+
+// 🔥 CONVERTIR ÍNDICE DE 30 MIN A HORA (0 = 00:00, 1 = 00:30, 2 = 01:00, etc.)
+function indiceToHora(indice) {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+}
+
+// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
+function horaToIndice(horaStr) {
+    const [hours, minutes] = horaStr.split(':').map(Number);
+    return hours * 2 + (minutes === 30 ? 1 : 0);
 }

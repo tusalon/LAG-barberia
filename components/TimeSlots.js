@@ -1,4 +1,4 @@
-// components/TimeSlots.js - Versión para LAG.barberia (CON MEDIAS HORAS)
+// components/TimeSlots.js - Versión para LAG.barberia (CON MEDIAS HORAS Y +2 HORAS)
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
@@ -15,7 +15,22 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         return new Date(year, month - 1, day).toLocaleDateString();
     };
 
-    // 🔥 Función para convertir índice de 30 minutos a hora legible
+    // Función para obtener fecha actual en formato YYYY-MM-DD
+    const getCurrentLocalDate = () => {
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = (hoy.getMonth() + 1).toString().padStart(2, '0');
+        const day = hoy.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Función para convertir hora a minutos
+    const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    };
+
+    // Función para convertir índice de 30 minutos a hora legible
     const indiceToHoraLegible = (indice) => {
         const horas = Math.floor(indice / 2);
         const minutos = indice % 2 === 0 ? '00' : '30';
@@ -93,7 +108,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     return;
                 }
                 
-                // 🔥 CONVERTIR ÍNDICES A HORAS LEGIBLES
+                // Convertir índices a horas legibles
                 const baseSlots = horariosBarbero.horas.map(indice => 
                     indiceToHoraLegible(indice)
                 );
@@ -101,7 +116,19 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 console.log('📋 Slots base (convertidos):', baseSlots);
                 
                 const todayStr = getCurrentLocalDate();
-                const isToday = date === todayStr;
+                const esHoy = date === todayStr;
+                
+                // 🔥 OBTENER HORA MÍNIMA PERMITIDA (ACTUAL + 2 HORAS)
+                const ahora = new Date();
+                const horaActual = ahora.getHours();
+                const minutosActuales = ahora.getMinutes();
+                const totalMinutosActual = horaActual * 60 + minutosActuales;
+                const minAllowedMinutes = totalMinutosActual + 120; // +2 horas
+                
+                console.log('🕐 Hora actual:', `${horaActual}:${minutosActuales}`);
+                console.log('⏱️ Hora mínima permitida (actual + 2h):', 
+                    `${Math.floor(minAllowedMinutes / 60)}:${minAllowedMinutes % 60}`);
+                console.log('📅 Fecha seleccionada:', date, 'es hoy?', esHoy);
                 
                 const bookings = await getBookingsByDateAndWorker(date, worker.id);
                 
@@ -109,18 +136,26 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     const slotStart = timeToMinutes(slotStartStr);
                     const slotEnd = slotStart + service.duracion;
 
+                    // 🔥 VALIDACIÓN DE +2 HORAS PARA HOY
+                    if (esHoy && slotStart < minAllowedMinutes) {
+                        console.log(`⏰ Slot ${slotStartStr} es menor a hora mínima - EXCLUIDO`);
+                        return false;
+                    }
+
                     const hasConflict = bookings.some(booking => {
                         const bookingStart = timeToMinutes(booking.hora_inicio);
                         const bookingEnd = timeToMinutes(booking.hora_fin);
                         return (slotStart < bookingEnd) && (slotEnd > bookingStart);
                     });
 
-                    return !hasConflict;
+                    if (!hasConflict) {
+                        console.log(`✅ Slot ${slotStartStr} disponible`);
+                        return true;
+                    } else {
+                        console.log(`❌ Slot ${slotStartStr} tiene conflicto - EXCLUIDO`);
+                        return false;
+                    }
                 });
-                
-                if (isToday) {
-                    availableSlots = availableSlots.filter(time => !isTimePassedToday(time));
-                }
                 
                 availableSlots.sort();
                 console.log(`✅ Slots disponibles para ${worker.nombre} el ${date}:`, availableSlots);
@@ -210,11 +245,14 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     {date === getCurrentLocalDate() && (
                         <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center gap-2 border border-amber-200">
                             <i className="icon-clock text-amber-500"></i>
-                            <span>Solo se muestran horarios que aún no pasaron</span>
+                            <span>
+                                ⏰ Solo se muestran horarios con al menos 2 horas de anticipación 
+                                (hora actual + 2h)
+                            </span>
                         </div>
                     )}
                     
-                    {/* 🔥 GRILLA DE HORARIOS (incluye medias horas) */}
+                    {/* GRILLA DE HORARIOS (incluye medias horas) */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
                         {slots.map(time24h => {
                             const time12h = formatTo12Hour(time24h);

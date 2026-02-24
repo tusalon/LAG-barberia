@@ -1,4 +1,4 @@
-// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON CANCELACIÓN Y WHATSAPP)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CORREGIDA)
 
 // ============================================
 // FUNCIONES DE SUPABASE
@@ -41,6 +41,36 @@ async function cancelBooking(id) {
     } catch (error) {
         console.error('Error cancel booking:', error);
         return false;
+    }
+}
+
+// ✅ FUNCIÓN AGREGADA: createBooking
+async function createBooking(bookingData) {
+    try {
+        const res = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas`,
+            {
+                method: 'POST',
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(bookingData)
+            }
+        );
+        
+        if (!res.ok) {
+            const error = await res.text();
+            throw new Error(error);
+        }
+        
+        const data = await res.json();
+        return { success: true, data: Array.isArray(data) ? data[0] : data };
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        return { success: false, error: error.message };
     }
 }
 
@@ -97,10 +127,8 @@ const getCurrentLocalDate = () => {
     return `${year}-${month}-${day}`;
 };
 
-// admin-app.js - Agregar esta función después de los useState
-
-// 🔥 FUNCIÓN PARA CONVERTIR ÍNDICE DE 30 MIN A HORA LEGIBLE
-const indiceToHora = (indice) => {
+// ✅ FUNCIÓN CORREGIDA: Convertir índice de 30 min a hora legible
+const indiceToHoraLegible = (indice) => {
     const horas = Math.floor(indice / 2);
     const minutos = indice % 2 === 0 ? '00' : '30';
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
@@ -111,7 +139,6 @@ const indiceToHora = (indice) => {
 // ============================================
 const enviarCancelacionWhatsApp = (bookingData) => {
     try {
-        // 🔥 MENSaje PROFESIONAL DE CANCELACIÓN
         const mensaje = 
 `❌ *CANCELACIÓN DE TURNO - LAG.barberia*
 
@@ -131,14 +158,8 @@ Disculpá las molestias. Esperamos verte pronto en LAG.barberia ✂️
 
 LAG.barberia - Nivel que se nota`;
 
-        // Obtener el número de teléfono del cliente (sin el +53)
         const telefono = bookingData.cliente_whatsapp.replace(/\D/g, '');
-        
-        // Codificar el mensaje para URL
         const encodedText = encodeURIComponent(mensaje);
-        
-        // 🔥 MÉTODO RECOMENDADO: Abrir en nueva pestaña
-        // Esto funciona en todos los dispositivos (móvil y desktop)
         const url = `https://wa.me/${telefono}?text=${encodedText}`;
         window.open(url, '_blank');
         
@@ -251,7 +272,7 @@ function AdminApp() {
     }, [nuevaReservaData.barbero_id]);
 
     // ============================================
-    // FUNCIÓN PARA CARGAR HORARIOS DISPONIBLES (ACTUALIZADA)
+    // FUNCIÓN PARA CARGAR HORARIOS DISPONIBLES (CORREGIDA)
     // ============================================
     React.useEffect(() => {
         const cargarHorarios = async () => {
@@ -269,6 +290,9 @@ function AdminApp() {
                 const horarios = await window.salonConfig.getHorariosBarbero(nuevaReservaData.barbero_id);
                 const horasTrabajo = horarios.horas || [];
                 
+                // ✅ CONVERSIÓN CORRECTA DE ÍNDICES A HORAS
+                const slotsTrabajo = horasTrabajo.map(indice => indiceToHoraLegible(indice));
+                
                 // Obtener reservas existentes para esa fecha
                 const response = await fetch(
                     `${window.SUPABASE_URL}/rest/v1/reservas?fecha=eq.${nuevaReservaData.fecha}&barbero_id=eq.${nuevaReservaData.barbero_id}&estado=neq.Cancelado&select=hora_inicio,hora_fin`,
@@ -281,24 +305,6 @@ function AdminApp() {
                 );
                 
                 const reservas = await response.json();
-                
-                // Convertir horas de trabajo a slots de 30 minutos
-                const slotsTrabajo = [];
-                horasTrabajo.forEach(hora => {
-                    // Cada hora de trabajo genera 2 slots (ej: 9:00 y 9:30)
-                    const horaBase = Math.floor(hora);
-                    const minutosBase = (hora % 1) * 60;
-                    
-                    if (minutosBase === 0) {
-                        // Hora exacta (ej: 9:00)
-                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:00`);
-                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:30`);
-                    } else {
-                        // Media hora (ej: 9:30)
-                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:30`);
-                        slotsTrabajo.push(`${(horaBase + 1).toString().padStart(2, '0')}:00`);
-                    }
-                });
 
                 // 🔥 OBTENER HORA MÍNIMA PERMITIDA (ACTUAL + 2 HORAS)
                 const ahora = new Date();
@@ -397,20 +403,28 @@ function AdminApp() {
             
             for (let d = 1; d <= diasEnMes; d++) {
                 const fechaStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-                const reservasDia = reservasPorFecha[fechaStr] || [];
                 
-                const tieneDisponibilidad = horasTrabajo.some(hora => {
-                    const slotStart = hora * 30;
-                    const slotEnd = slotStart + 60;
+                // Verificar si hay al menos un slot disponible en ese día
+                let tieneDisponibilidad = false;
+                
+                for (const horaIndice of horasTrabajo) {
+                    const slotStr = indiceToHoraLegible(horaIndice);
+                    const [horas, minutos] = slotStr.split(':').map(Number);
+                    const slotStart = horas * 60 + minutos;
+                    const slotEnd = slotStart + 60; // Duración estándar de 1 hora para verificación
                     
+                    const reservasDia = reservasPorFecha[fechaStr] || [];
                     const tieneConflicto = reservasDia.some(reserva => {
                         const reservaStart = timeToMinutes(reserva.hora_inicio);
                         const reservaEnd = timeToMinutes(reserva.hora_fin);
                         return (slotStart < reservaEnd) && (slotEnd > reservaStart);
                     });
                     
-                    return !tieneConflicto;
-                });
+                    if (!tieneConflicto) {
+                        tieneDisponibilidad = true;
+                        break;
+                    }
+                }
                 
                 disponibilidad[fechaStr] = tieneDisponibilidad;
             }
@@ -514,8 +528,8 @@ function AdminApp() {
                 cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
                 servicio: nuevaReservaData.servicio,
                 duracion: servicio.duracion,
-                trabajador_id: nuevaReservaData.barbero_id,
-                trabajador_nombre: barbero.nombre,
+                barbero_id: nuevaReservaData.barbero_id,
+                barbero_nombre: barbero.nombre,
                 fecha: nuevaReservaData.fecha,
                 hora_inicio: nuevaReservaData.hora_inicio,
                 hora_fin: endTime,
@@ -720,9 +734,7 @@ function AdminApp() {
         
         const ok = await cancelBooking(id);
         if (ok) {
-            // ✅ AHORA USA LA FUNCIÓN PROFESIONAL
             enviarCancelacionWhatsApp(bookingData);
-            
             alert('✅ Reserva cancelada y cliente notificado');
             fetchBookings();
         } else {
