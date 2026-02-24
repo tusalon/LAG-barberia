@@ -1,4 +1,4 @@
-// admin-app.js - LAG.barberia (VERSIÓN COMPLETA Y CORREGIDA)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON CANCELACIÓN Y WHATSAPP)
 
 // ============================================
 // FUNCIONES DE SUPABASE
@@ -43,6 +43,48 @@ async function cancelBooking(id) {
         return false;
     }
 }
+
+// ============================================
+// FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP
+// ============================================
+const enviarCancelacionWhatsApp = (bookingData) => {
+    try {
+        // 🔥 MENSaje PROFESIONAL DE CANCELACIÓN
+        const mensaje = 
+`❌ *CANCELACIÓN DE TURNO - LAG.barberia*
+
+Hola *${bookingData.cliente_nombre}*, lamentamos informarte que tu turno ha sido cancelado.
+
+📅 *Fecha:* ${bookingData.fecha}
+⏰ *Hora:* ${formatTo12Hour(bookingData.hora_inicio)}
+💈 *Servicio:* ${bookingData.servicio}
+👨‍🎨 *Barbero:* ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
+
+🔔 *Motivo:* Cancelación por administración
+
+📱 *¿Querés reprogramar?*
+Podés hacerlo desde la app
+
+Disculpá las molestias. Esperamos verte pronto en LAG.barberia ✂️
+
+LAG.barberia - Nivel que se nota`;
+
+        // Obtener el número de teléfono del cliente (sin el +53)
+        const telefono = bookingData.cliente_whatsapp.replace(/\D/g, '');
+        
+        // Codificar el mensaje para URL
+        const encodedText = encodeURIComponent(mensaje);
+        
+        // 🔥 MÉTODO RECOMENDADO: Abrir en nueva pestaña
+        // Esto funciona en todos los dispositivos (móvil y desktop)
+        const url = `https://wa.me/${telefono}?text=${encodedText}`;
+        window.open(url, '_blank');
+        
+        console.log('📤 Mensaje de cancelación enviado a:', telefono);
+    } catch (error) {
+        console.error('Error enviando mensaje de cancelación:', error);
+    }
+};
 
 // ============================================
 // COMPONENTE PRINCIPAL
@@ -154,7 +196,6 @@ function AdminApp() {
             const year = fecha.getFullYear();
             const month = fecha.getMonth();
             
-            // Obtener horarios del barbero
             const horarios = await window.salonConfig.getHorariosBarbero(barberoId);
             const horasTrabajo = horarios.horas || [];
             
@@ -163,7 +204,6 @@ function AdminApp() {
                 return;
             }
             
-            // Obtener todas las reservas del mes
             const primerDia = new Date(year, month, 1);
             const ultimoDia = new Date(year, month + 1, 0);
             
@@ -182,7 +222,6 @@ function AdminApp() {
             
             const reservas = await response.json();
             
-            // Agrupar reservas por fecha
             const reservasPorFecha = {};
             (reservas || []).forEach(r => {
                 if (!reservasPorFecha[r.fecha]) {
@@ -191,7 +230,6 @@ function AdminApp() {
                 reservasPorFecha[r.fecha].push(r);
             });
             
-            // Determinar qué fechas tienen disponibilidad
             const disponibilidad = {};
             const diasEnMes = ultimoDia.getDate();
             
@@ -199,10 +237,9 @@ function AdminApp() {
                 const fechaStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
                 const reservasDia = reservasPorFecha[fechaStr] || [];
                 
-                // Verificar si hay algún horario disponible
                 const tieneDisponibilidad = horasTrabajo.some(hora => {
-                    const slotStart = hora * 60;
-                    const slotEnd = slotStart + 60; // Duración por defecto
+                    const slotStart = hora * 30;
+                    const slotEnd = slotStart + 60;
                     
                     const tieneConflicto = reservasDia.some(reserva => {
                         const reservaStart = timeToMinutes(reserva.hora_inicio);
@@ -222,7 +259,6 @@ function AdminApp() {
         }
     };
 
-    // Función para cambiar de mes en el calendario
     const cambiarMes = (direccion) => {
         const nuevaFecha = new Date(currentDate);
         nuevaFecha.setMonth(currentDate.getMonth() + direccion);
@@ -233,7 +269,6 @@ function AdminApp() {
         }
     };
 
-    // Función para obtener los días del mes
     const getDaysInMonth = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
@@ -254,7 +289,6 @@ function AdminApp() {
         return days;
     };
 
-    // Función para formatear fecha
     const formatDate = (date) => {
         const y = date.getFullYear();
         const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -262,23 +296,19 @@ function AdminApp() {
         return `${y}-${m}-${d}`;
     };
 
-    // Función para verificar si una fecha está disponible
     const isDateAvailable = (date) => {
         if (!date || !nuevaReservaData.barbero_id) return false;
         
         const fechaStr = formatDate(date);
         const diaSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][date.getDay()];
         
-        // Verificar si el día es laboral
         if (diasLaborales.length > 0 && !diasLaborales.includes(diaSemana)) {
             return false;
         }
         
-        // Verificar si tiene horarios disponibles
         return fechasConHorarios[fechaStr] || false;
     };
 
-    // Función para seleccionar fecha
     const handleDateSelect = (date) => {
         if (isDateAvailable(date)) {
             const fechaStr = formatDate(date);
@@ -286,7 +316,6 @@ function AdminApp() {
         }
     };
 
-    // Cargar horarios cuando se selecciona fecha
     React.useEffect(() => {
         const cargarHorarios = async () => {
             if (nuevaReservaData.barbero_id && nuevaReservaData.fecha) {
@@ -295,7 +324,7 @@ function AdminApp() {
                     const bookings = await window.getBookingsByDateAndWorker(nuevaReservaData.fecha, nuevaReservaData.barbero_id);
                     
                     const baseSlots = (horarios.horas || []).map(h => 
-                        `${h.toString().padStart(2, '0')}:00`
+                        indiceToHora(h)
                     );
                     
                     const servicioSeleccionado = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
@@ -537,13 +566,18 @@ function AdminApp() {
         });
     }, [userRole, userNivel, barbero]);
 
+    // ============================================
+    // 🔥 FUNCIÓN DE CANCELACIÓN CON WHATSAPP
+    // ============================================
     const handleCancel = async (id, bookingData) => {
         if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
+        
         const ok = await cancelBooking(id);
         if (ok) {
-            const msg = `❌ Reserva cancelada\n\n${bookingData.cliente_nombre}, tu reserva del ${bookingData.fecha} a las ${formatTo12Hour(bookingData.hora_inicio)} fue cancelada.`;
-            window.open(`https://wa.me/${bookingData.cliente_whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
-            alert('✅ Reserva cancelada');
+            // Enviar mensaje de cancelación por WhatsApp
+            enviarCancelacionWhatsApp(bookingData);
+            
+            alert('✅ Reserva cancelada y cliente notificado');
             fetchBookings();
         } else {
             alert('❌ Error al cancelar');
@@ -736,7 +770,7 @@ function AdminApp() {
                                         <option value="">Seleccionar servicio</option>
                                         {serviciosList.map(s => (
                                             <option key={s.id} value={s.nombre}>
-                                                {s.nombre} ({s.duracion} min)
+                                                {s.nombre} ({s.duracion} min - ${s.precio})
                                             </option>
                                         ))}
                                     </select>
@@ -1114,7 +1148,7 @@ function AdminApp() {
                         ) : (
                             <div className="space-y-3">
                                 {filteredBookings.map(b => (
-                                    <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm">
+                                    <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
                                         <div className="flex justify-between mb-2">
                                             <span className="font-semibold">{b.fecha}</span>
                                             <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
@@ -1122,10 +1156,10 @@ function AdminApp() {
                                             </span>
                                         </div>
                                         <div className="text-sm space-y-1">
-                                            <p>👤 {b.cliente_nombre}</p>
-                                            <p>📱 {b.cliente_whatsapp}</p>
-                                            <p>💈 {b.servicio}</p>
-                                            <p>👨‍🎨 {b.barbero_nombre}</p>
+                                            <p><span className="font-medium">👤 Cliente:</span> {b.cliente_nombre}</p>
+                                            <p><span className="font-medium">📱 WhatsApp:</span> {b.cliente_whatsapp}</p>
+                                            <p><span className="font-medium">💈 Servicio:</span> {b.servicio}</p>
+                                            <p><span className="font-medium">👨‍🎨 Barbero:</span> {b.barbero_nombre || b.trabajador_nombre}</p>
                                         </div>
                                         <div className="flex justify-between items-center mt-3 pt-2 border-t">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold
@@ -1137,9 +1171,9 @@ function AdminApp() {
                                             {b.estado === 'Reservado' && (
                                                 <button 
                                                     onClick={() => handleCancel(b.id, b)} 
-                                                    className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+                                                    className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-1"
                                                 >
-                                                    Cancelar
+                                                    <span>❌</span> Cancelar
                                                 </button>
                                             )}
                                         </div>
