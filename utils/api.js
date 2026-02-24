@@ -1,10 +1,10 @@
-// utils/api.js - VERSIÓN COMPLETA para LAG.barberia
+// utils/api.js - VERSIÓN COMPLETA para LAG.barberia (SIN campo email)
 
 console.log('📡 api.js cargado');
 
 // Usar variable global o definir si no existe
 if (typeof window.TABLE_NAME === 'undefined') {
-    window.TABLE_NAME = 'reservas'; // ✅ Cambiado de 'benettsalon' a 'reservas'
+    window.TABLE_NAME = 'reservas';
 }
 const TABLE_NAME = window.TABLE_NAME;
 
@@ -76,13 +76,13 @@ async function createBooking(bookingData) {
             cliente_whatsapp: bookingData.cliente_whatsapp,
             servicio: bookingData.servicio,
             duracion: bookingData.duracion,
-            barbero_id: bookingData.trabajador_id, // ✅ Cambiado
-            barbero_nombre: bookingData.trabajador_nombre, // ✅ Cambiado
+            barbero_id: bookingData.trabajador_id,
+            barbero_nombre: bookingData.trabajador_nombre,
             fecha: bookingData.fecha,
             hora_inicio: bookingData.hora_inicio,
             hora_fin: bookingData.hora_fin,
-            estado: bookingData.estado || 'Reservado',
-            email: bookingData.email || null
+            estado: bookingData.estado || 'Reservado'
+            // 🔥 CAMPO EMAIL ELIMINADO - no existe en la tabla
         };
 
         console.log('📤 Enviando a Supabase:', dataForSupabase);

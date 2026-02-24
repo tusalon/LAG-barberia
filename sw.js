@@ -1,4 +1,4 @@
-// sw.js - Service Worker para LAG.barberia (VERSIÓN MEJORADA)
+// sw.js - Service Worker para LAG.barberia (CORREGIDO)
 
 const CACHE_NAME = 'lag-barberia-v1';
 const urlsToCache = [
@@ -17,10 +17,9 @@ const urlsToCache = [
   '/LAG-barberia/icons/icon-512x512.png'
 ];
 
-// Instalación del Service Worker
 self.addEventListener('install', event => {
   console.log('📦 Service Worker instalando...');
-  self.skipWaiting(); // Activar inmediatamente
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -30,7 +29,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activación - limpiar caches antiguos
 self.addEventListener('activate', event => {
   console.log('🔄 Service Worker activado');
   event.waitUntil(
@@ -44,22 +42,18 @@ self.addEventListener('activate', event => {
         })
       );
     }).then(() => {
-      // Notificar a todas las clientes que hay una nueva versión
-      self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({
-            type: 'NEW_VERSION_AVAILABLE',
-            cacheName: CACHE_NAME
-          });
-        });
-      });
-      return self.clients.claim();
+      self.clients.claim();
     })
   );
 });
 
-// Estrategia de caché: Stale-while-revalidate
+// 🔥 CORREGIDO: Ignorar peticiones que no sean http/https
 self.addEventListener('fetch', event => {
+  // Ignorar peticiones que no sean http/https (como chrome-extension://)
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+  
   // Ignorar peticiones a Supabase (API)
   if (event.request.url.includes('supabase.co')) {
     return;
@@ -68,10 +62,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        // Devolver cached response mientras se actualiza
         const fetchPromise = fetch(event.request)
           .then(networkResponse => {
-            // Actualizar caché
             if (networkResponse && networkResponse.status === 200) {
               const responseToCache = networkResponse.clone();
               caches.open(CACHE_NAME)
@@ -91,7 +83,6 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Escuchar mensajes desde la página
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

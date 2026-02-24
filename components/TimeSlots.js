@@ -1,4 +1,4 @@
-// components/TimeSlots.js - Versión para LAG.barberia
+// components/TimeSlots.js - Versión para LAG.barberia (CORREGIDO)
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
@@ -7,6 +7,13 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [horariosBarbero, setHorariosBarbero] = React.useState(null);
     const [diaTrabaja, setDiaTrabaja] = React.useState(true);
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
+
+    // 🔥 Función para formatear fecha local correctamente
+    const formatDateLocal = (dateStr) => {
+        if (!dateStr) return '';
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString();
+    };
 
     React.useEffect(() => {
         if (!worker) return;
@@ -175,7 +182,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 <div className="text-center p-8 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="icon-calendar-x text-4xl text-gray-400 mb-3 mx-auto"></div>
                     <p className="text-gray-700 font-medium">
-                        No hay horarios disponibles para {worker.nombre} el {new Date(date).toLocaleDateString()}
+                        No hay horarios disponibles para {worker.nombre} el {formatDateLocal(date)}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">Probá con otra fecha o verificá la configuración de horas</p>
                 </div>
@@ -185,7 +192,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                         <div className="flex items-center gap-2 text-amber-700">
                             <div className="icon-clock text-amber-500"></div>
                             <span className="font-medium">
-                                Horarios disponibles de {worker.nombre} para {new Date(date).toLocaleDateString()}:
+                                Horarios disponibles de {worker.nombre} para {formatDateLocal(date)}:
                             </span>
                         </div>
                     </div>

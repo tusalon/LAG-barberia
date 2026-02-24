@@ -1,9 +1,16 @@
-// components/Calendar.js - Versión para LAG.barberia
+// components/Calendar.js - Versión para LAG.barberia (CORREGIDO)
 
 function Calendar({ onDateSelect, selectedDate, worker }) {
     const [currentDate, setCurrentDate] = React.useState(new Date());
     const [diasLaborales, setDiasLaborales] = React.useState([]);
     const [cargandoHorarios, setCargandoHorarios] = React.useState(false);
+
+    // 🔥 Función para formatear fecha local correctamente
+    const formatDateLocal = (dateStr) => {
+        if (!dateStr) return '';
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString();
+    };
 
     React.useEffect(() => {
         if (!worker) return;
