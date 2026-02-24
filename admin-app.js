@@ -558,23 +558,23 @@ const handleCrearReservaManual = async () => {
         });
     }, [userRole, userNivel, barbero]);
 
-    // ============================================
-    // 🔥 FUNCIÓN DE CANCELACIÓN CON WHATSAPP
-    // ============================================
-    const handleCancel = async (id, bookingData) => {
-        if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
+  // ============================================
+// 🔥 FUNCIÓN DE CANCELACIÓN CON WHATSAPP (CORREGIDA)
+// ============================================
+const handleCancel = async (id, bookingData) => {
+    if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
+    
+    const ok = await cancelBooking(id);
+    if (ok) {
+        // ✅ AHORA USA LA FUNCIÓN PROFESIONAL
+        enviarCancelacionWhatsApp(bookingData);
         
-        const ok = await cancelBooking(id);
-        if (ok) {
-            // Enviar mensaje de cancelación por WhatsApp
-            enviarCancelacionWhatsApp(bookingData);
-            
-            alert('✅ Reserva cancelada y cliente notificado');
-            fetchBookings();
-        } else {
-            alert('❌ Error al cancelar');
-        }
-    };
+        alert('✅ Reserva cancelada y cliente notificado');
+        fetchBookings();
+    } else {
+        alert('❌ Error al cancelar');
+    }
+};
 
     const handleLogout = () => {
         if (confirm('¿Cerrar sesión?')) {
