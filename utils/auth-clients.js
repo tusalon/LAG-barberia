@@ -1,4 +1,4 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON NOTIFICACIÓN WHATSAPP AL APROBAR)
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP API)
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -116,7 +116,6 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
             if (estadoSolicitud.estado === 'rechazado') {
                 console.log('🔄 Cliente estaba rechazado, eliminando solicitud anterior...');
                 
-                // 🔥 ELIMINAR la solicitud rechazada
                 await fetch(
                     `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${estadoSolicitud.id}`,
                     {
@@ -130,7 +129,6 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
                 );
                 
                 console.log('✅ Solicitud rechazada eliminada');
-                // Continuamos para crear una nueva solicitud
             }
         }
         
@@ -171,10 +169,11 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const newSolicitud = await response.json();
         console.log('✅ Solicitud creada:', newSolicitud);
         
-        // Notificar al admin
+        // 🔥 Notificar al admin usando API
         const adminPhone = "53357234";
         const text = `🆕 NUEVA SOLICITUD\n\n👤 ${nombre}\n📱 +${whatsapp}`;
-        window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
+        const encodedText = encodeURIComponent(text);
+        window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedText}`, '_blank');
         
         return true;
     } catch (error) {
@@ -268,7 +267,7 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud y ENVÍA WHATSAPP)
+// 🔥 FUNCIÓN: Aprobar cliente (ELIMINA la solicitud y ENVÍA WHATSAPP)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
@@ -311,7 +310,6 @@ window.aprobarCliente = async function(whatsapp) {
         );
         
         if (!insertResponse.ok) {
-            // Si el error es por duplicado, el cliente ya existe
             if (insertResponse.status !== 409) {
                 console.error('Error al insertar en autorizados:', await insertResponse.text());
                 return null;
@@ -320,7 +318,7 @@ window.aprobarCliente = async function(whatsapp) {
             }
         }
         
-        // PASO 3: 🔥 ELIMINAR la solicitud pendiente (NO mantener registro)
+        // PASO 3: ELIMINAR la solicitud pendiente
         const deleteResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
             {
@@ -356,13 +354,11 @@ window.aprobarCliente = async function(whatsapp) {
         
         console.log('✅ Cliente aprobado exitosamente:', clienteAprobado);
         
-        // 🔥 PASO 5: ENVIAR WHATSAPP DE NOTIFICACIÓN AL CLIENTE
+        // 🔥 PASO 5: ENVIAR WHATSAPP DE NOTIFICACIÓN AL CLIENTE usando API
         if (clienteAprobado) {
             try {
-                // Limpiar el número de WhatsApp (eliminar +53 si existe)
                 const telefonoLimpio = clienteAprobado.whatsapp.replace(/\D/g, '');
                 
-                // 🔥 MENSAJE DE BIENVENIDA PERSONALIZADO
                 const mensajeBienvenida = 
 `✅ *¡FELICIDADES! Has sido ACEPTADO en LAG.barberia*
 
@@ -385,17 +381,15 @@ Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de ac
 LAG.barberia - Donde el estilo se encuentra con la calidad`;
 
                 const encodedText = encodeURIComponent(mensajeBienvenida);
-                const url = `https://wa.me/${telefonoLimpio}?text=${encodedText}`;
-                
-                // Abrir WhatsApp en una nueva pestaña
-                window.open(url, '_blank');
+                window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
                 
                 console.log('📤 Mensaje de bienvenida enviado a:', telefonoLimpio);
                 
-                // También notificar al admin que se envió
+                // Notificar al admin
                 const adminPhone = "53357234";
                 const notificacionAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
-                window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(notificacionAdmin)}`, '_blank');
+                const encodedAdmin = encodeURIComponent(notificacionAdmin);
+                window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedAdmin}`, '_blank');
                 
             } catch (error) {
                 console.error('Error enviando WhatsApp de bienvenida:', error);
@@ -410,12 +404,11 @@ LAG.barberia - Donde el estilo se encuentra con la calidad`;
     }
 };
 
-// 🔥 FUNCIÓN CORREGIDA: Rechazar cliente (ELIMINA la solicitud)
+// FUNCIÓN: Rechazar cliente (ELIMINA la solicitud)
 window.rechazarCliente = async function(whatsapp) {
     console.log('❌ Rechazando cliente:', whatsapp);
     
     try {
-        // PASO 1: Obtener la solicitud pendiente
         const response = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&estado=eq.pendiente&select=id`,
             {
@@ -434,7 +427,6 @@ window.rechazarCliente = async function(whatsapp) {
         
         const solicitud = solicitudes[0];
         
-        // PASO 2: 🔥 ELIMINAR la solicitud (NO cambiar estado)
         const deleteResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
             {

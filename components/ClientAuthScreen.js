@@ -266,7 +266,11 @@ function ClientAuthScreen({ onAccessGranted }) {
                 
                 <div className="text-sm text-gray-500">
                     <p>Mientras tanto, podés contactarnos:</p>
-                    <a href="https://wa.me/5353357234" target="_blank" className="text-amber-500 font-medium inline-flex items-center gap-1 mt-2">
+                    <a 
+                        href="https://api.whatsapp.com/send?phone=53357234&text=Hola%20LAG.barberia%2C%20consulté%20mi%20solicitud%20de%20acceso" 
+                        target="_blank" 
+                        className="text-amber-500 font-medium inline-flex items-center gap-1 mt-2"
+                    >
                         <div className="icon-message-circle"></div>
                         +53 53357234
                     </a>
@@ -279,7 +283,7 @@ function ClientAuthScreen({ onAccessGranted }) {
         <div className="min-h-screen bg-gradient-to-b from-amber-50 to-gray-900 flex flex-col items-center justify-center p-6 animate-fade-in">
             <div className="max-w-md w-full">
                 <div className="text-center mb-8">
-                    {/* 🔥 LOGO COMO ICONO (CUADRADO CON GRADIENTE) */}
+                    {/* LOGO COMO ICONO (CUADRADO CON GRADIENTE) */}
                     <div className="flex justify-center mb-4">
                         <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
                             <i className="icon-scissors text-4xl text-white"></i>

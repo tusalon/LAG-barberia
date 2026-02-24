@@ -1,20 +1,16 @@
 // components/Confirmation.js - Para LAG.barberia (VERSIÓN CORREGIDA)
 
 function Confirmation({ booking, onReset }) {
-    // Verificar que booking existe
     if (!booking) {
         console.error('❌ Error: booking no está definido');
         return null;
     }
 
-    // Referencia para el enlace de descarga
     const downloadLinkRef = React.useRef(null);
 
-    // Descargar archivo ICS automáticamente al cargar la página
     React.useEffect(() => {
         console.log('📅 Generando archivo ICS para:', booking);
         
-        // Pequeño retraso para asegurar que todo esté cargado
         const timer = setTimeout(() => {
             descargarICS();
         }, 500);
@@ -24,29 +20,23 @@ function Confirmation({ booking, onReset }) {
 
     const descargarICS = () => {
         try {
-            // Generar el contenido del archivo ICS
             const icsContent = generarICS(booking);
             
-            // Crear un Blob con el contenido ICS
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             
-            // Crear un enlace para descargar el archivo
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `turno-LAG-${booking.fecha}.ics`;
             link.style.display = 'none';
             
-            // Agregar al DOM, hacer clic y remover
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            // Limpiar la URL creada
             URL.revokeObjectURL(link.href);
             
             console.log('📅 Archivo ICS generado y descargado');
             
-            // Mostrar mensaje de éxito
             alert('✅ Se descargó un archivo .ics. Abrilo para agregar el turno a tu calendario.');
             
         } catch (error) {
@@ -55,14 +45,11 @@ function Confirmation({ booking, onReset }) {
         }
     };
 
-    // 🔥 FUNCIÓN ACTUALIZADA con las alertas solicitadas
     const generarICS = (booking) => {
         try {
-            // Crear fechas en formato correcto para ICS
             const fechaInicio = new Date(booking.fecha + 'T' + booking.hora_inicio + ':00');
             const fechaFin = new Date(booking.fecha + 'T' + booking.hora_fin + ':00');
             
-            // Formatear fechas para ICS (YYYYMMDDTHHMMSS)
             const formatICSDate = (date) => {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -73,10 +60,8 @@ function Confirmation({ booking, onReset }) {
                 return `${year}${month}${day}T${hours}${minutes}${seconds}`;
             };
             
-            // Obtener nombre del barbero
             const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
             
-            // Crear contenido ICS con los recordatorios solicitados
             return `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//LAG.barberia//ES
@@ -93,14 +78,12 @@ LOCATION:LAG.barberia
 STATUS:CONFIRMED
 SEQUENCE:0
 
-// 🔥 RECORDATORIO 1: 1 día antes
 BEGIN:VALARM
 TRIGGER:-P1D
 ACTION:DISPLAY
 DESCRIPTION:📅 Recordatorio: Tu turno en LAG.barberia es MAÑANA
 END:VALARM
 
-// 🔥 RECORDATORIO 2: 1 hora y 15 minutos antes
 BEGIN:VALARM
 TRIGGER:-PT1H15M
 ACTION:DISPLAY
@@ -115,7 +98,7 @@ END:VCALENDAR`;
         }
     };
 
-    // Función para compartir por WhatsApp
+    // 🔥 Función para compartir por WhatsApp usando API
     const compartirWhatsApp = () => {
         try {
             const mensaje = 
@@ -139,7 +122,7 @@ END:VCALENDAR`;
 ¡Gracias por elegir LAG.barberia! ✂️`;
 
             const encodedText = encodeURIComponent(mensaje);
-            const url = `https://wa.me/53357234?text=${encodedText}`;
+            const url = `https://api.whatsapp.com/send?phone=53357234&text=${encodedText}`;
             window.open(url, '_blank');
         } catch (error) {
             console.error('Error al compartir:', error);
@@ -156,7 +139,6 @@ END:VCALENDAR`;
             <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Turno Reservado!</h2>
             <p className="text-gray-500 mb-4 max-w-xs mx-auto">Tu cita ha sido agendada correctamente</p>
             
-            {/* Instrucciones claras para el archivo ICS */}
             <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 mb-6 max-w-sm mx-auto">
                 <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white text-xl">
@@ -193,7 +175,6 @@ END:VCALENDAR`;
                         </div>
                     </div>
                     
-                    {/* 🔥 Información de las alertas */}
                     <div className="mt-3 pt-2 border-t border-gray-200">
                         <p className="text-xs text-amber-700 font-medium">
                             ⏰ Recibirás alertas:
@@ -206,7 +187,6 @@ END:VCALENDAR`;
                 </div>
             </div>
             
-            {/* Botones de acción */}
             <div className="flex flex-col gap-3 w-full max-w-sm mb-6">
                 <button
                     onClick={descargarICS}
@@ -225,7 +205,6 @@ END:VCALENDAR`;
                 </button>
             </div>
             
-            {/* Detalles del turno */}
             <div className="bg-gray-800 p-6 rounded-2xl shadow-sm border border-amber-600 w-full max-w-sm mb-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
                 <div className="space-y-4 text-left">

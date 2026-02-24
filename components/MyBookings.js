@@ -4,7 +4,7 @@ function MyBookings({ cliente, onVolver }) {
     const [bookings, setBookings] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [cancelando, setCancelando] = React.useState(false);
-    const [filtro, setFiltro] = React.useState('activas'); // 'activas', 'canceladas', 'todas'
+    const [filtro, setFiltro] = React.useState('activas');
     const [mensajeError, setMensajeError] = React.useState('');
 
     React.useEffect(() => {
@@ -15,7 +15,6 @@ function MyBookings({ cliente, onVolver }) {
         setLoading(true);
         setMensajeError('');
         try {
-            // Obtener reservas del cliente por su WhatsApp
             const response = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/reservas?cliente_whatsapp=eq.${cliente.whatsapp}&order=fecha.desc,hora_inicio.desc`,
                 {
@@ -43,18 +42,13 @@ function MyBookings({ cliente, onVolver }) {
         }
     };
 
-    // 🔥 FUNCIÓN PARA VERIFICAR SI SE PUEDE CANCELAR (1 HORA ANTES)
     const puedeCancelar = (fecha, horaInicio) => {
         try {
             const ahora = new Date();
-            
-            // Crear fecha del turno combinando fecha y hora
             const [year, month, day] = fecha.split('-').map(Number);
             const [hours, minutes] = horaInicio.split(':').map(Number);
             
             const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
-            
-            // Calcular diferencia en milisegundos y convertir a minutos
             const diffMs = fechaTurno - ahora;
             const diffMinutos = Math.floor(diffMs / (1000 * 60));
             
@@ -65,16 +59,14 @@ function MyBookings({ cliente, onVolver }) {
                 puede: diffMinutos > 60
             });
             
-            // ✅ PUEDE CANCELAR SOLO SI FALTAN MÁS DE 60 MINUTOS
             return diffMinutos > 60;
             
         } catch (error) {
             console.error('Error verificando cancelación:', error);
-            return false; // Por seguridad, si hay error no permitir cancelar
+            return false;
         }
     };
 
-    // 🔥 FUNCIÓN PARA OBTENER MENSAJE SEGÚN EL TIEMPO RESTANTE
     const getMensajeTiempoRestante = (fecha, horaInicio) => {
         try {
             const ahora = new Date();
@@ -103,7 +95,6 @@ function MyBookings({ cliente, onVolver }) {
     };
 
     const handleCancelarReserva = async (id, bookingData) => {
-        // 🔥 VERIFICAR SI PUEDE CANCELAR
         if (!puedeCancelar(bookingData.fecha, bookingData.hora_inicio)) {
             const mensaje = `❌ No podés cancelar este turno porque faltan menos de 1 hora.
             
@@ -123,7 +114,6 @@ Si no podés asistir, contactanos por WhatsApp al +53 53357234`;
         
         setCancelando(true);
         try {
-            // Cancelar la reserva en Supabase
             const response = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/reservas?id=eq.${id}`,
                 {
@@ -141,7 +131,7 @@ Si no podés asistir, contactanos por WhatsApp al +53 53357234`;
                 throw new Error('Error al cancelar');
             }
             
-            // Notificar al dueño por WhatsApp
+            // 🔥 Notificar al dueño por WhatsApp usando API
             const mensajeParaDueño = 
 `❌ *CANCELACIÓN DE CLIENTE - LAG.barberia*
 
@@ -156,11 +146,9 @@ El cliente canceló su turno desde la app.`;
 
             const telefonoDueño = "53357234";
             const encodedText = encodeURIComponent(mensajeParaDueño);
-            window.open(`https://wa.me/${telefonoDueño}?text=${encodedText}`, '_blank');
+            window.open(`https://api.whatsapp.com/send?phone=${telefonoDueño}&text=${encodedText}`, '_blank');
             
             alert('✅ Turno cancelado correctamente');
-            
-            // Recargar reservas
             await cargarReservas();
             
         } catch (error) {
@@ -171,11 +159,10 @@ El cliente canceló su turno desde la app.`;
         }
     };
 
-    // Filtrar reservas según el estado seleccionado
     const reservasFiltradas = bookings.filter(booking => {
         if (filtro === 'activas') return booking.estado !== 'Cancelado';
         if (filtro === 'canceladas') return booking.estado === 'Cancelado';
-        return true; // 'todas'
+        return true;
     });
 
     const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;
@@ -323,7 +310,6 @@ El cliente canceló su turno desde la app.`;
                                             </div>
                                         </div>
                                         
-                                        {/* 🔥 MOSTRAR TIEMPO RESTANTE PARA RESERVAS ACTIVAS */}
                                         {booking.estado !== 'Cancelado' && (
                                             <div className={`
                                                 text-xs p-2 rounded-lg mb-3 flex items-center gap-2
