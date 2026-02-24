@@ -1,11 +1,11 @@
-// utils/config.js - Configuración para LAG.barberia
+// utils/config.js - Configuración para LAG.barberia (CORREGIDO)
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
 let configuracionGlobal = {
-    duracionTurnos: 60,
-    intervaloEntreTurnos: 0,
-    modo24h: false
+    duracion_turnos: 60,
+    intervalo_entre_turnos: 0,
+    modo_24h: false
 };
 
 let horariosBarberos = {};
@@ -62,7 +62,7 @@ async function cargarHorariosBarberos() {
         const data = await response.json();
         
         const horarios = {};
-        data.forEach(item => {
+        (data || []).forEach(item => {
             if (!horarios[item.barbero_id]) {
                 horarios[item.barbero_id] = {
                     horas: item.horas || [],
@@ -90,9 +90,19 @@ window.salonConfig = {
         return { ...configuracionGlobal };
     },
     
+    // 🔥 CORREGIDO: Usa los nombres correctos de columnas (con guión bajo)
     guardar: async function(nuevaConfig) {
         try {
             console.log('💾 Guardando configuración global:', nuevaConfig);
+            
+            // Mapear los nombres de las propiedades
+            const datosAGuardar = {
+                duracion_turnos: nuevaConfig.duracion_turnos || nuevaConfig.duracionTurnos || 60,
+                intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || nuevaConfig.intervaloEntreTurnos || 0,
+                modo_24h: nuevaConfig.modo_24h !== undefined ? nuevaConfig.modo_24h : (nuevaConfig.modo24h || false)
+            };
+            
+            console.log('📤 Datos a guardar (mapeados):', datosAGuardar);
             
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
@@ -119,7 +129,7 @@ window.salonConfig = {
                             'Content-Type': 'application/json',
                             'Prefer': 'return=representation'
                         },
-                        body: JSON.stringify(nuevaConfig)
+                        body: JSON.stringify(datosAGuardar)
                     }
                 );
             } else {
@@ -133,7 +143,7 @@ window.salonConfig = {
                             'Content-Type': 'application/json',
                             'Prefer': 'return=representation'
                         },
-                        body: JSON.stringify(nuevaConfig)
+                        body: JSON.stringify(datosAGuardar)
                     }
                 );
             }
@@ -202,50 +212,49 @@ window.salonConfig = {
             const existe = await checkResponse.json();
             
             let response;
+            let url;
+            let method;
+            let body;
+            
             if (existe && existe.length > 0) {
-                response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': window.SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify({
-                            horas: horarios.horas || [],
-                            dias: horarios.dias || []
-                        })
-                    }
-                );
+                console.log('🔄 Actualizando registro existente ID:', existe[0].id);
+                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`;
+                method = 'PATCH';
+                body = JSON.stringify({
+                    horas: horarios.horas || [],
+                    dias: horarios.dias || []
+                });
             } else {
-                response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/horarios_barberos`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'apikey': window.SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify({
-                            barbero_id: barberoId,
-                            horas: horarios.horas || [],
-                            dias: horarios.dias || []
-                        })
-                    }
-                );
+                console.log('➕ Insertando nuevo registro');
+                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos`;
+                method = 'POST';
+                body = JSON.stringify({
+                    barbero_id: barberoId,
+                    horas: horarios.horas || [],
+                    dias: horarios.dias || []
+                });
             }
+            
+            response = await fetch(url, {
+                method: method,
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: body
+            });
             
             if (!response.ok) {
                 const error = await response.text();
                 console.error('Error guardando horarios:', error);
+                alert('Error al guardar horarios. Ver permisos.');
                 return null;
             }
             
             const data = await response.json();
+            console.log('✅ Horarios guardados exitosamente:', data);
             
             horariosBarberos[barberoId] = {
                 horas: horarios.horas || [],
@@ -256,9 +265,12 @@ window.salonConfig = {
                 window.dispatchEvent(new Event('horariosActualizados'));
             }
             
+            alert('✅ Horarios guardados correctamente');
             return Array.isArray(data) ? data[0] : data;
+            
         } catch (error) {
             console.error('Error en guardarHorariosBarbero:', error);
+            alert('Error al guardar horarios: ' + error.message);
             return null;
         }
     }

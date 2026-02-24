@@ -1,4 +1,4 @@
-// utils/timeLogic.js - Versión con solo 2 turnos por día (8:00 AM y 2:00 PM)
+// utils/timeLogic.js - Versión con horarios cada 30 minutos
 
 // Helper to convert "HH:mm" to minutes since midnight
 function timeToMinutes(timeStr) {
@@ -45,25 +45,28 @@ function isTimePassedToday(timeStr24) {
     return false;
 }
 
-// 🔥 NUEVO: Generar solo 2 slots por día (8:00 AM y 2:00 PM)
-function generateBaseSlots(durationMinutes) {
-    // Solo dos horarios fijos independientemente de la duración
-    return ["08:00", "14:00"];
+// 🔥 CONVERTIR ÍNDICE DE 30 MIN A HORA (0 = 00:00, 1 = 00:30, 2 = 01:00, etc.)
+function indiceToHora(indice) {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+}
+
+// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
+function horaToIndice(horaStr) {
+    const [hours, minutes] = horaStr.split(':').map(Number);
+    return hours * 2 + (minutes === 30 ? 1 : 0);
 }
 
 // Filtrar slots disponibles considerando reservas existentes
 function filterAvailableSlots(baseSlots, durationMinutes, existingBookings) {
     return baseSlots.filter(slotStartStr => {
         const slotStart = timeToMinutes(slotStartStr);
-        // Para slots fijos, la duración se calcula según el servicio
         const slotEnd = slotStart + durationMinutes;
 
-        // Verificar contra cada reserva existente
         const hasConflict = existingBookings.some(booking => {
             const bookingStart = timeToMinutes(booking.hora_inicio);
             const bookingEnd = timeToMinutes(booking.hora_fin);
-
-            // Verificar superposición
             return (slotStart < bookingEnd) && (slotEnd > bookingStart);
         });
 

@@ -1,13 +1,14 @@
-// components/admin/ConfigPanel.js - Versión para LAG.barberia (CON SELECTOR DE DURACIÓN)
+// components/admin/ConfigPanel.js - CON HORARIOS CADA 30 MINUTOS (CORREGIDO)
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
     const [barberoSeleccionado, setBarberoSeleccionado] = React.useState(null);
     const [horarios, setHorarios] = React.useState({});
+    // 🔥 CORREGIDO: Usar nombres con guión bajo para coincidir con la BD
     const [configGlobal, setConfigGlobal] = React.useState({
-        duracionTurnos: 60,
-        intervaloEntreTurnos: 0,
-        modo24h: false
+        duracion_turnos: 60,
+        intervalo_entre_turnos: 0,
+        modo_24h: false
     });
     const [cargando, setCargando] = React.useState(true);
 
@@ -17,20 +18,27 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
     };
 
-    // 🔥 OPCIONES DE DURACIÓN PREDEFINIDAS
+    // OPCIONES DE DURACIÓN POR DEFECTO
     const opcionesDuracion = [
-        { value: 30, label: '30 minutos', icon: '⏱️' },
-        { value: 45, label: '45 minutos', icon: '⏰' },
-        { value: 60, label: '60 minutos', icon: '⌛' },
-        { value: 75, label: '1 hora 15 min', icon: '⏳' },
-        { value: 90, label: '1 hora 30 min', icon: '🕐' },
-        { value: 120, label: '2 horas', icon: '🕑' }
+        { value: 30, label: '30 min', icon: '⏱️' },
+        { value: 45, label: '45 min', icon: '⏰' },
+        { value: 60, label: '60 min', icon: '⌛' },
+        { value: 75, label: '75 min', icon: '⏳' },
+        { value: 90, label: '90 min', icon: '🕐' },
+        { value: 120, label: '120 min', icon: '🕑' }
     ];
 
-    const horas = Array.from({ length: 24 }, (_, i) => ({
-        value: i,
-        label: `${i.toString().padStart(2, '0')}:00`
-    }));
+    // GENERAR HORAS CADA 30 MINUTOS (0:00, 0:30, 1:00, 1:30, etc.)
+    const horas = Array.from({ length: 48 }, (_, i) => {
+        const hora = Math.floor(i / 2);
+        const minutos = i % 2 === 0 ? '00' : '30';
+        return {
+            value: i,
+            horaReal: hora,
+            minutos: minutos,
+            label: `${hora.toString().padStart(2, '0')}:${minutos}`
+        };
+    });
 
     React.useEffect(() => {
         cargarDatos();
@@ -56,10 +64,11 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
+                // 🔥 MAPEAR los nombres si vienen de la BD
                 setConfigGlobal(config || {
-                    duracionTurnos: 60,
-                    intervaloEntreTurnos: 0,
-                    modo24h: false
+                    duracion_turnos: 60,
+                    intervalo_entre_turnos: 0,
+                    modo_24h: false
                 });
             }
         } catch (error) {
@@ -106,15 +115,16 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         });
     };
 
-    const toggleHora = (hora) => {
+    // FUNCIÓN PARA TRABAJAR CON ÍNDICES DE 30 MIN
+    const toggleHora = (indice) => {
         if (!barberoSeleccionado) return;
         
         const horariosActuales = horarios[barberoSeleccionado] || { horas: [], dias: [] };
         const horasActuales = horariosActuales.horas || [];
         
-        const nuevasHoras = horasActuales.includes(hora)
-            ? horasActuales.filter(h => h !== hora)
-            : [...horasActuales, hora].sort((a, b) => a - b);
+        const nuevasHoras = horasActuales.includes(indice)
+            ? horasActuales.filter(h => h !== indice)
+            : [...horasActuales, indice].sort((a, b) => a - b);
         
         setHorarios({
             ...horarios,
@@ -129,6 +139,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         if (modoRestringido) return;
         
         try {
+            // 🔥 Pasar directamente configGlobal (ya tiene los nombres correctos)
             await window.salonConfig.guardar(configGlobal);
             alert('✅ Configuración global guardada');
         } catch (error) {
@@ -173,23 +184,22 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <h3 className="font-semibold text-lg mb-4">⚙️ Configuración General</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        {/* 🔥 SELECTOR DE DURACIÓN POR DEFECTO */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Duración por defecto (min)
                             </label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                                 {opcionesDuracion.map(opcion => (
                                     <button
                                         key={opcion.value}
                                         type="button"
                                         onClick={() => setConfigGlobal({
                                             ...configGlobal, 
-                                            duracionTurnos: opcion.value
+                                            duracion_turnos: opcion.value  // 🔥 CORREGIDO
                                         })}
                                         className={`
                                             py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center
-                                            ${configGlobal.duracionTurnos === opcion.value
+                                            ${configGlobal.duracion_turnos === opcion.value  // 🔥 CORREGIDO
                                                 ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
                                                 : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'
                                             }
@@ -208,10 +218,10 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             </label>
                             <input
                                 type="number"
-                                value={configGlobal.intervaloEntreTurnos || 0}
+                                value={configGlobal.intervalo_entre_turnos || 0}  // 🔥 CORREGIDO
                                 onChange={(e) => setConfigGlobal({
                                     ...configGlobal, 
-                                    intervaloEntreTurnos: parseInt(e.target.value) || 0
+                                    intervalo_entre_turnos: parseInt(e.target.value) || 0  // 🔥 CORREGIDO
                                 })}
                                 className="w-full border rounded-lg px-3 py-2 text-sm"
                                 min="0"
@@ -224,10 +234,10 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
-                                checked={configGlobal.modo24h || false}
+                                checked={configGlobal.modo_24h || false}  // 🔥 CORREGIDO
                                 onChange={(e) => setConfigGlobal({
                                     ...configGlobal, 
-                                    modo24h: e.target.checked
+                                    modo_24h: e.target.checked  // 🔥 CORREGIDO
                                 })}
                                 className="w-5 h-5 text-amber-600"
                             />
@@ -304,8 +314,9 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                         </div>
                     </div>
                     
+                    {/* HORAS CADA 30 MINUTOS */}
                     <div className="space-y-4">
-                        <h4 className="font-medium text-gray-700">Horas disponibles</h4>
+                        <h4 className="font-medium text-gray-700">Horas disponibles (cada 30 min)</h4>
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                             {horas.map(hora => {
                                 const activa = horarios[barberoSeleccionado]?.horas?.includes(hora.value) || false;
@@ -325,6 +336,9 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                                 );
                             })}
                         </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                            ⏰ Horarios disponibles cada 30 minutos (9:00, 9:30, 10:00, etc.)
+                        </p>
                     </div>
                     
                     <button
