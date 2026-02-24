@@ -1,28 +1,28 @@
-import React, { useEffect } from 'react';
-
-// Función auxiliar para formatear la hora (por si no la tenías en este archivo)
-const formatTo12Hour = (time) => {
-    if (!time) return '';
-    const [hour, minute] = time.split(':');
-    const h = parseInt(hour, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const formattedHour = h % 12 || 12;
-    return `${formattedHour}:${minute} ${ampm}`;
-};
+// components/Confirmation.js - Para LAG.barberia (VERSIÓN CORREGIDA)
 
 function Confirmation({ booking, onReset }) {
+    // Verificar que booking existe
+    if (!booking) {
+        console.error('❌ Error: booking no está definido');
+        return null;
+    }
 
-    // Descargar archivo ICS automáticamente al cargar la página (de forma silenciosa)
-    useEffect(() => {
+    // Referencia para el enlace de descarga
+    const downloadLinkRef = React.useRef(null);
+
+    // Descargar archivo ICS automáticamente al cargar la página
+    React.useEffect(() => {
+        console.log('📅 Generando archivo ICS para:', booking);
+        
         // Pequeño retraso para asegurar que todo esté cargado
         const timer = setTimeout(() => {
-            descargarICS(true); // true = es un intento automático
+            descargarICS();
         }, 500);
         
         return () => clearTimeout(timer);
     }, [booking]);
 
-    const descargarICS = (esAutomatico = false) => {
+    const descargarICS = () => {
         try {
             // Generar el contenido del archivo ICS
             const icsContent = generarICS(booking);
@@ -46,42 +46,38 @@ function Confirmation({ booking, onReset }) {
             
             console.log('📅 Archivo ICS generado y descargado');
             
-            // Mostrar mensaje de éxito solo si fue un clic manual
-            if (esAutomatico !== true) {
-                alert('✅ Archivo descargado. Buscalo en tus notificaciones o en tu carpeta de descargas para abrirlo.');
-            }
+            // Mostrar mensaje de éxito
+            alert('✅ Se descargó un archivo .ics. Abrilo para agregar el turno a tu calendario.');
             
         } catch (error) {
             console.error('Error al descargar archivo ICS:', error);
-            // Mostrar error solo si fue un clic manual
-            if (esAutomatico !== true) {
-                alert('⚠️ No se pudo descargar el archivo. Por favor, intentá de nuevo.');
-            }
+            alert('⚠️ No se pudo descargar el archivo automáticamente. Usá el botón "Descargar archivo de calendario"');
         }
     };
 
-    // Función para generar archivo ICS con recordatorios
+    // 🔥 FUNCIÓN ACTUALIZADA con las alertas solicitadas
     const generarICS = (booking) => {
-        // Crear fechas en formato correcto para ICS
-        const fechaInicio = new Date(booking.fecha + 'T' + booking.hora_inicio + ':00');
-        const fechaFin = new Date(booking.fecha + 'T' + booking.hora_fin + ':00');
-        
-        // Formatear fechas para ICS (YYYYMMDDTHHMMSS) - Hora flotante
-        const formatICSDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${year}${month}${day}T${hours}${minutes}${seconds}`;
-        };
-        
-        // Obtener nombre del barbero
-        const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
-        
-        // Crear contenido ICS con dos recordatorios
-        return `BEGIN:VCALENDAR
+        try {
+            // Crear fechas en formato correcto para ICS
+            const fechaInicio = new Date(booking.fecha + 'T' + booking.hora_inicio + ':00');
+            const fechaFin = new Date(booking.fecha + 'T' + booking.hora_fin + ':00');
+            
+            // Formatear fechas para ICS (YYYYMMDDTHHMMSS)
+            const formatICSDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+            };
+            
+            // Obtener nombre del barbero
+            const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
+            
+            // Crear contenido ICS con los recordatorios solicitados
+            return `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//LAG.barberia//ES
 CALSCALE:GREGORIAN
@@ -96,23 +92,33 @@ DESCRIPTION:Reserva con ${barberoNombre}
 LOCATION:LAG.barberia
 STATUS:CONFIRMED
 SEQUENCE:0
+
+// 🔥 RECORDATORIO 1: 1 día antes
 BEGIN:VALARM
 TRIGGER:-P1D
 ACTION:DISPLAY
-DESCRIPTION:🔔 Recordatorio: Tu turno es mañana en LAG.barberia
+DESCRIPTION:📅 Recordatorio: Tu turno en LAG.barberia es MAÑANA
 END:VALARM
+
+// 🔥 RECORDATORIO 2: 1 hora y 15 minutos antes
 BEGIN:VALARM
-TRIGGER:-PT1H
+TRIGGER:-PT1H15M
 ACTION:DISPLAY
-DESCRIPTION:⏰ Recordatorio: Tu turno es en 1 hora en LAG.barberia
+DESCRIPTION:⏰ Recordatorio: Tu turno en LAG.barberia es en 1 hora y 15 minutos
 END:VALARM
+
 END:VEVENT
 END:VCALENDAR`;
+        } catch (error) {
+            console.error('Error generando ICS:', error);
+            return '';
+        }
     };
 
     // Función para compartir por WhatsApp
     const compartirWhatsApp = () => {
-        const mensaje = 
+        try {
+            const mensaje = 
 `📅 *TURNO CONFIRMADO - LAG.barberia*
 
 👤 *Cliente:* ${booking.cliente_nombre}
@@ -122,15 +128,23 @@ END:VCALENDAR`;
 ⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}
 
 ✅ *Para recibir recordatorios automáticos:*
-1️⃣ Abrí el archivo .ics que se descargó al reservar
+1️⃣ Abrí el archivo .ics que se descargó
 2️⃣ Elegí "Agregar a Calendario"
-3️⃣ Recibirás notificaciones 1 día y 1 hora antes
+3️⃣ Recibirás notificaciones:
+   • 1 día antes del turno
+   • 1 hora y 15 minutos antes del turno
+
+📲 *Si no ves el archivo descargado, usá el botón "Descargar archivo" abajo*
 
 ¡Gracias por elegir LAG.barberia! ✂️`;
 
-        const encodedText = encodeURIComponent(mensaje);
-        const url = `https://wa.me/53357234?text=${encodedText}`;
-        window.open(url, '_blank');
+            const encodedText = encodeURIComponent(mensaje);
+            const url = `https://wa.me/53357234?text=${encodedText}`;
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error('Error al compartir:', error);
+            alert('Error al abrir WhatsApp');
+        }
     };
 
     return (
@@ -176,6 +190,17 @@ END:VCALENDAR`;
                             <div className="text-xl mb-1">💻</div>
                             <p className="font-medium">PC</p>
                             <p className="text-gray-500">Doble clic en el archivo</p>
+                        </div>
+                    </div>
+                    
+                    {/* 🔥 Información de las alertas */}
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-amber-700 font-medium">
+                            ⏰ Recibirás alertas:
+                        </p>
+                        <div className="flex justify-center gap-4 mt-1 text-xs">
+                            <span className="bg-amber-100 px-2 py-1 rounded-full">📅 1 día antes</span>
+                            <span className="bg-amber-100 px-2 py-1 rounded-full">⏱️ 1h 15min antes</span>
                         </div>
                     </div>
                 </div>
@@ -249,5 +274,3 @@ END:VCALENDAR`;
         </div>
     );
 }
-
-export default Confirmation;

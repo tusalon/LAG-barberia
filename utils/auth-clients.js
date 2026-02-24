@@ -1,4 +1,4 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (ELIMINA solicitud al aprobar)
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (ELIMINA solicitud al rechazar)
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -112,51 +112,30 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
                 return false;
             }
             
-            // Caso C: Está rechazado - PERMITIR REENVÍO (actualizar el existente)
+            // Caso C: Está rechazado - ELIMINAR LA SOLICITUD ANTERIOR Y CREAR NUEVA
             if (estadoSolicitud.estado === 'rechazado') {
-                console.log('🔄 Cliente estaba rechazado, actualizando a pendiente');
+                console.log('🔄 Cliente estaba rechazado, eliminando solicitud anterior...');
                 
-                // Actualizar la solicitud existente a pendiente
-                const updateResponse = await fetch(
+                // 🔥 ELIMINAR la solicitud rechazada
+                await fetch(
                     `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${estadoSolicitud.id}`,
                     {
-                        method: 'PATCH',
+                        method: 'DELETE',
                         headers: {
                             'apikey': window.SUPABASE_ANON_KEY,
                             'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify({
-                            nombre: nombre,
-                            estado: 'pendiente',
-                            fecha_solicitud: new Date().toISOString(),
-                            dispositivo_info: navigator.userAgent
-                        })
+                            'Content-Type': 'application/json'
+                        }
                     }
                 );
                 
-                if (!updateResponse.ok) {
-                    const error = await updateResponse.text();
-                    console.error('Error al actualizar solicitud:', error);
-                    alert('Error al procesar la solicitud. Intentá de nuevo.');
-                    return false;
-                }
-                
-                const updated = await updateResponse.json();
-                console.log('✅ Solicitud actualizada a pendiente:', updated);
-                
-                // Notificar al admin
-                const adminPhone = "5353357234";
-                const text = `🔄 REENVÍO DE SOLICITUD (estaba rechazada)\n\n👤 ${nombre}\n📱 +${whatsapp}`;
-                window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                
-                return true;
+                console.log('✅ Solicitud rechazada eliminada');
+                // Continuamos para crear una nueva solicitud
             }
         }
         
-        // PASO 4: No existe solicitud previa - crear nueva
-        console.log('🆕 No existe solicitud previa, creando nueva...');
+        // PASO 4: Crear nueva solicitud
+        console.log('🆕 Creando nueva solicitud...');
         
         const response = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes`,
@@ -289,7 +268,7 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud, NO la deja como aprobada)
+// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
@@ -332,7 +311,7 @@ window.aprobarCliente = async function(whatsapp) {
         );
         
         if (!insertResponse.ok) {
-            // Si el error es por duplicado, el cliente ya existe - podemos continuar
+            // Si el error es por duplicado, el cliente ya existe
             if (insertResponse.status !== 409) {
                 console.error('Error al insertar en autorizados:', await insertResponse.text());
                 return null;
@@ -341,7 +320,7 @@ window.aprobarCliente = async function(whatsapp) {
             }
         }
         
-        // PASO 3: ELIMINAR la solicitud pendiente (NO cambiar estado a aprobado)
+        // PASO 3: 🔥 ELIMINAR la solicitud pendiente (NO mantener registro)
         const deleteResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
             {
@@ -356,12 +335,11 @@ window.aprobarCliente = async function(whatsapp) {
         
         if (!deleteResponse.ok) {
             console.error('Error al eliminar solicitud:', await deleteResponse.text());
-            // No retornamos null porque el cliente ya se insertó en autorizados
         } else {
             console.log('✅ Solicitud eliminada correctamente');
         }
         
-        // PASO 4: Obtener el cliente autorizado para devolverlo
+        // PASO 4: Obtener el cliente autorizado
         const getResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/clientes_autorizados?whatsapp=eq.${whatsapp}&select=*`,
             {
@@ -383,25 +361,51 @@ window.aprobarCliente = async function(whatsapp) {
     }
 };
 
-// Rechazar cliente
+// 🔥 FUNCIÓN CORREGIDA: Rechazar cliente (ELIMINA la solicitud)
 window.rechazarCliente = async function(whatsapp) {
     console.log('❌ Rechazando cliente:', whatsapp);
     
     try {
+        // PASO 1: Obtener la solicitud pendiente
         const response = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&estado=eq.pendiente`,
+            `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&estado=eq.pendiente&select=id`,
             {
-                method: 'PATCH',
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
                     'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ estado: 'rechazado' })
+                }
             }
         );
         
-        return response.ok;
+        if (!response.ok) return false;
+        
+        const solicitudes = await response.json();
+        if (solicitudes.length === 0) return false;
+        
+        const solicitud = solicitudes[0];
+        
+        // PASO 2: 🔥 ELIMINAR la solicitud (NO cambiar estado)
+        const deleteResponse = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        
+        if (!deleteResponse.ok) {
+            console.error('Error al eliminar solicitud:', await deleteResponse.text());
+            return false;
+        }
+        
+        console.log('✅ Solicitud rechazada eliminada correctamente');
+        return true;
+        
     } catch (error) {
         console.error('Error rechazando cliente:', error);
         return false;

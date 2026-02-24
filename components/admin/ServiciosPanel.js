@@ -1,4 +1,4 @@
-// components/admin/ServiciosPanel.js
+// components/admin/ServiciosPanel.js - CON PRECIO ÚNICO
 
 function ServiciosPanel() {
     const [servicios, setServicios] = React.useState([]);
@@ -8,6 +8,14 @@ function ServiciosPanel() {
 
     React.useEffect(() => {
         cargarServicios();
+        
+        // Escuchar actualizaciones
+        const handleActualizacion = () => cargarServicios();
+        window.addEventListener('serviciosActualizados', handleActualizacion);
+        
+        return () => {
+            window.removeEventListener('serviciosActualizados', handleActualizacion);
+        };
     }, []);
 
     const cargarServicios = async () => {
@@ -69,7 +77,7 @@ function ServiciosPanel() {
         return (
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto"></div>
                     <p className="text-gray-500 mt-4">Cargando servicios...</p>
                 </div>
             </div>
@@ -79,13 +87,13 @@ function ServiciosPanel() {
     return (
         <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">💅 Servicios</h2>
+                <h2 className="text-xl font-bold">💈 Servicios</h2>
                 <button
                     onClick={() => {
                         setEditando(null);
                         setMostrarForm(true);
                     }}
-                    className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+                    className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700"
                 >
                     + Nuevo Servicio
                 </button>
@@ -105,7 +113,8 @@ function ServiciosPanel() {
             <div className="space-y-2">
                 {servicios.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                        No hay servicios cargados
+                        <p className="mb-2">No hay servicios cargados</p>
+                        <p className="text-sm">Hacé clic en "+ Nuevo Servicio" para comenzar</p>
                     </div>
                 ) : (
                     servicios.map(s => (
@@ -113,7 +122,7 @@ function ServiciosPanel() {
                             <div className="flex justify-between items-center">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3">
-                                        <h3 className="font-semibold">{s.nombre}</h3>
+                                        <h3 className="font-semibold text-lg">{s.nombre}</h3>
                                         <button
                                             onClick={() => toggleActivo(s.id)}
                                             className={`text-xs px-2 py-1 rounded-full ${
@@ -126,7 +135,7 @@ function ServiciosPanel() {
                                         </button>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        {s.duracion} min | ${s.precioMin} - ${s.precioMax}
+                                        {s.duracion} min | ${s.precio}  {/* 🔥 PRECIO ÚNICO */}
                                     </p>
                                     {s.descripcion && (
                                         <p className="text-xs text-gray-500 mt-1">{s.descripcion}</p>
@@ -139,12 +148,14 @@ function ServiciosPanel() {
                                             setMostrarForm(true);
                                         }}
                                         className="text-blue-600 hover:text-blue-800 px-2"
+                                        title="Editar"
                                     >
                                         ✏️
                                     </button>
                                     <button
                                         onClick={() => handleEliminar(s.id)}
                                         className="text-red-600 hover:text-red-800 px-2"
+                                        title="Eliminar"
                                     >
                                         🗑️
                                     </button>
@@ -161,9 +172,8 @@ function ServiciosPanel() {
 function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const [form, setForm] = React.useState(servicio || {
         nombre: '',
-        duracion: 60,
-        precioMin: 0,
-        precioMax: 0,
+        duracion: 45,
+        precio: 0,
         descripcion: ''
     });
 
@@ -188,7 +198,7 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                     required
                 />
                 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                     <input
                         type="number"
                         placeholder="Duración (min)"
@@ -201,19 +211,9 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                     />
                     <input
                         type="number"
-                        placeholder="Precio mínimo $"
-                        value={form.precioMin}
-                        onChange={(e) => setForm({...form, precioMin: parseFloat(e.target.value)})}
-                        className="border rounded-lg px-3 py-2"
-                        required
-                        min="0"
-                        step="0.5"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Precio máximo $"
-                        value={form.precioMax}
-                        onChange={(e) => setForm({...form, precioMax: parseFloat(e.target.value)})}
+                        placeholder="Precio $"
+                        value={form.precio}
+                        onChange={(e) => setForm({...form, precio: parseFloat(e.target.value)})}
                         className="border rounded-lg px-3 py-2"
                         required
                         min="0"
@@ -240,7 +240,7 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                 >
                     Guardar
                 </button>

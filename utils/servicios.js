@@ -1,15 +1,10 @@
-// utils/servicios.js - Gestión de servicios CON SUPABASE (CORREGIDO)
+// utils/servicios.js - Gestión de servicios CON SUPABASE (PRECIO ÚNICO)
 
 console.log('💅 servicios.js cargado (modo Supabase)');
 
 let serviciosCache = [];
 let ultimaActualizacionServicios = 0;
-// 🔥 CAMBIADO: usar nombre diferente para evitar conflicto
-const CACHE_DURATION_SERVICIOS = 5 * 60 * 1000; 
-
-// ============================================
-// FUNCIONES CON SUPABASE
-// ============================================
+const CACHE_DURATION_SERVICIOS = 5 * 60 * 1000;
 
 async function cargarServiciosDesdeDB() {
     try {
@@ -43,7 +38,6 @@ async function cargarServiciosDesdeDB() {
 
 window.salonServicios = {
     getAll: async function(activos = true) {
-        // 🔥 Usar la constante renombrada
         if (Date.now() - ultimaActualizacionServicios < CACHE_DURATION_SERVICIOS && serviciosCache.length > 0) {
             if (activos) {
                 return serviciosCache.filter(s => s.activo === true);
@@ -52,25 +46,15 @@ window.salonServicios = {
         }
         
         const datos = await cargarServiciosDesdeDB();
-        if (datos) {
+        if (datos && datos.length > 0) {
             if (activos) {
                 return datos.filter(s => s.activo === true);
             }
             return datos;
         }
         
-        // Fallback a datos por defecto
-        const serviciosDefault = [
-            { id: 1, nombre: "Esmaltado + Manicura Macro con Cera", duracion: 75, precioMin: 3.5, precioMax: 5, descripcion: "Incluye esmaltado común o semipermanente", activo: true, imagen: null },
-            { id: 2, nombre: "Sistema Press On + Manicura Macro con Cera", duracion: 120, precioMin: 6, precioMax: 7, descripcion: "Precio según complejidad del diseño", activo: true, imagen: null },
-            { id: 3, nombre: "Builder Gel + Manicura Macro con Cera", duracion: 150, precioMin: 6.5, precioMax: 7.5, descripcion: "Para fortalecer y alargar uñas naturales", activo: true, imagen: null },
-            { id: 4, nombre: "Pedicura Spa + Esmaltado", duracion: 120, precioMin: 6.5, precioMax: 10, descripcion: "Incluye exfoliación, hidratación, masaje", activo: true, imagen: null },
-            { id: 5, nombre: "Gel Semipermanente + Manicura Macro con Cera", duracion: 90, precioMin: 4.5, precioMax: 6, descripcion: "Esmaltado semipermanente de larga duración", activo: true, imagen: null },
-            { id: 6, nombre: "Gel Semi Transparente + Manicura Macro con Cera", duracion: 90, precioMin: 5, precioMax: 6.5, descripcion: "Acabado natural y brillante", activo: true, imagen: null }
-        ];
-        serviciosCache = serviciosDefault;
-        ultimaActualizacionServicios = Date.now();
-        return activos ? serviciosDefault : serviciosDefault;
+        // Fallback a datos por defecto (solo por si acaso)
+        return [];
     },
     
     getById: async function(id) {
@@ -94,6 +78,7 @@ window.salonServicios = {
         }
     },
     
+    // 🔥 CREAR con precio único
     crear: async function(servicio) {
         try {
             console.log('➕ Creando servicio:', servicio);
@@ -110,8 +95,7 @@ window.salonServicios = {
                     body: JSON.stringify({
                         nombre: servicio.nombre,
                         duracion: servicio.duracion,
-                        precioMin: servicio.precioMin,
-                        precioMax: servicio.precioMax,
+                        precio: servicio.precio,
                         descripcion: servicio.descripcion || '',
                         activo: true,
                         imagen: servicio.imagen || null
@@ -141,9 +125,20 @@ window.salonServicios = {
         }
     },
     
+    // 🔥 ACTUALIZAR con precio único
     actualizar: async function(id, cambios) {
         try {
             console.log('✏️ Actualizando servicio', id, 'con:', cambios);
+            
+            // Construir objeto con los campos a actualizar
+            const datosActualizar = {};
+            if (cambios.nombre !== undefined) datosActualizar.nombre = cambios.nombre;
+            if (cambios.duracion !== undefined) datosActualizar.duracion = cambios.duracion;
+            if (cambios.precio !== undefined) datosActualizar.precio = cambios.precio;
+            if (cambios.descripcion !== undefined) datosActualizar.descripcion = cambios.descripcion;
+            if (cambios.activo !== undefined) datosActualizar.activo = cambios.activo;
+            if (cambios.imagen !== undefined) datosActualizar.imagen = cambios.imagen;
+            
             const response = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/servicios?id=eq.${id}`,
                 {
@@ -154,7 +149,7 @@ window.salonServicios = {
                         'Content-Type': 'application/json',
                         'Prefer': 'return=representation'
                     },
-                    body: JSON.stringify(cambios)
+                    body: JSON.stringify(datosActualizar)
                 }
             );
             
@@ -217,7 +212,6 @@ window.salonServicios = {
     }
 };
 
-// Cargar servicios al inicio
 setTimeout(async () => {
     await window.salonServicios.getAll(false);
 }, 1000);
