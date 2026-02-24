@@ -1,20 +1,28 @@
-// components/Confirmation.js - Para LAG.barberia con mejor manejo de archivo ICS
+import React, { useEffect } from 'react';
+
+// Función auxiliar para formatear la hora (por si no la tenías en este archivo)
+const formatTo12Hour = (time) => {
+    if (!time) return '';
+    const [hour, minute] = time.split(':');
+    const h = parseInt(hour, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const formattedHour = h % 12 || 12;
+    return `${formattedHour}:${minute} ${ampm}`;
+};
 
 function Confirmation({ booking, onReset }) {
-    // Referencia para el enlace de descarga
-    const downloadLinkRef = React.useRef(null);
 
-    // Descargar archivo ICS automáticamente al cargar la página
-    React.useEffect(() => {
+    // Descargar archivo ICS automáticamente al cargar la página (de forma silenciosa)
+    useEffect(() => {
         // Pequeño retraso para asegurar que todo esté cargado
         const timer = setTimeout(() => {
-            descargarICS();
+            descargarICS(true); // true = es un intento automático
         }, 500);
         
         return () => clearTimeout(timer);
     }, [booking]);
 
-    const descargarICS = () => {
+    const descargarICS = (esAutomatico = false) => {
         try {
             // Generar el contenido del archivo ICS
             const icsContent = generarICS(booking);
@@ -38,12 +46,17 @@ function Confirmation({ booking, onReset }) {
             
             console.log('📅 Archivo ICS generado y descargado');
             
-            // Mostrar mensaje de éxito
-            alert('✅ Se descargó un archivo .ics. Abrilo para agregar el turno a tu calendario.');
+            // Mostrar mensaje de éxito solo si fue un clic manual
+            if (esAutomatico !== true) {
+                alert('✅ Archivo descargado. Buscalo en tus notificaciones o en tu carpeta de descargas para abrirlo.');
+            }
             
         } catch (error) {
             console.error('Error al descargar archivo ICS:', error);
-            alert('⚠️ No se pudo descargar el archivo automáticamente. Usá el botón "Descargar archivo de calendario"');
+            // Mostrar error solo si fue un clic manual
+            if (esAutomatico !== true) {
+                alert('⚠️ No se pudo descargar el archivo. Por favor, intentá de nuevo.');
+            }
         }
     };
 
@@ -53,7 +66,7 @@ function Confirmation({ booking, onReset }) {
         const fechaInicio = new Date(booking.fecha + 'T' + booking.hora_inicio + ':00');
         const fechaFin = new Date(booking.fecha + 'T' + booking.hora_fin + ':00');
         
-        // Formatear fechas para ICS (YYYYMMDDTHHMMSS)
+        // Formatear fechas para ICS (YYYYMMDDTHHMMSS) - Hora flotante
         const formatICSDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -109,11 +122,9 @@ END:VCALENDAR`;
 ⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}
 
 ✅ *Para recibir recordatorios automáticos:*
-1️⃣ Abrí el archivo .ics que se descargó
+1️⃣ Abrí el archivo .ics que se descargó al reservar
 2️⃣ Elegí "Agregar a Calendario"
-3️⃣ Recibirás notificaciones 1 día antes y 1 hora antes
-
-📲 *Si no ves el archivo descargado, usá el botón "Descargar archivo" abajo*
+3️⃣ Recibirás notificaciones 1 día y 1 hora antes
 
 ¡Gracias por elegir LAG.barberia! ✂️`;
 
@@ -238,3 +249,5 @@ END:VCALENDAR`;
         </div>
     );
 }
+
+export default Confirmation;
