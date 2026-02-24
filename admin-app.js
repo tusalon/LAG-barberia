@@ -43,6 +43,14 @@ async function cancelBooking(id) {
         return false;
     }
 }
+// admin-app.js - Agregar esta función después de los useState
+
+// 🔥 FUNCIÓN PARA CONVERTIR ÍNDICE DE 30 MIN A HORA LEGIBLE
+const indiceToHora = (indice) => {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+};
 
 // ============================================
 // FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP
@@ -316,93 +324,77 @@ function AdminApp() {
         }
     };
 
-    React.useEffect(() => {
-        const cargarHorarios = async () => {
-            if (nuevaReservaData.barbero_id && nuevaReservaData.fecha) {
-                try {
-                    const horarios = await window.salonConfig.getHorariosBarbero(nuevaReservaData.barbero_id);
-                    const bookings = await window.getBookingsByDateAndWorker(nuevaReservaData.fecha, nuevaReservaData.barbero_id);
-                    
-                    const baseSlots = (horarios.horas || []).map(h => 
-                        indiceToHora(h)
-                    );
-                    
-                    const servicioSeleccionado = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
-                    const duracion = servicioSeleccionado?.duracion || 60;
-                    
-                    const available = baseSlots.filter(slotStartStr => {
-                        const slotStart = timeToMinutes(slotStartStr);
-                        const slotEnd = slotStart + duracion;
-                        
-                        const hasConflict = bookings.some(booking => {
-                            const bookingStart = timeToMinutes(booking.hora_inicio);
-                            const bookingEnd = timeToMinutes(booking.hora_fin);
-                            return (slotStart < bookingEnd) && (slotEnd > bookingStart);
-                        });
-                        
-                        return !hasConflict;
-                    });
-                    
-                    setHorariosDisponibles(available);
-                } catch (error) {
-                    console.error('Error cargando horarios:', error);
-                    setHorariosDisponibles([]);
-                }
-            } else {
-                setHorariosDisponibles([]);
-            }
-        };
-        cargarHorarios();
-    }, [nuevaReservaData.barbero_id, nuevaReservaData.fecha, nuevaReservaData.servicio]);
+// ============================================
+// FUNCIÓN PARA CREAR RESERVA MANUAL
+// ============================================
+const handleCrearReservaManual = async () => {
+    // Validar que todos los campos estén completos
+    if (!nuevaReservaData.cliente_nombre || !nuevaReservaData.cliente_whatsapp || 
+        !nuevaReservaData.servicio || !nuevaReservaData.barbero_id || 
+        !nuevaReservaData.fecha || !nuevaReservaData.hora_inicio) {
+        alert('Completá todos los campos');
+        return;
+    }
 
-    const handleCrearReservaManual = async () => {
-        if (!nuevaReservaData.cliente_nombre || !nuevaReservaData.cliente_whatsapp || 
-            !nuevaReservaData.servicio || !nuevaReservaData.barbero_id || 
-            !nuevaReservaData.fecha || !nuevaReservaData.hora_inicio) {
-            alert('Completá todos los campos');
+    try {
+        // Buscar el servicio seleccionado
+        const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
+        if (!servicio) {
+            alert('Servicio no encontrado');
             return;
         }
-
-        try {
-            const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
-            const barbero = barberosList.find(b => b.id === parseInt(nuevaReservaData.barbero_id));
-            
-            const endTime = calculateEndTime(nuevaReservaData.hora_inicio, servicio.duracion);
-            
-            const bookingData = {
-                cliente_nombre: nuevaReservaData.cliente_nombre,
-                cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
-                servicio: nuevaReservaData.servicio,
-                duracion: servicio.duracion,
-                trabajador_id: nuevaReservaData.barbero_id,
-                trabajador_nombre: barbero.nombre,
-                fecha: nuevaReservaData.fecha,
-                hora_inicio: nuevaReservaData.hora_inicio,
-                hora_fin: endTime,
-                estado: "Reservado"
-            };
-
-            console.log('📤 Creando reserva manual:', bookingData);
-            const result = await createBooking(bookingData);
-            
-            if (result.success) {
-                alert('✅ Reserva creada exitosamente');
-                setShowNuevaReservaModal(false);
-                setNuevaReservaData({
-                    cliente_nombre: '',
-                    cliente_whatsapp: '',
-                    servicio: '',
-                    barbero_id: userRole === 'barbero' ? barbero?.id : '',
-                    fecha: '',
-                    hora_inicio: ''
-                });
-                fetchBookings();
-            }
-        } catch (error) {
-            console.error('Error creando reserva:', error);
-            alert('❌ Error al crear la reserva');
+        
+        // Buscar el barbero seleccionado
+        const barbero = barberosList.find(b => b.id === parseInt(nuevaReservaData.barbero_id));
+        if (!barbero) {
+            alert('Barbero no encontrado');
+            return;
         }
-    };
+        
+        // Calcular hora de fin
+        const endTime = calculateEndTime(nuevaReservaData.hora_inicio, servicio.duracion);
+        
+        // Preparar datos para la reserva
+        const bookingData = {
+            cliente_nombre: nuevaReservaData.cliente_nombre,
+            cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
+            servicio: nuevaReservaData.servicio,
+            duracion: servicio.duracion,
+            trabajador_id: nuevaReservaData.barbero_id,
+            trabajador_nombre: barbero.nombre,
+            fecha: nuevaReservaData.fecha,
+            hora_inicio: nuevaReservaData.hora_inicio,
+            hora_fin: endTime,
+            estado: "Reservado"
+        };
+
+        console.log('📤 Creando reserva manual:', bookingData);
+        
+        // Enviar a Supabase
+        const result = await createBooking(bookingData);
+        
+        if (result.success) {
+            alert('✅ Reserva creada exitosamente');
+            
+            // Cerrar modal y limpiar datos
+            setShowNuevaReservaModal(false);
+            setNuevaReservaData({
+                cliente_nombre: '',
+                cliente_whatsapp: '',
+                servicio: '',
+                barbero_id: userRole === 'barbero' ? barbero?.id : '',
+                fecha: '',
+                hora_inicio: ''
+            });
+            
+            // Recargar lista de reservas
+            fetchBookings();
+        }
+    } catch (error) {
+        console.error('Error creando reserva:', error);
+        alert('❌ Error al crear la reserva: ' + error.message);
+    }
+};
 
     // ============================================
     // FUNCIONES DE CLIENTES
