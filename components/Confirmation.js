@@ -1,28 +1,51 @@
-// components/Confirmation.js - Para LAG.barberia con descarga automática y botón WhatsApp
+// components/Confirmation.js - Para LAG.barberia con mejor manejo de archivo ICS
 
 function Confirmation({ booking, onReset }) {
+    // Referencia para el enlace de descarga
+    const downloadLinkRef = React.useRef(null);
+
     // Descargar archivo ICS automáticamente al cargar la página
     React.useEffect(() => {
-        // Generar el contenido del archivo ICS
-        const icsContent = generarICS(booking);
+        // Pequeño retraso para asegurar que todo esté cargado
+        const timer = setTimeout(() => {
+            descargarICS();
+        }, 500);
         
-        // Crear un Blob con el contenido ICS
-        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-        
-        // Crear un enlace para descargar el archivo
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `turno-LAG-${booking.fecha}.ics`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Limpiar la URL creada
-        URL.revokeObjectURL(link.href);
-        
-        // Mostrar mensaje en consola
-        console.log('📅 Archivo ICS generado y descargado');
+        return () => clearTimeout(timer);
     }, [booking]);
+
+    const descargarICS = () => {
+        try {
+            // Generar el contenido del archivo ICS
+            const icsContent = generarICS(booking);
+            
+            // Crear un Blob con el contenido ICS
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            
+            // Crear un enlace para descargar el archivo
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `turno-LAG-${booking.fecha}.ics`;
+            link.style.display = 'none';
+            
+            // Agregar al DOM, hacer clic y remover
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Limpiar la URL creada
+            URL.revokeObjectURL(link.href);
+            
+            console.log('📅 Archivo ICS generado y descargado');
+            
+            // Mostrar mensaje de éxito
+            alert('✅ Se descargó un archivo .ics. Abrilo para agregar el turno a tu calendario.');
+            
+        } catch (error) {
+            console.error('Error al descargar archivo ICS:', error);
+            alert('⚠️ No se pudo descargar el archivo automáticamente. Usá el botón "Descargar archivo de calendario"');
+        }
+    };
 
     // Función para generar archivo ICS con recordatorios
     const generarICS = (booking) => {
@@ -44,7 +67,7 @@ function Confirmation({ booking, onReset }) {
         // Obtener nombre del barbero
         const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
         
-        // Crear contenido ICS con dos recordatorios (1 día antes y 1 hora antes)
+        // Crear contenido ICS con dos recordatorios
         return `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//LAG.barberia//ES
@@ -85,9 +108,12 @@ END:VCALENDAR`;
 📆 *Fecha:* ${booking.fecha}
 ⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}
 
-✅ *Se descargó un archivo .ics*
-📲 *Abrilo para agregar el turno a tu calendario*
-⏰ *Recibirás recordatorios 1 día antes y 1 hora antes*
+✅ *Para recibir recordatorios automáticos:*
+1️⃣ Abrí el archivo .ics que se descargó
+2️⃣ Elegí "Agregar a Calendario"
+3️⃣ Recibirás notificaciones 1 día antes y 1 hora antes
+
+📲 *Si no ves el archivo descargado, usá el botón "Descargar archivo" abajo*
 
 ¡Gracias por elegir LAG.barberia! ✂️`;
 
@@ -105,48 +131,63 @@ END:VCALENDAR`;
             <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Turno Reservado!</h2>
             <p className="text-gray-500 mb-4 max-w-xs mx-auto">Tu cita ha sido agendada correctamente</p>
             
-            {/* Notificación de descarga del calendario */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-sm mx-auto animate-pulse">
-                <div className="flex items-start gap-3">
-                    <div className="text-amber-500 text-xl">📅</div>
-                    <div className="text-left">
-                        <p className="font-semibold text-amber-800">¡Archivo descargado!</p>
-                        <p className="text-sm text-amber-600">
-                            Se descargó un archivo para agregar este turno a tu calendario.
-                            <br />
-                            <span className="font-medium">Abrilo para recibir recordatorios automáticos.</span>
-                        </p>
+            {/* Instrucciones claras para el archivo ICS */}
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-5 mb-6 max-w-sm mx-auto">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white text-xl">
+                        📥
+                    </div>
+                    <h3 className="font-bold text-amber-800 text-lg">Archivo descargado</h3>
+                </div>
+                
+                <p className="text-amber-700 text-sm mb-3">
+                    Se ha descargado un archivo llamado: <br />
+                    <span className="font-mono bg-amber-100 px-2 py-1 rounded text-xs">
+                        turno-LAG-{booking.fecha}.ics
+                    </span>
+                </p>
+                
+                <div className="bg-white rounded-lg p-3 text-left space-y-2">
+                    <p className="font-semibold text-gray-700 text-sm">📲 ¿Cómo agregarlo a tu calendario?</p>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="bg-gray-100 p-2 rounded text-center">
+                            <div className="text-xl mb-1">🍎</div>
+                            <p className="font-medium">iPhone</p>
+                            <p className="text-gray-500">Abrí el archivo → "Agregar a Calendario"</p>
+                        </div>
+                        <div className="bg-gray-100 p-2 rounded text-center">
+                            <div className="text-xl mb-1">📱</div>
+                            <p className="font-medium">Android</p>
+                            <p className="text-gray-500">Abrí el archivo → "Importar a Google Calendar"</p>
+                        </div>
+                        <div className="bg-gray-100 p-2 rounded text-center">
+                            <div className="text-xl mb-1">💻</div>
+                            <p className="font-medium">PC</p>
+                            <p className="text-gray-500">Doble clic en el archivo</p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            {/* Instrucciones según dispositivo */}
-            <div className="bg-gray-100 p-4 rounded-lg mb-6 max-w-sm mx-auto text-left text-sm">
-                <p className="font-semibold mb-2">📲 ¿Cómo agregarlo a tu calendario?</p>
-                <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span><strong>iPhone:</strong> Abrí el archivo descargado → "Agregar a Calendario"</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span><strong>Android:</strong> Abrí el archivo → "Importar a Google Calendar"</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">•</span>
-                        <span><strong>PC:</strong> Hacé doble clic en el archivo</span>
-                    </li>
-                </ul>
+            {/* Botones de acción */}
+            <div className="flex flex-col gap-3 w-full max-w-sm mb-6">
+                <button
+                    onClick={descargarICS}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105"
+                >
+                    <i className="icon-download"></i>
+                    Descargar archivo de calendario
+                </button>
+                
+                <button
+                    onClick={compartirWhatsApp}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105"
+                >
+                    <i className="icon-message-circle"></i>
+                    Compartir por WhatsApp
+                </button>
             </div>
-            
-            {/* Botón para compartir por WhatsApp */}
-            <button
-                onClick={compartirWhatsApp}
-                className="mb-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105"
-            >
-                <i className="icon-message-circle"></i>
-                Compartir detalles por WhatsApp
-            </button>
             
             {/* Detalles del turno */}
             <div className="bg-gray-800 p-6 rounded-2xl shadow-sm border border-amber-600 w-full max-w-sm mb-8 relative overflow-hidden">
