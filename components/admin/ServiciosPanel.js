@@ -1,9 +1,9 @@
-// components/admin/ServiciosPanel.js - CON OPCIONES DE DURACIÓN 30/60 MIN
+// components/admin/ServiciosPanel.js - CON INPUT NORMAL PARA DURACIÓN
 
 function ServiciosPanel() {
     const [servicios, setServicios] = React.useState([]);
     const [mostrarForm, setMostrarForm] = React.useState(false);
-    const [editando, setEditando] = React.useState(null);
+    const [editando, setEditando] React.useState(null);
     const [cargando, setCargando] = React.useState(true);
 
     React.useEffect(() => {
@@ -168,11 +168,11 @@ function ServiciosPanel() {
     );
 }
 
-// 🔥 FORMULARIO MEJORADO CON OPCIONES 30/60 MINUTOS
+// 🔥 FORMULARIO CON INPUT NORMAL (VOLVEMOS A LA VERSIÓN ANTERIOR)
 function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const [form, setForm] = React.useState(servicio || {
         nombre: '',
-        duracion: 30,        // 🔥 VALOR POR DEFECTO 30 MINUTOS
+        duracion: 45,
         precio: 0,
         descripcion: ''
     });
@@ -180,13 +180,12 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Validar que los campos no estén vacíos
         if (!form.nombre.trim()) {
             alert('El nombre del servicio es obligatorio');
             return;
         }
-        if (!form.duracion) {
-            alert('Debés seleccionar una duración');
+        if (!form.duracion || form.duracion < 15) {
+            alert('La duración debe ser al menos 15 minutos');
             return;
         }
         if (!form.precio || form.precio < 0) {
@@ -203,8 +202,7 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                 {servicio ? '✏️ Editar Servicio' : '➕ Nuevo Servicio'}
             </h3>
             
-            <div className="space-y-4">
-                {/* Campo Nombre */}
+            <div className="space-y-3">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nombre del servicio *
@@ -219,69 +217,52 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                     />
                 </div>
                 
-                {/* 🔥 SELECTOR DE DURACIÓN - 30 O 60 MINUTOS */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Duración del servicio *
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setForm({...form, duracion: 30})}
-                            className={`
-                                py-3 px-4 rounded-lg border-2 font-medium transition-all
-                                ${form.duracion === 30 
-                                    ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-105' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:border-amber-400 hover:bg-amber-50'}
-                            `}
-                        >
-                            <div className="text-xl mb-1">⏱️</div>
-                            <div>30 minutos</div>
-                        </button>
-                        
-                        <button
-                            type="button"
-                            onClick={() => setForm({...form, duracion: 60})}
-                            className={`
-                                py-3 px-4 rounded-lg border-2 font-medium transition-all
-                                ${form.duracion === 60 
-                                    ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-105' 
-                                    : 'bg-white text-gray-700 border-gray-300 hover:border-amber-400 hover:bg-amber-50'}
-                            `}
-                        >
-                            <div className="text-xl mb-1">⌛</div>
-                            <div>60 minutos</div>
-                        </button>
+                <div className="grid grid-cols-2 gap-2">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Duración (min) *
+                        </label>
+                        <input
+                            type="number"
+                            value={form.duracion}
+                            onChange={(e) => {
+                                const valor = parseInt(e.target.value);
+                                setForm({
+                                    ...form, 
+                                    duracion: isNaN(valor) ? 45 : Math.max(15, valor)
+                                });
+                            }}
+                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            required
+                            min="15"
+                            max="480"
+                            step="15"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Múltiplos de 15 min</p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                        Elegí la duración estimada del servicio
-                    </p>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Precio ($) *
+                        </label>
+                        <input
+                            type="number"
+                            value={form.precio}
+                            onChange={(e) => {
+                                const valor = parseFloat(e.target.value);
+                                setForm({
+                                    ...form, 
+                                    precio: isNaN(valor) ? 0 : Math.max(0, valor)
+                                });
+                            }}
+                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            required
+                            min="0"
+                            step="0.5"
+                        />
+                    </div>
                 </div>
                 
-                {/* Campo Precio */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Precio ($) *
-                    </label>
-                    <input
-                        type="number"
-                        value={form.precio}
-                        onChange={(e) => {
-                            const valor = parseFloat(e.target.value);
-                            setForm({
-                                ...form, 
-                                precio: isNaN(valor) ? 0 : valor
-                            });
-                        }}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                        required
-                        min="0"
-                        step="0.5"
-                        placeholder="0.00"
-                    />
-                </div>
-                
-                {/* Campo Descripción */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Descripción
@@ -296,19 +277,19 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                 </div>
             </div>
             
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2 mt-4">
                 <button
                     type="button"
                     onClick={onCancelar}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+                    className="px-4 py-2 border rounded-lg hover:bg-gray-100"
                 >
                     Cancelar
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition transform hover:scale-105"
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                 >
-                    {servicio ? 'Actualizar Servicio' : 'Guardar Servicio'}
+                    {servicio ? 'Actualizar' : 'Guardar'}
                 </button>
             </div>
         </form>

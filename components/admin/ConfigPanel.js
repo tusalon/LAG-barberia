@@ -1,10 +1,14 @@
-// components/admin/ConfigPanel.js - Versión para LAG.barberia
+// components/admin/ConfigPanel.js - Versión para LAG.barberia (CON SELECTOR DE DURACIÓN)
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
     const [barberoSeleccionado, setBarberoSeleccionado] = React.useState(null);
     const [horarios, setHorarios] = React.useState({});
-    const [configGlobal, setConfigGlobal] = React.useState({});
+    const [configGlobal, setConfigGlobal] = React.useState({
+        duracionTurnos: 60,
+        intervaloEntreTurnos: 0,
+        modo24h: false
+    });
     const [cargando, setCargando] = React.useState(true);
 
     const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
@@ -12,6 +16,16 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
         jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
     };
+
+    // 🔥 OPCIONES DE DURACIÓN PREDEFINIDAS
+    const opcionesDuracion = [
+        { value: 30, label: '30 minutos', icon: '⏱️' },
+        { value: 45, label: '45 minutos', icon: '⏰' },
+        { value: 60, label: '60 minutos', icon: '⌛' },
+        { value: 75, label: '1 hora 15 min', icon: '⏳' },
+        { value: 90, label: '1 hora 30 min', icon: '🕐' },
+        { value: 120, label: '2 horas', icon: '🕑' }
+    ];
 
     const horas = Array.from({ length: 24 }, (_, i) => ({
         value: i,
@@ -42,7 +56,11 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
-                setConfigGlobal(config || {});
+                setConfigGlobal(config || {
+                    duracionTurnos: 60,
+                    intervaloEntreTurnos: 0,
+                    modo24h: false
+                });
             }
         } catch (error) {
             console.error('Error cargando datos:', error);
@@ -155,21 +173,33 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <h3 className="font-semibold text-lg mb-4">⚙️ Configuración General</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        {/* 🔥 SELECTOR DE DURACIÓN POR DEFECTO */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Duración por defecto (min)
                             </label>
-                            <input
-                                type="number"
-                                value={configGlobal.duracionTurnos || 60}
-                                onChange={(e) => setConfigGlobal({
-                                    ...configGlobal, 
-                                    duracionTurnos: parseInt(e.target.value)
-                                })}
-                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                min="15"
-                                step="15"
-                            />
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {opcionesDuracion.map(opcion => (
+                                    <button
+                                        key={opcion.value}
+                                        type="button"
+                                        onClick={() => setConfigGlobal({
+                                            ...configGlobal, 
+                                            duracionTurnos: opcion.value
+                                        })}
+                                        className={`
+                                            py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center
+                                            ${configGlobal.duracionTurnos === opcion.value
+                                                ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'
+                                            }
+                                        `}
+                                    >
+                                        <span className="text-lg mb-1">{opcion.icon}</span>
+                                        <span>{opcion.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         
                         <div>
@@ -181,7 +211,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                                 value={configGlobal.intervaloEntreTurnos || 0}
                                 onChange={(e) => setConfigGlobal({
                                     ...configGlobal, 
-                                    intervaloEntreTurnos: parseInt(e.target.value)
+                                    intervaloEntreTurnos: parseInt(e.target.value) || 0
                                 })}
                                 className="w-full border rounded-lg px-3 py-2 text-sm"
                                 min="0"
@@ -235,7 +265,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             {modoRestringido && (
                 <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
                     <div className="flex items-center gap-2">
-                        <div className="icon-info"></div>
+                        <i className="icon-info"></i>
                         <span>Estás configurando tus propios horarios de trabajo</span>
                     </div>
                 </div>
