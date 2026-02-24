@@ -1,4 +1,4 @@
-// components/admin/ServiciosPanel.js - CON PRECIO ÚNICO Y INPUT CORREGIDO
+// components/admin/ServiciosPanel.js - CON OPCIONES DE DURACIÓN 30/60 MIN
 
 function ServiciosPanel() {
     const [servicios, setServicios] = React.useState([]);
@@ -9,7 +9,6 @@ function ServiciosPanel() {
     React.useEffect(() => {
         cargarServicios();
         
-        // Escuchar actualizaciones
         const handleActualizacion = () => cargarServicios();
         window.addEventListener('serviciosActualizados', handleActualizacion);
         
@@ -169,10 +168,11 @@ function ServiciosPanel() {
     );
 }
 
+// 🔥 FORMULARIO MEJORADO CON OPCIONES 30/60 MINUTOS
 function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const [form, setForm] = React.useState(servicio || {
         nombre: '',
-        duracion: 45,        // 🔥 VALOR POR DEFECTO CAMBIADO A 45
+        duracion: 30,        // 🔥 VALOR POR DEFECTO 30 MINUTOS
         precio: 0,
         descripcion: ''
     });
@@ -185,8 +185,8 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
             alert('El nombre del servicio es obligatorio');
             return;
         }
-        if (!form.duracion || form.duracion < 15) {
-            alert('La duración debe ser al menos 15 minutos');
+        if (!form.duracion) {
+            alert('Debés seleccionar una duración');
             return;
         }
         if (!form.precio || form.precio < 0) {
@@ -203,7 +203,7 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                 {servicio ? '✏️ Editar Servicio' : '➕ Nuevo Servicio'}
             </h3>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {/* Campo Nombre */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -219,51 +219,66 @@ function ServicioForm({ servicio, onGuardar, onCancelar }) {
                     />
                 </div>
                 
-                {/* Campos de Duración y Precio */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Duración (min) *
-                        </label>
-                        <input
-                            type="number"
-                            value={form.duracion}
-                            onChange={(e) => {
-                                const valor = parseInt(e.target.value);
-                                setForm({
-                                    ...form, 
-                                    duracion: isNaN(valor) ? 45 : valor
-                                });
-                            }}
-                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                            required
-                            min="15"
-                            max="480"
-                            step="15"
-                        />
-                        <p className="text-xs text-gray-400 mt-1">Múltiplos de 15 min</p>
+                {/* 🔥 SELECTOR DE DURACIÓN - 30 O 60 MINUTOS */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Duración del servicio *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setForm({...form, duracion: 30})}
+                            className={`
+                                py-3 px-4 rounded-lg border-2 font-medium transition-all
+                                ${form.duracion === 30 
+                                    ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-105' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:border-amber-400 hover:bg-amber-50'}
+                            `}
+                        >
+                            <div className="text-xl mb-1">⏱️</div>
+                            <div>30 minutos</div>
+                        </button>
+                        
+                        <button
+                            type="button"
+                            onClick={() => setForm({...form, duracion: 60})}
+                            className={`
+                                py-3 px-4 rounded-lg border-2 font-medium transition-all
+                                ${form.duracion === 60 
+                                    ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-105' 
+                                    : 'bg-white text-gray-700 border-gray-300 hover:border-amber-400 hover:bg-amber-50'}
+                            `}
+                        >
+                            <div className="text-xl mb-1">⌛</div>
+                            <div>60 minutos</div>
+                        </button>
                     </div>
-                    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Precio ($) *
-                        </label>
-                        <input
-                            type="number"
-                            value={form.precio}
-                            onChange={(e) => {
-                                const valor = parseFloat(e.target.value);
-                                setForm({
-                                    ...form, 
-                                    precio: isNaN(valor) ? 0 : valor
-                                });
-                            }}
-                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                            required
-                            min="0"
-                            step="0.5"
-                        />
-                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                        Elegí la duración estimada del servicio
+                    </p>
+                </div>
+                
+                {/* Campo Precio */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Precio ($) *
+                    </label>
+                    <input
+                        type="number"
+                        value={form.precio}
+                        onChange={(e) => {
+                            const valor = parseFloat(e.target.value);
+                            setForm({
+                                ...form, 
+                                precio: isNaN(valor) ? 0 : valor
+                            });
+                        }}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        required
+                        min="0"
+                        step="0.5"
+                        placeholder="0.00"
+                    />
                 </div>
                 
                 {/* Campo Descripción */}
