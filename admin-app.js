@@ -43,6 +43,60 @@ async function cancelBooking(id) {
         return false;
     }
 }
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+};
+
+const formatTo12Hour = (time) => {
+    const [hours, minutes] = time.split(':');
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${minutes} ${ampm}`;
+};
+
+const calculateEndTime = (startTime, duration) => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + duration;
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+};
+
+// ============================================
+// FUNCIÓN PARA OBTENER HORA MÍNIMA PERMITIDA
+// ============================================
+const getMinAllowedTime = () => {
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    const minutosActuales = ahora.getMinutes();
+    const totalMinutosActual = horaActual * 60 + minutosActuales;
+    const minAllowedMinutes = totalMinutosActual + 120; // +2 horas
+    
+    return {
+        totalMinutes: minAllowedMinutes,
+        hours: Math.floor(minAllowedMinutes / 60),
+        minutes: minAllowedMinutes % 60,
+        formatted: `${Math.floor(minAllowedMinutes / 60).toString().padStart(2, '0')}:${(minAllowedMinutes % 60).toString().padStart(2, '0')}`
+    };
+};
+
+// ============================================
+// FUNCIÓN PARA OBTENER FECHA LOCAL ACTUAL
+// ============================================
+const getCurrentLocalDate = () => {
+    const ahora = new Date();
+    const year = ahora.getFullYear();
+    const month = (ahora.getMonth() + 1).toString().padStart(2, '0');
+    const day = ahora.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // admin-app.js - Agregar esta función después de los useState
 
 // 🔥 FUNCIÓN PARA CONVERTIR ÍNDICE DE 30 MIN A HORA LEGIBLE
@@ -196,6 +250,106 @@ function AdminApp() {
         cargarDiasLaborales();
     }, [nuevaReservaData.barbero_id]);
 
+    // ============================================
+    // FUNCIÓN PARA CARGAR HORARIOS DISPONIBLES (ACTUALIZADA)
+    // ============================================
+    React.useEffect(() => {
+        const cargarHorarios = async () => {
+            if (!nuevaReservaData.barbero_id || !nuevaReservaData.fecha || !nuevaReservaData.servicio) {
+                setHorariosDisponibles([]);
+                return;
+            }
+
+            try {
+                // Buscar servicio seleccionado
+                const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
+                if (!servicio) return;
+
+                // Obtener horarios del barbero
+                const horarios = await window.salonConfig.getHorariosBarbero(nuevaReservaData.barbero_id);
+                const horasTrabajo = horarios.horas || [];
+                
+                // Obtener reservas existentes para esa fecha
+                const response = await fetch(
+                    `${window.SUPABASE_URL}/rest/v1/reservas?fecha=eq.${nuevaReservaData.fecha}&barbero_id=eq.${nuevaReservaData.barbero_id}&estado=neq.Cancelado&select=hora_inicio,hora_fin`,
+                    {
+                        headers: {
+                            'apikey': window.SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                        }
+                    }
+                );
+                
+                const reservas = await response.json();
+                
+                // Convertir horas de trabajo a slots de 30 minutos
+                const slotsTrabajo = [];
+                horasTrabajo.forEach(hora => {
+                    // Cada hora de trabajo genera 2 slots (ej: 9:00 y 9:30)
+                    const horaBase = Math.floor(hora);
+                    const minutosBase = (hora % 1) * 60;
+                    
+                    if (minutosBase === 0) {
+                        // Hora exacta (ej: 9:00)
+                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:00`);
+                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:30`);
+                    } else {
+                        // Media hora (ej: 9:30)
+                        slotsTrabajo.push(`${horaBase.toString().padStart(2, '0')}:30`);
+                        slotsTrabajo.push(`${(horaBase + 1).toString().padStart(2, '0')}:00`);
+                    }
+                });
+
+                // 🔥 OBTENER HORA MÍNIMA PERMITIDA (ACTUAL + 2 HORAS)
+                const ahora = new Date();
+                const horaActual = ahora.getHours();
+                const minutosActuales = ahora.getMinutes();
+                const totalMinutosActual = horaActual * 60 + minutosActuales;
+                const minAllowedMinutes = totalMinutosActual + 120; // +2 horas en minutos
+
+                // Verificar si la fecha seleccionada es hoy
+                const hoy = new Date().toISOString().split('T')[0];
+                const esHoy = nuevaReservaData.fecha === hoy;
+
+                // Filtrar slots disponibles
+                const disponibles = slotsTrabajo.filter(slot => {
+                    const [horas, minutos] = slot.split(':').map(Number);
+                    const slotStart = horas * 60 + minutos;
+                    const slotEnd = slotStart + servicio.duracion;
+
+                    // 🔥 SI ES HOY, VERIFICAR HORA MÍNIMA
+                    if (esHoy && slotStart < minAllowedMinutes) {
+                        return false;
+                    }
+
+                    // Verificar conflictos con reservas existentes
+                    const tieneConflicto = reservas.some(reserva => {
+                        const reservaStart = timeToMinutes(reserva.hora_inicio);
+                        const reservaEnd = timeToMinutes(reserva.hora_fin);
+                        return (slotStart < reservaEnd) && (slotEnd > reservaStart);
+                    });
+
+                    return !tieneConflicto;
+                });
+
+                // Ordenar horarios
+                disponibles.sort((a, b) => {
+                    const [hA, mA] = a.split(':').map(Number);
+                    const [hB, mB] = b.split(':').map(Number);
+                    return (hA * 60 + mA) - (hB * 60 + mB);
+                });
+
+                setHorariosDisponibles(disponibles);
+
+            } catch (error) {
+                console.error('Error cargando horarios:', error);
+                setHorariosDisponibles([]);
+            }
+        };
+
+        cargarHorarios();
+    }, [nuevaReservaData.barbero_id, nuevaReservaData.fecha, nuevaReservaData.servicio, serviciosList]);
+
     // Función para cargar disponibilidad de un mes completo
     const cargarDisponibilidadMes = async (fecha, barberoId) => {
         if (!barberoId) return;
@@ -324,77 +478,77 @@ function AdminApp() {
         }
     };
 
-// ============================================
-// FUNCIÓN PARA CREAR RESERVA MANUAL
-// ============================================
-const handleCrearReservaManual = async () => {
-    // Validar que todos los campos estén completos
-    if (!nuevaReservaData.cliente_nombre || !nuevaReservaData.cliente_whatsapp || 
-        !nuevaReservaData.servicio || !nuevaReservaData.barbero_id || 
-        !nuevaReservaData.fecha || !nuevaReservaData.hora_inicio) {
-        alert('Completá todos los campos');
-        return;
-    }
-
-    try {
-        // Buscar el servicio seleccionado
-        const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
-        if (!servicio) {
-            alert('Servicio no encontrado');
+    // ============================================
+    // FUNCIÓN PARA CREAR RESERVA MANUAL
+    // ============================================
+    const handleCrearReservaManual = async () => {
+        // Validar que todos los campos estén completos
+        if (!nuevaReservaData.cliente_nombre || !nuevaReservaData.cliente_whatsapp || 
+            !nuevaReservaData.servicio || !nuevaReservaData.barbero_id || 
+            !nuevaReservaData.fecha || !nuevaReservaData.hora_inicio) {
+            alert('Completá todos los campos');
             return;
         }
-        
-        // Buscar el barbero seleccionado
-        const barbero = barberosList.find(b => b.id === parseInt(nuevaReservaData.barbero_id));
-        if (!barbero) {
-            alert('Barbero no encontrado');
-            return;
-        }
-        
-        // Calcular hora de fin
-        const endTime = calculateEndTime(nuevaReservaData.hora_inicio, servicio.duracion);
-        
-        // Preparar datos para la reserva
-        const bookingData = {
-            cliente_nombre: nuevaReservaData.cliente_nombre,
-            cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
-            servicio: nuevaReservaData.servicio,
-            duracion: servicio.duracion,
-            trabajador_id: nuevaReservaData.barbero_id,
-            trabajador_nombre: barbero.nombre,
-            fecha: nuevaReservaData.fecha,
-            hora_inicio: nuevaReservaData.hora_inicio,
-            hora_fin: endTime,
-            estado: "Reservado"
-        };
 
-        console.log('📤 Creando reserva manual:', bookingData);
-        
-        // Enviar a Supabase
-        const result = await createBooking(bookingData);
-        
-        if (result.success) {
-            alert('✅ Reserva creada exitosamente');
+        try {
+            // Buscar el servicio seleccionado
+            const servicio = serviciosList.find(s => s.nombre === nuevaReservaData.servicio);
+            if (!servicio) {
+                alert('Servicio no encontrado');
+                return;
+            }
             
-            // Cerrar modal y limpiar datos
-            setShowNuevaReservaModal(false);
-            setNuevaReservaData({
-                cliente_nombre: '',
-                cliente_whatsapp: '',
-                servicio: '',
-                barbero_id: userRole === 'barbero' ? barbero?.id : '',
-                fecha: '',
-                hora_inicio: ''
-            });
+            // Buscar el barbero seleccionado
+            const barbero = barberosList.find(b => b.id === parseInt(nuevaReservaData.barbero_id));
+            if (!barbero) {
+                alert('Barbero no encontrado');
+                return;
+            }
             
-            // Recargar lista de reservas
-            fetchBookings();
+            // Calcular hora de fin
+            const endTime = calculateEndTime(nuevaReservaData.hora_inicio, servicio.duracion);
+            
+            // Preparar datos para la reserva
+            const bookingData = {
+                cliente_nombre: nuevaReservaData.cliente_nombre,
+                cliente_whatsapp: `53${nuevaReservaData.cliente_whatsapp.replace(/\D/g, '')}`,
+                servicio: nuevaReservaData.servicio,
+                duracion: servicio.duracion,
+                trabajador_id: nuevaReservaData.barbero_id,
+                trabajador_nombre: barbero.nombre,
+                fecha: nuevaReservaData.fecha,
+                hora_inicio: nuevaReservaData.hora_inicio,
+                hora_fin: endTime,
+                estado: "Reservado"
+            };
+
+            console.log('📤 Creando reserva manual:', bookingData);
+            
+            // Enviar a Supabase
+            const result = await createBooking(bookingData);
+            
+            if (result.success) {
+                alert('✅ Reserva creada exitosamente');
+                
+                // Cerrar modal y limpiar datos
+                setShowNuevaReservaModal(false);
+                setNuevaReservaData({
+                    cliente_nombre: '',
+                    cliente_whatsapp: '',
+                    servicio: '',
+                    barbero_id: userRole === 'barbero' ? barbero?.id : '',
+                    fecha: '',
+                    hora_inicio: ''
+                });
+                
+                // Recargar lista de reservas
+                fetchBookings();
+            }
+        } catch (error) {
+            console.error('Error creando reserva:', error);
+            alert('❌ Error al crear la reserva: ' + error.message);
         }
-    } catch (error) {
-        console.error('Error creando reserva:', error);
-        alert('❌ Error al crear la reserva: ' + error.message);
-    }
-};
+    };
 
     // ============================================
     // FUNCIONES DE CLIENTES
@@ -558,23 +712,23 @@ const handleCrearReservaManual = async () => {
         });
     }, [userRole, userNivel, barbero]);
 
-  // ============================================
-// 🔥 FUNCIÓN DE CANCELACIÓN CON WHATSAPP (CORREGIDA)
-// ============================================
-const handleCancel = async (id, bookingData) => {
-    if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
-    
-    const ok = await cancelBooking(id);
-    if (ok) {
-        // ✅ AHORA USA LA FUNCIÓN PROFESIONAL
-        enviarCancelacionWhatsApp(bookingData);
+    // ============================================
+    // 🔥 FUNCIÓN DE CANCELACIÓN CON WHATSAPP (CORREGIDA)
+    // ============================================
+    const handleCancel = async (id, bookingData) => {
+        if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
         
-        alert('✅ Reserva cancelada y cliente notificado');
-        fetchBookings();
-    } else {
-        alert('❌ Error al cancelar');
-    }
-};
+        const ok = await cancelBooking(id);
+        if (ok) {
+            // ✅ AHORA USA LA FUNCIÓN PROFESIONAL
+            enviarCancelacionWhatsApp(bookingData);
+            
+            alert('✅ Reserva cancelada y cliente notificado');
+            fetchBookings();
+        } else {
+            alert('❌ Error al cancelar');
+        }
+    };
 
     const handleLogout = () => {
         if (confirm('¿Cerrar sesión?')) {
