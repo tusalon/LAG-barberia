@@ -1,10 +1,10 @@
-// app.js - Versión con selección de trabajador primero
+// app.js - Versión con Mis Reservas
 
 function App() {
     const [showWelcome, setShowWelcome] = React.useState(true);
     const [clienteAutorizado, setClienteAutorizado] = React.useState(null);
-    // 🔥 PASO 1: Agregar este estado (al inicio, con los otros estados)
     const [userRol, setUserRol] = React.useState('cliente');
+    const [mostrarMisReservas, setMostrarMisReservas] = React.useState(false); // 🔥 NUEVO
     
     const [bookingData, setBookingData] = React.useState({
         service: null,
@@ -22,6 +22,7 @@ function App() {
                 const cliente = JSON.parse(savedCliente);
                 if (window.verificarAccesoCliente && window.verificarAccesoCliente(cliente.whatsapp)) {
                     setClienteAutorizado(cliente);
+                    obtenerRol(cliente.whatsapp);
                 } else {
                     localStorage.removeItem('cliente_autorizado');
                 }
@@ -30,6 +31,16 @@ function App() {
             }
         }
     }, []);
+
+    const obtenerRol = async (whatsapp) => {
+        try {
+            const rolInfo = await window.obtenerRolUsuario(whatsapp);
+            console.log('🎯 Rol obtenido:', rolInfo);
+            setUserRol(rolInfo.rol);
+        } catch (error) {
+            console.error('Error obteniendo rol:', error);
+        }
+    };
 
     const scrollToSection = (sectionId) => {
         setTimeout(() => {
@@ -42,13 +53,11 @@ function App() {
         }, 100);
     };
 
-    // 🔥 PASO 2: Modificar esta función para incluir la obtención del rol
     const handleAccessGranted = async (nombre, whatsapp) => {
         const cliente = { nombre, whatsapp };
         setClienteAutorizado(cliente);
         localStorage.setItem('cliente_autorizado', JSON.stringify(cliente));
         
-        // Obtener el rol del usuario
         if (window.obtenerRolUsuario) {
             const rolInfo = await window.obtenerRolUsuario(whatsapp);
             setUserRol(rolInfo.rol);
@@ -57,7 +66,6 @@ function App() {
         setShowWelcome(false);
     };
 
-    // 🔥 NUEVO ORDEN: Servicio → Trabajador → Fecha → Hora
     const handleServiceSelect = (service) => {
         setBookingData(prev => ({ 
             ...prev, 
@@ -113,11 +121,22 @@ function App() {
     const handleLogout = () => {
         localStorage.removeItem('cliente_autorizado');
         setClienteAutorizado(null);
+        setUserRol('cliente');
         setShowWelcome(true);
     };
 
     if (!clienteAutorizado) {
         return <ClientAuthScreen onAccessGranted={handleAccessGranted} />;
+    }
+
+    // 🔥 MOSTRAR PANTALLA DE MIS RESERVAS
+    if (mostrarMisReservas) {
+        return (
+            <MyBookings
+                cliente={clienteAutorizado}
+                onVolver={() => setMostrarMisReservas(false)}
+            />
+        );
     }
 
     if (showWelcome) {
@@ -132,7 +151,6 @@ function App() {
     if (bookingData.confirmedBooking) {
         return (
             <div className="min-h-screen bg-[#faf8f7] flex flex-col" data-name="app-container">
-                {/* 🔥 PASO 3: Aquí se pasa userRol al Header */}
                 <Header 
                     cliente={clienteAutorizado} 
                     onLogout={handleLogout}
@@ -150,7 +168,6 @@ function App() {
 
     return (
         <div className="min-h-screen bg-[#faf8f7] flex flex-col pb-20" data-name="app-container">
-            {/* 🔥 PASO 3: Aquí también se pasa userRol al Header */}
             <Header 
                 cliente={clienteAutorizado} 
                 onLogout={handleLogout}
@@ -158,23 +175,39 @@ function App() {
             />
             
             <main className="flex-grow p-4 space-y-8 max-w-4xl mx-auto w-full">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="icon-check-circle text-green-600"></div>
-                        <span className="text-sm text-green-700">
-                            Bienvenido, <strong>{clienteAutorizado.nombre}</strong>
-                        </span>
+                {/* 🔥 HEADER MEJORADO CON MIS RESERVAS */}
+                <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {clienteAutorizado.nombre.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <span className="text-sm text-amber-600 block">Bienvenido,</span>
+                            <span className="font-bold text-amber-800 text-lg">{clienteAutorizado.nombre}</span>
+                        </div>
                     </div>
-                    <button 
-                        onClick={handleLogout}
-                        className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1"
-                        title="Salir"
-                    >
-                        <div className="icon-log-out"></div>
-                    </button>
+                    
+                    <div className="flex gap-2">
+                        {/* 🔥 BOTÓN MIS RESERVAS */}
+                        <button
+                            onClick={() => setMostrarMisReservas(true)}
+                            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition transform hover:scale-105 shadow-sm"
+                        >
+                            <i className="icon-calendar"></i>
+                            Mis Reservas
+                        </button>
+                        
+                        <button 
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 bg-white hover:bg-red-50 text-gray-600 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200"
+                            title="Cerrar sesión"
+                        >
+                            <i className="icon-log-out"></i>
+                            <span className="hidden sm:inline">Salir</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* 🔥 PASO 1: Servicio */}
                 <div id="service-section">
                     <ServiceSelection 
                         selectedService={bookingData.service} 
@@ -182,7 +215,6 @@ function App() {
                     />
                 </div>
 
-                {/* 🔥 PASO 2: Trabajador (solo si hay servicio) */}
                 {bookingData.service && (
                     <div id="worker-selector">
                         <WorkerSelector 
@@ -192,7 +224,6 @@ function App() {
                     </div>
                 )}
 
-                {/* 🔥 PASO 3: Calendario (solo si hay servicio y trabajador) */}
                 {bookingData.service && bookingData.worker && (
                     <div id="calendar-section">
                         <Calendar 
@@ -203,7 +234,6 @@ function App() {
                     </div>
                 )}
 
-                {/* 🔥 PASO 4: Horarios (solo si hay servicio, trabajador y fecha) */}
                 {bookingData.service && bookingData.worker && bookingData.date && (
                     <div id="timeslots-section">
                         <TimeSlots 
@@ -235,7 +265,7 @@ function App() {
                         onClick={resetBooking}
                         className="bg-white text-gray-600 shadow-lg border border-gray-200 rounded-full px-4 py-2 text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
                     >
-                        <div className="icon-rotate-ccw text-xs"></div>
+                        <i className="icon-rotate-ccw text-xs"></i>
                         Reiniciar
                     </button>
                 </div>
