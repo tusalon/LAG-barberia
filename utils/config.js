@@ -27,12 +27,20 @@ async function cargarConfiguracionGlobal() {
         );
         
         if (!response.ok) {
+            console.log('⚠️ No se pudo cargar configuración, usando valores por defecto');
             return null;
         }
         
         const data = await response.json();
+        console.log('📋 Configuración cargada:', data);
+        
         if (data && data.length > 0) {
             configuracionGlobal = data[0];
+            console.log('✅ Configuración global cargada:', configuracionGlobal);
+        } else {
+            console.log('⚠️ No hay configuración en la BD, insertando valores por defecto');
+            // Si no hay configuración, crear una
+            await window.salonConfig.guardar(configuracionGlobal);
         }
         return configuracionGlobal;
     } catch (error) {
@@ -60,6 +68,7 @@ async function cargarHorariosBarberos() {
         }
         
         const data = await response.json();
+        console.log('📋 Horarios cargados:', data);
         
         const horarios = {};
         (data || []).forEach(item => {
@@ -81,16 +90,13 @@ async function cargarHorariosBarberos() {
 
 window.salonConfig = {
     get: async function() {
-        if (Date.now() - ultimaActualizacion < CACHE_DURATION) {
-            return { ...configuracionGlobal };
-        }
-        
+        // Siempre obtener datos frescos de la BD
+        console.log('🔍 Obteniendo configuración...');
         await cargarConfiguracionGlobal();
         ultimaActualizacion = Date.now();
         return { ...configuracionGlobal };
     },
     
-    // 🔥 CORREGIDO: Usa los nombres correctos de columnas (con guión bajo)
     guardar: async function(nuevaConfig) {
         try {
             console.log('💾 Guardando configuración global:', nuevaConfig);
@@ -104,6 +110,7 @@ window.salonConfig = {
             
             console.log('📤 Datos a guardar (mapeados):', datosAGuardar);
             
+            // Verificar si ya existe un registro
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
                 {
@@ -116,9 +123,12 @@ window.salonConfig = {
             );
             
             const existe = await checkResponse.json();
+            console.log('📋 Registro existente:', existe);
             
             let response;
             if (existe && existe.length > 0) {
+                // Actualizar registro existente
+                console.log('🔄 Actualizando configuración ID:', existe[0].id);
                 response = await fetch(
                     `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`,
                     {
@@ -133,6 +143,8 @@ window.salonConfig = {
                     }
                 );
             } else {
+                // Insertar nuevo registro
+                console.log('➕ Insertando nueva configuración');
                 response = await fetch(
                     `${window.SUPABASE_URL}/rest/v1/configuracion`,
                     {
@@ -150,17 +162,24 @@ window.salonConfig = {
             
             if (!response.ok) {
                 const error = await response.text();
-                console.error('Error guardando configuración:', error);
+                console.error('❌ Error guardando configuración:', error);
+                alert('Error al guardar configuración: ' + error);
                 return null;
             }
             
             const data = await response.json();
+            console.log('✅ Configuración guardada exitosamente:', data);
+            
+            // Actualizar variable global
             configuracionGlobal = Array.isArray(data) ? data[0] : data;
             ultimaActualizacion = Date.now();
             
+            alert('✅ Configuración global guardada correctamente');
             return configuracionGlobal;
+            
         } catch (error) {
-            console.error('Error en guardar:', error);
+            console.error('❌ Error en guardar:', error);
+            alert('Error al guardar configuración: ' + error.message);
             return null;
         }
     },
@@ -249,7 +268,7 @@ window.salonConfig = {
             if (!response.ok) {
                 const error = await response.text();
                 console.error('Error guardando horarios:', error);
-                alert('Error al guardar horarios. Ver permisos.');
+                alert('Error al guardar horarios: ' + error);
                 return null;
             }
             
@@ -276,6 +295,7 @@ window.salonConfig = {
     }
 };
 
+// Cargar configuración al inicio
 setTimeout(async () => {
     await window.salonConfig.get();
     await cargarHorariosBarberos();

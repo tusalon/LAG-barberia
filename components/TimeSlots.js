@@ -1,4 +1,4 @@
-// components/TimeSlots.js - Versión para LAG.barberia (CORREGIDO)
+// components/TimeSlots.js - Versión para LAG.barberia (CON MEDIAS HORAS)
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
@@ -8,11 +8,18 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [diaTrabaja, setDiaTrabaja] = React.useState(true);
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
 
-    // 🔥 Función para formatear fecha local correctamente
+    // Función para formatear fecha local correctamente
     const formatDateLocal = (dateStr) => {
         if (!dateStr) return '';
         const [year, month, day] = dateStr.split('-').map(Number);
         return new Date(year, month - 1, day).toLocaleDateString();
+    };
+
+    // 🔥 Función para convertir índice de 30 minutos a hora legible
+    const indiceToHoraLegible = (indice) => {
+        const horas = Math.floor(indice / 2);
+        const minutos = indice % 2 === 0 ? '00' : '30';
+        return `${horas.toString().padStart(2, '0')}:${minutos}`;
     };
 
     React.useEffect(() => {
@@ -86,9 +93,12 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     return;
                 }
                 
-                const baseSlots = horariosBarbero.horas.map(h => 
-                    `${h.toString().padStart(2, '0')}:00`
+                // 🔥 CONVERTIR ÍNDICES A HORAS LEGIBLES
+                const baseSlots = horariosBarbero.horas.map(indice => 
+                    indiceToHoraLegible(indice)
                 );
+                
+                console.log('📋 Slots base (convertidos):', baseSlots);
                 
                 const todayStr = getCurrentLocalDate();
                 const isToday = date === todayStr;
@@ -132,7 +142,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="icon-clock text-amber-500"></div>
+                    <i className="icon-clock text-amber-500"></i>
                     4. Elegí un horario con {worker.nombre}
                 </h2>
                 <div className="flex justify-center py-8">
@@ -146,7 +156,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="icon-clock text-amber-500"></div>
+                    <i className="icon-clock text-amber-500"></i>
                     4. Elegí un horario con {worker.nombre}
                 </h2>
                 <div className="text-center p-8 bg-yellow-50 rounded-xl border border-yellow-200">
@@ -163,7 +173,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     return (
         <div className="space-y-4 animate-fade-in">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <div className="icon-clock text-amber-500"></div>
+                <i className="icon-clock text-amber-500"></i>
                 4. Elegí un horario con {worker.nombre}
                 {selectedTime && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full ml-2">
@@ -190,7 +200,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 <>
                     <div className="text-sm bg-gradient-to-r from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200">
                         <div className="flex items-center gap-2 text-amber-700">
-                            <div className="icon-clock text-amber-500"></div>
+                            <i className="icon-clock text-amber-500"></i>
                             <span className="font-medium">
                                 Horarios disponibles de {worker.nombre} para {formatDateLocal(date)}:
                             </span>
@@ -199,32 +209,41 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     
                     {date === getCurrentLocalDate() && (
                         <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg flex items-center gap-2 border border-amber-200">
-                            <div className="icon-clock text-amber-500"></div>
+                            <i className="icon-clock text-amber-500"></i>
                             <span>Solo se muestran horarios que aún no pasaron</span>
                         </div>
                     )}
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
+                    {/* 🔥 GRILLA DE HORARIOS (incluye medias horas) */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
                         {slots.map(time24h => {
                             const time12h = formatTo12Hour(time24h);
                             const isSelected = selectedTime === time24h;
+                            
+                            // Detectar si es media hora para mostrar un ícono diferente
+                            const esMediaHora = time24h.includes(':30');
                             
                             return (
                                 <button
                                     key={time24h}
                                     onClick={() => onTimeSelect(time24h)}
                                     className={`
-                                        py-3 px-2 rounded-lg text-base font-semibold transition-all transform
+                                        py-3 px-2 rounded-lg text-base font-semibold transition-all transform flex flex-col items-center
                                         ${isSelected
                                             ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg scale-105 ring-2 ring-amber-300'
                                             : 'bg-white text-gray-700 border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 hover:scale-105 hover:shadow-md'}
                                     `}
                                 >
-                                    {time12h}
+                                    <span className="text-sm">{esMediaHora ? '⏱️' : '⌛'}</span>
+                                    <span>{time12h}</span>
                                 </button>
                             );
                         })}
                     </div>
+                    
+                    <p className="text-xs text-gray-500 mt-3 text-center">
+                        ⏰ Horarios cada 30 minutos (9:00, 9:30, 10:00, 10:30, etc.)
+                    </p>
                 </>
             )}
         </div>
