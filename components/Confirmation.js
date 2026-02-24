@@ -1,6 +1,7 @@
-// components/Confirmation.js - Para LAG.barberia con generación de archivo ICS
+// components/Confirmation.js - Para LAG.barberia con descarga automática y botón WhatsApp
 
 function Confirmation({ booking, onReset }) {
+    // Descargar archivo ICS automáticamente al cargar la página
     React.useEffect(() => {
         // Generar el contenido del archivo ICS
         const icsContent = generarICS(booking);
@@ -19,37 +20,8 @@ function Confirmation({ booking, onReset }) {
         // Limpiar la URL creada
         URL.revokeObjectURL(link.href);
         
-        // Mensaje para WhatsApp con instrucciones
-        const phone = "53357234";
-        const text = `📅 *TURNO CONFIRMADO - LAG.barberia*%0A%0A` +
-                    `👤 *Cliente:* ${booking.cliente_nombre}%0A` +
-                    `📱 *WhatsApp:* ${booking.cliente_whatsapp}%0A` +
-                    `💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)%0A` +
-                    `📆 *Fecha:* ${booking.fecha}%0A` +
-                    `⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}%0A%0A` +
-                    `✅ *Se ha descargado un archivo .ics*%0A` +
-                    `📲 *Para agregarlo a tu calendario:*%0A` +
-                    `• *iPhone:* Abrí el archivo → "Agregar a Calendario"%0A` +
-                    `• *Android:* Abrí el archivo → "Importar a Google Calendar"%0A` +
-                    `• *PC:* Hacé doble clic en el archivo%0A%0A` +
-                    `⏰ *Recordatorios automáticos:*%0A` +
-                    `• 1 día antes del turno%0A` +
-                    `• 1 hora antes del turno%0A%0A` +
-                    `¡Gracias por elegir LAG.barberia! ✂️`;
-        
-        const encodedText = encodeURIComponent(text);
-        
-        // Abrir WhatsApp con el mensaje
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
-        if (isIOS) {
-            window.location.href = `whatsapp://send?phone=${phone}&text=${encodedText}`;
-            setTimeout(() => {
-                window.location.href = `https://wa.me/${phone}?text=${encodedText}`;
-            }, 500);
-        } else {
-            window.location.href = `https://wa.me/${phone}?text=${encodedText}`;
-        }
+        // Mostrar mensaje en consola
+        console.log('📅 Archivo ICS generado y descargado');
     }, [booking]);
 
     // Función para generar archivo ICS con recordatorios
@@ -58,7 +30,7 @@ function Confirmation({ booking, onReset }) {
         const fechaInicio = new Date(booking.fecha + 'T' + booking.hora_inicio + ':00');
         const fechaFin = new Date(booking.fecha + 'T' + booking.hora_fin + ':00');
         
-        // Formatear fechas para ICS (YYYYMMDDTHHMMSSZ)
+        // Formatear fechas para ICS (YYYYMMDDTHHMMSS)
         const formatICSDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -69,7 +41,7 @@ function Confirmation({ booking, onReset }) {
             return `${year}${month}${day}T${hours}${minutes}${seconds}`;
         };
         
-        // Obtener nombre del barbero o usar valor por defecto
+        // Obtener nombre del barbero
         const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
         
         // Crear contenido ICS con dos recordatorios (1 día antes y 1 hora antes)
@@ -88,7 +60,6 @@ DESCRIPTION:Reserva con ${barberoNombre}
 LOCATION:LAG.barberia
 STATUS:CONFIRMED
 SEQUENCE:0
-X-APPLE-STRUCTURED-LOCATION;VALUE=URI;X-ADDRESS=LAG.barberia:geo:0,0
 BEGIN:VALARM
 TRIGGER:-P1D
 ACTION:DISPLAY
@@ -103,29 +74,81 @@ END:VEVENT
 END:VCALENDAR`;
     };
 
+    // Función para compartir por WhatsApp
+    const compartirWhatsApp = () => {
+        const mensaje = 
+`📅 *TURNO CONFIRMADO - LAG.barberia*
+
+👤 *Cliente:* ${booking.cliente_nombre}
+📱 *WhatsApp:* ${booking.cliente_whatsapp}
+💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)
+📆 *Fecha:* ${booking.fecha}
+⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}
+
+✅ *Se descargó un archivo .ics*
+📲 *Abrilo para agregar el turno a tu calendario*
+⏰ *Recibirás recordatorios 1 día antes y 1 hora antes*
+
+¡Gracias por elegir LAG.barberia! ✂️`;
+
+        const encodedText = encodeURIComponent(mensaje);
+        const url = `https://wa.me/53357234?text=${encodedText}`;
+        window.open(url, '_blank');
+    };
+
     return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 animate-fade-in">
             <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mb-6">
-                <div className="icon-check text-4xl text-white"></div>
+                <i className="icon-check text-4xl text-white"></i>
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Turno Reservado!</h2>
             <p className="text-gray-500 mb-4 max-w-xs mx-auto">Tu cita ha sido agendada correctamente</p>
             
             {/* Notificación de descarga del calendario */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-sm mx-auto">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 max-w-sm mx-auto animate-pulse">
                 <div className="flex items-start gap-3">
                     <div className="text-amber-500 text-xl">📅</div>
                     <div className="text-left">
-                        <p className="font-semibold text-amber-800">Recordatorio automático</p>
+                        <p className="font-semibold text-amber-800">¡Archivo descargado!</p>
                         <p className="text-sm text-amber-600">
-                            Se ha descargado un archivo para agregar este turno a tu calendario.
-                            Recibirás notificaciones 1 día antes y 1 hora antes.
+                            Se descargó un archivo para agregar este turno a tu calendario.
+                            <br />
+                            <span className="font-medium">Abrilo para recibir recordatorios automáticos.</span>
                         </p>
                     </div>
                 </div>
             </div>
             
+            {/* Instrucciones según dispositivo */}
+            <div className="bg-gray-100 p-4 rounded-lg mb-6 max-w-sm mx-auto text-left text-sm">
+                <p className="font-semibold mb-2">📲 ¿Cómo agregarlo a tu calendario?</p>
+                <ul className="space-y-2 text-gray-600">
+                    <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong>iPhone:</strong> Abrí el archivo descargado → "Agregar a Calendario"</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong>Android:</strong> Abrí el archivo → "Importar a Google Calendar"</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">•</span>
+                        <span><strong>PC:</strong> Hacé doble clic en el archivo</span>
+                    </li>
+                </ul>
+            </div>
+            
+            {/* Botón para compartir por WhatsApp */}
+            <button
+                onClick={compartirWhatsApp}
+                className="mb-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition-all transform hover:scale-105"
+            >
+                <i className="icon-message-circle"></i>
+                Compartir detalles por WhatsApp
+            </button>
+            
+            {/* Detalles del turno */}
             <div className="bg-gray-800 p-6 rounded-2xl shadow-sm border border-amber-600 w-full max-w-sm mb-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
                 <div className="space-y-4 text-left">
@@ -160,7 +183,7 @@ END:VCALENDAR`;
 
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 <div className="text-sm text-gray-400 bg-gray-800 p-3 rounded-lg flex items-center justify-center gap-2 border border-amber-700">
-                   <div className="icon-smartphone text-amber-500"></div>
+                   <i className="icon-smartphone text-amber-500"></i>
                    Contacto: +53 53357234
                 </div>
                 

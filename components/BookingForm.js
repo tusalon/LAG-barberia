@@ -1,4 +1,4 @@
-// components/BookingForm.js - VERSIÓN CORREGIDA
+// components/BookingForm.js - VERSIÓN CORREGIDA PARA LAG.barberia
 
 function BookingForm({ service, worker, date, time, onSubmit, onCancel, cliente }) {
     const [submitting, setSubmitting] = React.useState(false);
@@ -27,12 +27,12 @@ function BookingForm({ service, worker, date, time, onSubmit, onCancel, cliente 
                 cliente_nombre: cliente.nombre,
                 cliente_whatsapp: cliente.whatsapp,
                 servicio: service.nombre,
-                duracion: service.duracion,        // ✅ CORREGIDO
+                duracion: service.duracion,
                 trabajador_id: worker.id,
                 trabajador_nombre: worker.nombre,
                 fecha: date,
                 hora_inicio: time,
-                hora_fin: endTime,                  // ✅ CORREGIDO
+                hora_fin: endTime,
                 estado: "Reservado"
             };
 
@@ -54,29 +54,29 @@ function BookingForm({ service, worker, date, time, onSubmit, onCancel, cliente 
                 <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                     <h3 className="text-xl font-bold text-gray-900">Confirmar Reserva</h3>
                     <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
-                        <div className="icon-x text-2xl"></div>
+                        <i className="icon-x text-2xl"></i>
                     </button>
                 </div>
 
                 <div className="space-y-4">
-                    {/* Resumen del turno */}
-                    <div className="bg-pink-50 p-4 rounded-xl border border-pink-100 space-y-2">
+                    {/* Resumen del turno - ACTUALIZADO con colores ámbar */}
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 space-y-2">
                         <div className="flex items-center gap-3 text-gray-700">
-                            <div className="icon-sparkles text-pink-500"></div>
+                            <i className="icon-scissors text-amber-500"></i>
                             <span className="font-medium">{service.nombre}</span>
                         </div>
                         
                         <div className="flex items-center gap-3 text-gray-700">
-                            <div className="icon-users text-pink-500"></div>
+                            <i className="icon-users text-amber-500"></i>
                             <span>Con: <strong>{worker.nombre}</strong></span>
                         </div>
                         
                         <div className="flex items-center gap-3 text-gray-700">
-                            <div className="icon-calendar text-pink-500"></div>
+                            <i className="icon-calendar text-amber-500"></i>
                             <span>{date}</span>
                         </div>
                         <div className="flex items-center gap-3 text-gray-700">
-                            <div className="icon-clock text-pink-500"></div>
+                            <i className="icon-clock text-amber-500"></i>
                             <span>{formatTo12Hour(time)} ({service.duracion} min)</span>
                         </div>
                     </div>
@@ -90,7 +90,7 @@ function BookingForm({ service, worker, date, time, onSubmit, onCancel, cliente 
 
                         {error && (
                             <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg flex items-start gap-2">
-                                <div className="icon-triangle-alert mt-0.5"></div>
+                                <i className="icon-triangle-alert mt-0.5"></i>
                                 {error}
                             </div>
                         )}
@@ -98,7 +98,7 @@ function BookingForm({ service, worker, date, time, onSubmit, onCancel, cliente 
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full bg-black text-white py-3.5 rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                            className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-3.5 rounded-xl font-bold hover:from-amber-700 hover:to-amber-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                         >
                             {submitting ? (
                                 <>
