@@ -1,4 +1,4 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (ELIMINA solicitud al rechazar)
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON NOTIFICACIÓN WHATSAPP AL APROBAR)
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -172,7 +172,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         console.log('✅ Solicitud creada:', newSolicitud);
         
         // Notificar al admin
-        const adminPhone = "5353357234";
+        const adminPhone = "53357234";
         const text = `🆕 NUEVA SOLICITUD\n\n👤 ${nombre}\n📱 +${whatsapp}`;
         window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
         
@@ -268,7 +268,7 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud)
+// 🔥 FUNCIÓN CORREGIDA: Aprobar cliente (ELIMINA la solicitud y ENVÍA WHATSAPP)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
@@ -352,8 +352,57 @@ window.aprobarCliente = async function(whatsapp) {
         );
         
         const autorizado = await getResponse.json();
-        console.log('✅ Cliente aprobado exitosamente:', autorizado[0]);
-        return autorizado[0] || null;
+        const clienteAprobado = autorizado[0] || null;
+        
+        console.log('✅ Cliente aprobado exitosamente:', clienteAprobado);
+        
+        // 🔥 PASO 5: ENVIAR WHATSAPP DE NOTIFICACIÓN AL CLIENTE
+        if (clienteAprobado) {
+            try {
+                // Limpiar el número de WhatsApp (eliminar +53 si existe)
+                const telefonoLimpio = clienteAprobado.whatsapp.replace(/\D/g, '');
+                
+                // 🔥 MENSAJE DE BIENVENIDA PERSONALIZADO
+                const mensajeBienvenida = 
+`✅ *¡FELICIDADES! Has sido ACEPTADO en LAG.barberia*
+
+Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de acceso ha sido *APROBADA*.
+
+🎉 *Ya podés disfrutar de todos los beneficios:*
+• Reservar turnos online las 24/7
+• Ver el historial de tus reservas
+• Cancelar turnos desde la app
+• Recibir recordatorios automáticos
+
+📱 *¿Cómo reservar?*
+1. Ingresá a LAG.barberia desde tu celular
+2. Iniciá sesión con tu número +${clienteAprobado.whatsapp}
+3. Elegí servicio, barbero, fecha y hora
+4. ¡Confirmá tu turno!
+
+✂️ *Nivel que se nota*
+
+LAG.barberia - Donde el estilo se encuentra con la calidad`;
+
+                const encodedText = encodeURIComponent(mensajeBienvenida);
+                const url = `https://wa.me/${telefonoLimpio}?text=${encodedText}`;
+                
+                // Abrir WhatsApp en una nueva pestaña
+                window.open(url, '_blank');
+                
+                console.log('📤 Mensaje de bienvenida enviado a:', telefonoLimpio);
+                
+                // También notificar al admin que se envió
+                const adminPhone = "53357234";
+                const notificacionAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
+                window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(notificacionAdmin)}`, '_blank');
+                
+            } catch (error) {
+                console.error('Error enviando WhatsApp de bienvenida:', error);
+            }
+        }
+        
+        return clienteAprobado;
         
     } catch (error) {
         console.error('Error aprobando cliente:', error);
