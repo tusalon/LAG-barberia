@@ -1,4 +1,4 @@
-// components/admin/ServiciosPanel.js - CON PRECIO ÚNICO
+// components/admin/ServiciosPanel.js - CON PRECIO ÚNICO Y INPUT CORREGIDO
 
 function ServiciosPanel() {
     const [servicios, setServicios] = React.useState([]);
@@ -135,7 +135,7 @@ function ServiciosPanel() {
                                         </button>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        {s.duracion} min | ${s.precio}  {/* 🔥 PRECIO ÚNICO */}
+                                        {s.duracion} min | ${s.precio}
                                     </p>
                                     {s.descripcion && (
                                         <p className="text-xs text-gray-500 mt-1">{s.descripcion}</p>
@@ -172,77 +172,128 @@ function ServiciosPanel() {
 function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const [form, setForm] = React.useState(servicio || {
         nombre: '',
-        duracion: 45,
+        duracion: 45,        // 🔥 VALOR POR DEFECTO CAMBIADO A 45
         precio: 0,
         descripcion: ''
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        // Validar que los campos no estén vacíos
+        if (!form.nombre.trim()) {
+            alert('El nombre del servicio es obligatorio');
+            return;
+        }
+        if (!form.duracion || form.duracion < 15) {
+            alert('La duración debe ser al menos 15 minutos');
+            return;
+        }
+        if (!form.precio || form.precio < 0) {
+            alert('El precio debe ser un valor válido');
+            return;
+        }
+        
         onGuardar(form);
     };
 
     return (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold mb-4">
+        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg border border-amber-200">
+            <h3 className="font-semibold mb-4 text-amber-800">
                 {servicio ? '✏️ Editar Servicio' : '➕ Nuevo Servicio'}
             </h3>
             
             <div className="space-y-3">
-                <input
-                    type="text"
-                    placeholder="Nombre del servicio"
-                    value={form.nombre}
-                    onChange={(e) => setForm({...form, nombre: e.target.value})}
-                    className="w-full border rounded-lg px-3 py-2"
-                    required
-                />
-                
-                <div className="grid grid-cols-2 gap-2">
+                {/* Campo Nombre */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre del servicio *
+                    </label>
                     <input
-                        type="number"
-                        placeholder="Duración (min)"
-                        value={form.duracion}
-                        onChange={(e) => setForm({...form, duracion: parseInt(e.target.value)})}
-                        className="border rounded-lg px-3 py-2"
+                        type="text"
+                        value={form.nombre}
+                        onChange={(e) => setForm({...form, nombre: e.target.value})}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        placeholder="Ej: Corte de Cabello"
                         required
-                        min="15"
-                        step="15"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Precio $"
-                        value={form.precio}
-                        onChange={(e) => setForm({...form, precio: parseFloat(e.target.value)})}
-                        className="border rounded-lg px-3 py-2"
-                        required
-                        min="0"
-                        step="0.5"
                     />
                 </div>
                 
-                <textarea
-                    placeholder="Descripción (opcional)"
-                    value={form.descripcion}
-                    onChange={(e) => setForm({...form, descripcion: e.target.value})}
-                    className="w-full border rounded-lg px-3 py-2"
-                    rows="2"
-                />
+                {/* Campos de Duración y Precio */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Duración (min) *
+                        </label>
+                        <input
+                            type="number"
+                            value={form.duracion}
+                            onChange={(e) => {
+                                const valor = parseInt(e.target.value);
+                                setForm({
+                                    ...form, 
+                                    duracion: isNaN(valor) ? 45 : valor
+                                });
+                            }}
+                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            required
+                            min="15"
+                            max="480"
+                            step="15"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Múltiplos de 15 min</p>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Precio ($) *
+                        </label>
+                        <input
+                            type="number"
+                            value={form.precio}
+                            onChange={(e) => {
+                                const valor = parseFloat(e.target.value);
+                                setForm({
+                                    ...form, 
+                                    precio: isNaN(valor) ? 0 : valor
+                                });
+                            }}
+                            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            required
+                            min="0"
+                            step="0.5"
+                        />
+                    </div>
+                </div>
+                
+                {/* Campo Descripción */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Descripción
+                    </label>
+                    <textarea
+                        value={form.descripcion}
+                        onChange={(e) => setForm({...form, descripcion: e.target.value})}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                        rows="2"
+                        placeholder="Descripción opcional del servicio"
+                    />
+                </div>
             </div>
             
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-end gap-3 mt-6">
                 <button
                     type="button"
                     onClick={onCancelar}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
                 >
                     Cancelar
                 </button>
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition transform hover:scale-105"
                 >
-                    Guardar
+                    {servicio ? 'Actualizar Servicio' : 'Guardar Servicio'}
                 </button>
             </div>
         </form>
