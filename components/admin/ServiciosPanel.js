@@ -1,9 +1,10 @@
-// components/admin/ServiciosPanel.js - CON INPUT NORMAL PARA DURACIÓN
+// components/admin/ServiciosPanel.js - CON PRECIO ÚNICO (CORREGIDO)
 
 function ServiciosPanel() {
     const [servicios, setServicios] = React.useState([]);
     const [mostrarForm, setMostrarForm] = React.useState(false);
-    const [editando, setEditando] React.useState(null);
+    // 🔥 CORREGIDO: Faltaba el signo =
+    const [editando, setEditando] = React.useState(null);
     const [cargando, setCargando] = React.useState(true);
 
     React.useEffect(() => {
@@ -168,7 +169,6 @@ function ServiciosPanel() {
     );
 }
 
-// 🔥 FORMULARIO CON INPUT NORMAL (VOLVEMOS A LA VERSIÓN ANTERIOR)
 function ServicioForm({ servicio, onGuardar, onCancelar }) {
     const [form, setForm] = React.useState(servicio || {
         nombre: '',
