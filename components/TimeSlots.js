@@ -47,12 +47,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         return hours * 60 + minutes;
     };
 
-    const indiceToHoraLegible = (indice) => {
-        const horas = Math.floor(indice / 2);
-        const minutos = indice % 2 === 0 ? '00' : '30';
-        return `${horas.toString().padStart(2, '0')}:${minutos}`;
-    };
-
+  
     React.useEffect(() => {
         if (!worker) return;
         
