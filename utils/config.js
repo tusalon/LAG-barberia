@@ -1,4 +1,4 @@
-// utils/config.js - Configuración para LAG.barberia (CORREGIDO)
+// utils/config.js - Configuración para LAG.barberia (CON HORARIOS POR DÍA)
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
@@ -39,7 +39,6 @@ async function cargarConfiguracionGlobal() {
             console.log('✅ Configuración global cargada:', configuracionGlobal);
         } else {
             console.log('⚠️ No hay configuración en la BD, insertando valores por defecto');
-            // Si no hay configuración, crear una
             await window.salonConfig.guardar(configuracionGlobal);
         }
         return configuracionGlobal;
@@ -72,12 +71,13 @@ async function cargarHorariosBarberos() {
         
         const horarios = {};
         (data || []).forEach(item => {
-            if (!horarios[item.barbero_id]) {
-                horarios[item.barbero_id] = {
-                    horas: item.horas || [],
-                    dias: item.dias || []
-                };
-            }
+            horarios[item.barbero_id] = {
+                // Formato nuevo: { lunes: [9, 9.5, 10], martes: [14, 14.5, 15], ... }
+                horariosPorDia: item.horarios_por_dia || {},
+                // Mantener compatibilidad con formato antiguo
+                horas: item.horas || [],
+                dias: item.dias || []
+            };
         });
         
         horariosBarberos = horarios;
@@ -88,9 +88,21 @@ async function cargarHorariosBarberos() {
     }
 }
 
+// Función para convertir índices a hora legible
+const indiceToHoraLegible = (indice) => {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+};
+
+// Función para convertir hora a índice
+const horaToIndice = (horaStr) => {
+    const [horas, minutos] = horaStr.split(':').map(Number);
+    return horas * 2 + (minutos === 30 ? 1 : 0);
+};
+
 window.salonConfig = {
     get: async function() {
-        // Siempre obtener datos frescos de la BD
         console.log('🔍 Obteniendo configuración...');
         await cargarConfiguracionGlobal();
         ultimaActualizacion = Date.now();
@@ -101,7 +113,6 @@ window.salonConfig = {
         try {
             console.log('💾 Guardando configuración global:', nuevaConfig);
             
-            // Mapear los nombres de las propiedades
             const datosAGuardar = {
                 duracion_turnos: nuevaConfig.duracion_turnos || nuevaConfig.duracionTurnos || 60,
                 intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || nuevaConfig.intervaloEntreTurnos || 0,
@@ -110,7 +121,6 @@ window.salonConfig = {
             
             console.log('📤 Datos a guardar (mapeados):', datosAGuardar);
             
-            // Verificar si ya existe un registro
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
                 {
@@ -126,39 +136,29 @@ window.salonConfig = {
             console.log('📋 Registro existente:', existe);
             
             let response;
+            let url;
+            let method;
+            
             if (existe && existe.length > 0) {
-                // Actualizar registro existente
                 console.log('🔄 Actualizando configuración ID:', existe[0].id);
-                response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': window.SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify(datosAGuardar)
-                    }
-                );
+                url = `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`;
+                method = 'PATCH';
             } else {
-                // Insertar nuevo registro
                 console.log('➕ Insertando nueva configuración');
-                response = await fetch(
-                    `${window.SUPABASE_URL}/rest/v1/configuracion`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'apikey': window.SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify(datosAGuardar)
-                    }
-                );
+                url = `${window.SUPABASE_URL}/rest/v1/configuracion`;
+                method = 'POST';
             }
+            
+            response = await fetch(url, {
+                method: method,
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(datosAGuardar)
+            });
             
             if (!response.ok) {
                 const error = await response.text();
@@ -170,7 +170,6 @@ window.salonConfig = {
             const data = await response.json();
             console.log('✅ Configuración guardada exitosamente:', data);
             
-            // Actualizar variable global
             configuracionGlobal = Array.isArray(data) ? data[0] : data;
             ultimaActualizacion = Date.now();
             
@@ -184,6 +183,130 @@ window.salonConfig = {
         }
     },
     
+    // ✅ NUEVA FUNCIÓN: Obtener horarios por día para un barbero
+    getHorariosPorDia: async function(barberoId) {
+        try {
+            const response = await fetch(
+                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=*`,
+                {
+                    headers: {
+                        'apikey': window.SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            if (!response.ok) return {};
+            
+            const data = await response.json();
+            if (data && data.length > 0) {
+                // Devolver el objeto de horarios por día, o un objeto vacío si no existe
+                return data[0].horarios_por_dia || {};
+            }
+            return {};
+        } catch (error) {
+            console.error('Error obteniendo horarios por día:', error);
+            return {};
+        }
+    },
+    
+    // ✅ NUEVA FUNCIÓN: Guardar horarios por día
+    guardarHorariosPorDia: async function(barberoId, horariosPorDia) {
+        try {
+            console.log(`💾 Guardando horarios por día para barbero ${barberoId}:`, horariosPorDia);
+            
+            const checkResponse = await fetch(
+                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id,horas,dias`,
+                {
+                    headers: {
+                        'apikey': window.SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            const existe = await checkResponse.json();
+            
+            let response;
+            let url;
+            let method;
+            let body;
+            
+            // Extraer todos los horarios únicos para mantener compatibilidad
+            const todasLasHoras = new Set();
+            Object.values(horariosPorDia).forEach(horasArray => {
+                horasArray.forEach(hora => todasLasHoras.add(hora));
+            });
+            const horasArray = Array.from(todasLasHoras).sort((a, b) => a - b);
+            
+            // Extraer todos los días que trabajan
+            const diasQueTrabajan = Object.keys(horariosPorDia).filter(dia => horariosPorDia[dia].length > 0);
+            
+            if (existe && existe.length > 0) {
+                console.log('🔄 Actualizando registro existente ID:', existe[0].id);
+                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`;
+                method = 'PATCH';
+                body = JSON.stringify({
+                    horarios_por_dia: horariosPorDia,
+                    horas: horasArray, // Mantener compatibilidad
+                    dias: diasQueTrabajan // Mantener compatibilidad
+                });
+            } else {
+                console.log('➕ Insertando nuevo registro');
+                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos`;
+                method = 'POST';
+                body = JSON.stringify({
+                    barbero_id: barberoId,
+                    horarios_por_dia: horariosPorDia,
+                    horas: horasArray,
+                    dias: diasQueTrabajan
+                });
+            }
+            
+            response = await fetch(url, {
+                method: method,
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: body
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                console.error('Error guardando horarios:', error);
+                alert('Error al guardar horarios: ' + error);
+                return null;
+            }
+            
+            const data = await response.json();
+            console.log('✅ Horarios guardados exitosamente:', data);
+            
+            horariosBarberos[barberoId] = {
+                horariosPorDia: horariosPorDia,
+                horas: horasArray,
+                dias: diasQueTrabajan
+            };
+            
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new Event('horariosActualizados'));
+            }
+            
+            alert('✅ Horarios guardados correctamente');
+            return Array.isArray(data) ? data[0] : data;
+            
+        } catch (error) {
+            console.error('Error en guardarHorariosPorDia:', error);
+            alert('Error al guardar horarios: ' + error.message);
+            return null;
+        }
+    },
+    
+    // Mantener compatibilidad con funciones anteriores
     getHorariosBarbero: async function(barberoId) {
         try {
             const response = await fetch(
@@ -201,21 +324,29 @@ window.salonConfig = {
             
             const data = await response.json();
             if (data && data.length > 0) {
+                // Devolver también el nuevo formato si existe
                 return {
                     horas: data[0].horas || [],
-                    dias: data[0].dias || []
+                    dias: data[0].dias || [],
+                    horariosPorDia: data[0].horarios_por_dia || {}
                 };
             }
-            return { horas: [], dias: [] };
+            return { horas: [], dias: [], horariosPorDia: {} };
         } catch (error) {
             console.error('Error obteniendo horarios:', error);
-            return { horas: [], dias: [] };
+            return { horas: [], dias: [], horariosPorDia: {} };
         }
     },
     
     guardarHorariosBarbero: async function(barberoId, horarios) {
+        // Si viene con el nuevo formato, usar guardarHorariosPorDia
+        if (horarios.horariosPorDia) {
+            return this.guardarHorariosPorDia(barberoId, horarios.horariosPorDia);
+        }
+        
+        // Si no, mantener compatibilidad
         try {
-            console.log(`💾 Guardando horarios para barbero ${barberoId}:`, horarios);
+            console.log(`💾 Guardando horarios para barbero ${barberoId} (formato antiguo):`, horarios);
             
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id`,
@@ -292,6 +423,16 @@ window.salonConfig = {
             alert('Error al guardar horarios: ' + error.message);
             return null;
         }
+    },
+    
+    // ✅ FUNCIÓN PARA CONVERTIR HORAS LEGIBLES A ÍNDICES
+    horasToIndices: function(horasLegibles) {
+        return horasLegibles.map(hora => horaToIndice(hora));
+    },
+    
+    // ✅ FUNCIÓN PARA CONVERTIR ÍNDICES A HORAS LEGIBLES
+    indicesToHoras: function(indices) {
+        return indices.map(indice => indiceToHoraLegible(indice));
     }
 };
 

@@ -1,10 +1,10 @@
-// components/admin/ConfigPanel.js - CON HORARIOS CADA 30 MINUTOS (CORREGIDO)
+// components/admin/ConfigPanel.js - CON HORARIOS POR DÍA
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
     const [barberoSeleccionado, setBarberoSeleccionado] = React.useState(null);
-    const [horarios, setHorarios] = React.useState({});
-    // 🔥 CORREGIDO: Usar nombres con guión bajo para coincidir con la BD
+    const [modoEdicion, setModoEdicion] = React.useState('porDia'); // 'porDia' o 'tradicional'
+    const [mostrarEditorPorDia, setMostrarEditorPorDia] = React.useState(false);
     const [configGlobal, setConfigGlobal] = React.useState({
         duracion_turnos: 60,
         intervalo_entre_turnos: 0,
@@ -18,7 +18,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
     };
 
-    // OPCIONES DE DURACIÓN POR DEFECTO
     const opcionesDuracion = [
         { value: 30, label: '30 min', icon: '⏱️' },
         { value: 45, label: '45 min', icon: '⏰' },
@@ -27,18 +26,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         { value: 90, label: '90 min', icon: '🕐' },
         { value: 120, label: '120 min', icon: '🕑' }
     ];
-
-    // GENERAR HORAS CADA 30 MINUTOS (0:00, 0:30, 1:00, 1:30, etc.)
-    const horas = Array.from({ length: 48 }, (_, i) => {
-        const hora = Math.floor(i / 2);
-        const minutos = i % 2 === 0 ? '00' : '30';
-        return {
-            value: i,
-            horaReal: hora,
-            minutos: minutos,
-            label: `${hora.toString().padStart(2, '0')}:${minutos}`
-        };
-    });
 
     React.useEffect(() => {
         cargarDatos();
@@ -64,7 +51,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
-                // 🔥 MAPEAR los nombres si vienen de la BD
                 setConfigGlobal(config || {
                     duracion_turnos: 60,
                     intervalo_entre_turnos: 0,
@@ -78,87 +64,22 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         }
     };
 
-    React.useEffect(() => {
-        if (barberoSeleccionado) {
-            cargarHorariosBarbero(barberoSeleccionado);
+    const abrirEditorPorDia = () => {
+        if (!barberoSeleccionado) {
+            alert('Seleccioná un barbero primero');
+            return;
         }
-    }, [barberoSeleccionado]);
-
-    const cargarHorariosBarbero = async (id) => {
-        try {
-            const horariosBarbero = await window.salonConfig.getHorariosBarbero(id);
-            setHorarios(prev => ({
-                ...prev,
-                [id]: horariosBarbero
-            }));
-        } catch (error) {
-            console.error('Error cargando horarios:', error);
-        }
-    };
-
-    const toggleDia = (dia) => {
-        if (!barberoSeleccionado) return;
-        
-        const horariosActuales = horarios[barberoSeleccionado] || { horas: [], dias: [] };
-        const diasActuales = horariosActuales.dias || [];
-        
-        const nuevosDias = diasActuales.includes(dia)
-            ? diasActuales.filter(d => d !== dia)
-            : [...diasActuales, dia];
-        
-        setHorarios({
-            ...horarios,
-            [barberoSeleccionado]: {
-                ...horariosActuales,
-                dias: nuevosDias
-            }
-        });
-    };
-
-    // FUNCIÓN PARA TRABAJAR CON ÍNDICES DE 30 MIN
-    const toggleHora = (indice) => {
-        if (!barberoSeleccionado) return;
-        
-        const horariosActuales = horarios[barberoSeleccionado] || { horas: [], dias: [] };
-        const horasActuales = horariosActuales.horas || [];
-        
-        const nuevasHoras = horasActuales.includes(indice)
-            ? horasActuales.filter(h => h !== indice)
-            : [...horasActuales, indice].sort((a, b) => a - b);
-        
-        setHorarios({
-            ...horarios,
-            [barberoSeleccionado]: {
-                ...horariosActuales,
-                horas: nuevasHoras
-            }
-        });
+        setMostrarEditorPorDia(true);
     };
 
     const handleGuardarConfigGlobal = async () => {
         if (modoRestringido) return;
         
         try {
-            // 🔥 Pasar directamente configGlobal (ya tiene los nombres correctos)
             await window.salonConfig.guardar(configGlobal);
             alert('✅ Configuración global guardada');
         } catch (error) {
             alert('Error al guardar configuración global');
-        }
-    };
-
-    const handleGuardarHorariosBarbero = async () => {
-        if (!barberoSeleccionado) return;
-        
-        try {
-            const horariosAGuardar = horarios[barberoSeleccionado] || { horas: [], dias: [] };
-            await window.salonConfig.guardarHorariosBarbero(
-                barberoSeleccionado, 
-                horariosAGuardar
-            );
-            alert('✅ Horarios guardados para el barbero');
-        } catch (error) {
-            alert('Error al guardar horarios');
         }
     };
 
@@ -195,11 +116,11 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                                         type="button"
                                         onClick={() => setConfigGlobal({
                                             ...configGlobal, 
-                                            duracion_turnos: opcion.value  // 🔥 CORREGIDO
+                                            duracion_turnos: opcion.value
                                         })}
                                         className={`
                                             py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center
-                                            ${configGlobal.duracion_turnos === opcion.value  // 🔥 CORREGIDO
+                                            ${configGlobal.duracion_turnos === opcion.value
                                                 ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
                                                 : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'
                                             }
@@ -218,10 +139,10 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             </label>
                             <input
                                 type="number"
-                                value={configGlobal.intervalo_entre_turnos || 0}  // 🔥 CORREGIDO
+                                value={configGlobal.intervalo_entre_turnos || 0}
                                 onChange={(e) => setConfigGlobal({
                                     ...configGlobal, 
-                                    intervalo_entre_turnos: parseInt(e.target.value) || 0  // 🔥 CORREGIDO
+                                    intervalo_entre_turnos: parseInt(e.target.value) || 0
                                 })}
                                 className="w-full border rounded-lg px-3 py-2 text-sm"
                                 min="0"
@@ -234,10 +155,10 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input
                                 type="checkbox"
-                                checked={configGlobal.modo_24h || false}  // 🔥 CORREGIDO
+                                checked={configGlobal.modo_24h || false}
                                 onChange={(e) => setConfigGlobal({
                                     ...configGlobal, 
-                                    modo_24h: e.target.checked  // 🔥 CORREGIDO
+                                    modo_24h: e.target.checked
                                 })}
                                 className="w-5 h-5 text-amber-600"
                             />
@@ -259,94 +180,60 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Seleccionar Barbero
                     </label>
-                    <select
-                        value={barberoSeleccionado || ''}
-                        onChange={(e) => setBarberoSeleccionado(parseInt(e.target.value))}
-                        className="w-full border rounded-lg px-3 py-2"
-                    >
-                        <option value="">Seleccione un barbero</option>
-                        {barberos.map(b => (
-                            <option key={b.id} value={b.id}>{b.nombre}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-            
-            {modoRestringido && (
-                <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
-                    <div className="flex items-center gap-2">
-                        <i className="icon-info"></i>
-                        <span>Estás configurando tus propios horarios de trabajo</span>
+                    <div className="flex gap-2">
+                        <select
+                            value={barberoSeleccionado || ''}
+                            onChange={(e) => setBarberoSeleccionado(parseInt(e.target.value))}
+                            className="flex-1 border rounded-lg px-3 py-2"
+                        >
+                            <option value="">Seleccione un barbero</option>
+                            {barberos.map(b => (
+                                <option key={b.id} value={b.id}>{b.nombre}</option>
+                            ))}
+                        </select>
+                        
+                        <button
+                            onClick={abrirEditorPorDia}
+                            disabled={!barberoSeleccionado}
+                            className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Configurar horarios por día
+                        </button>
                     </div>
                 </div>
             )}
             
-            {barberoSeleccionado && (
-                <div className="space-y-6">
-                    <h3 className="font-semibold text-lg">
-                        📅 Horarios de {
-                            modoRestringido 
-                                ? 'mi trabajo'
-                                : barberos.find(b => b.id === barberoSeleccionado)?.nombre
-                        }
-                    </h3>
-                    
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-gray-700">Días laborales</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {dias.map(dia => {
-                                const activo = horarios[barberoSeleccionado]?.dias?.includes(dia) || false;
-                                return (
-                                    <button
-                                        key={dia}
-                                        onClick={() => toggleDia(dia)}
-                                        className={`
-                                            px-3 py-2 rounded-lg text-sm font-medium transition
-                                            ${activo 
-                                                ? 'bg-amber-600 text-white shadow-md' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
-                                        `}
-                                    >
-                                        {diasNombres[dia]}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    
-                    {/* HORAS CADA 30 MINUTOS */}
-                    <div className="space-y-4">
-                        <h4 className="font-medium text-gray-700">Horas disponibles (cada 30 min)</h4>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                            {horas.map(hora => {
-                                const activa = horarios[barberoSeleccionado]?.horas?.includes(hora.value) || false;
-                                return (
-                                    <button
-                                        key={hora.value}
-                                        onClick={() => toggleHora(hora.value)}
-                                        className={`
-                                            px-2 py-1 text-xs font-medium rounded transition-all
-                                            ${activa 
-                                                ? 'bg-amber-600 text-white shadow-md hover:bg-amber-700' 
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'}
-                                        `}
-                                    >
-                                        {hora.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                            ⏰ Horarios disponibles cada 30 minutos (9:00, 9:30, 10:00, etc.)
-                        </p>
-                    </div>
-                    
+            {modoRestringido && barberoId && (
+                <div className="mb-4">
                     <button
-                        onClick={handleGuardarHorariosBarbero}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition"
+                        onClick={abrirEditorPorDia}
+                        className="w-full bg-amber-600 text-white px-4 py-3 rounded-lg hover:bg-amber-700 font-medium"
                     >
-                        Guardar {modoRestringido ? 'Mis Horarios' : `Horarios de ${barberos.find(b => b.id === barberoSeleccionado)?.nombre}`}
+                        Configurar mis horarios por día
                     </button>
+                    
+                    <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                        <div className="flex items-center gap-2">
+                            <i className="icon-info"></i>
+                            <span>Podés configurar diferentes horarios para cada día de la semana</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Modal para editor por día */}
+            {mostrarEditorPorDia && barberoSeleccionado && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                        <HorariosPorDiaPanel
+                            barberoId={barberoSeleccionado}
+                            barberoNombre={barberos.find(b => b.id === barberoSeleccionado)?.nombre || 'Barbero'}
+                            onGuardar={(horarios) => {
+                                setMostrarEditorPorDia(false);
+                            }}
+                            onCancelar={() => setMostrarEditorPorDia(false)}
+                        />
+                    </div>
                 </div>
             )}
         </div>

@@ -1,4 +1,4 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP API)
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP BUSINESS)
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -78,12 +78,11 @@ window.obtenerEstadoSolicitud = async function(whatsapp) {
     }
 };
 
-// FUNCIÓN PRINCIPAL: Agregar cliente pendiente (permite reenvío si está rechazado)
+// FUNCIÓN PRINCIPAL: Agregar cliente pendiente
 window.agregarClientePendiente = async function(nombre, whatsapp) {
     console.log('➕ Agregando cliente pendiente:', { nombre, whatsapp });
     
     try {
-        // PASO 1: Verificar si ya está autorizado
         const autorizado = await window.verificarAccesoCliente(whatsapp);
         if (autorizado) {
             console.log('❌ Cliente ya está autorizado');
@@ -91,28 +90,23 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
             return false;
         }
         
-        // PASO 2: Obtener estado de solicitud existente
         const estadoSolicitud = await window.obtenerEstadoSolicitud(whatsapp);
         console.log('📋 Estado de solicitud:', estadoSolicitud);
         
-        // PASO 3: Si existe una solicitud
         if (estadoSolicitud && estadoSolicitud.existe) {
             
-            // Caso A: Está pendiente - no permitir nuevo
             if (estadoSolicitud.estado === 'pendiente') {
                 console.log('❌ Cliente ya tiene solicitud pendiente');
                 alert('Ya tenés una solicitud pendiente. El dueño te contactará pronto.');
                 return false;
             }
             
-            // Caso B: Está aprobado - no debería pasar porque ya verificamos autorizado
             if (estadoSolicitud.estado === 'aprobado') {
                 console.log('❌ Cliente ya fue aprobado (inconsistencia)');
                 alert('Ya tenés acceso al sistema. Contactá al dueño si tenés problemas.');
                 return false;
             }
             
-            // Caso C: Está rechazado - ELIMINAR LA SOLICITUD ANTERIOR Y CREAR NUEVA
             if (estadoSolicitud.estado === 'rechazado') {
                 console.log('🔄 Cliente estaba rechazado, eliminando solicitud anterior...');
                 
@@ -132,7 +126,6 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
             }
         }
         
-        // PASO 4: Crear nueva solicitud
         console.log('🆕 Creando nueva solicitud...');
         
         const response = await fetch(
@@ -169,11 +162,16 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const newSolicitud = await response.json();
         console.log('✅ Solicitud creada:', newSolicitud);
         
-        // 🔥 Notificar al admin usando API
+        // Notificar al admin usando el helper
         const adminPhone = "53357234";
         const text = `🆕 NUEVA SOLICITUD\n\n👤 ${nombre}\n📱 +${whatsapp}`;
-        const encodedText = encodeURIComponent(text);
-        window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedText}`, '_blank');
+        
+        if (window.enviarWhatsAppUniversal) {
+            window.enviarWhatsAppUniversal(adminPhone, text);
+        } else {
+            const encodedText = encodeURIComponent(text);
+            window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedText}`, '_blank');
+        }
         
         return true;
     } catch (error) {
@@ -183,7 +181,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
     }
 };
 
-// Verificar si tiene solicitud PENDIENTE específicamente
+// Verificar si tiene solicitud PENDIENTE
 window.isClientePendiente = async function(whatsapp) {
     try {
         console.log('🔍 Verificando pendiente para:', whatsapp);
@@ -209,7 +207,7 @@ window.isClientePendiente = async function(whatsapp) {
     }
 };
 
-// Obtener todas las solicitudes pendientes (para admin)
+// Obtener todas las solicitudes pendientes
 window.getClientesPendientes = async function() {
     try {
         console.log('📋 Obteniendo solicitudes pendientes...');
@@ -238,7 +236,7 @@ window.getClientesPendientes = async function() {
     }
 };
 
-// Obtener todos los clientes autorizados (para admin)
+// Obtener todos los clientes autorizados
 window.getClientesAutorizados = async function() {
     try {
         console.log('📋 Obteniendo clientes autorizados...');
@@ -267,12 +265,11 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN: Aprobar cliente (ELIMINA la solicitud y ENVÍA WHATSAPP)
+// 🔥 FUNCIÓN: Aprobar cliente (CON WHATSAPP BUSINESS)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
     try {
-        // PASO 1: Obtener la solicitud pendiente
         const response = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&estado=eq.pendiente&select=*`,
             {
@@ -291,7 +288,6 @@ window.aprobarCliente = async function(whatsapp) {
         
         const solicitud = solicitudes[0];
         
-        // PASO 2: Insertar en clientes autorizados
         const insertResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/clientes_autorizados`,
             {
@@ -318,7 +314,6 @@ window.aprobarCliente = async function(whatsapp) {
             }
         }
         
-        // PASO 3: ELIMINAR la solicitud pendiente
         const deleteResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?id=eq.${solicitud.id}`,
             {
@@ -337,7 +332,6 @@ window.aprobarCliente = async function(whatsapp) {
             console.log('✅ Solicitud eliminada correctamente');
         }
         
-        // PASO 4: Obtener el cliente autorizado
         const getResponse = await fetch(
             `${window.SUPABASE_URL}/rest/v1/clientes_autorizados?whatsapp=eq.${whatsapp}&select=*`,
             {
@@ -354,42 +348,33 @@ window.aprobarCliente = async function(whatsapp) {
         
         console.log('✅ Cliente aprobado exitosamente:', clienteAprobado);
         
-        // 🔥 PASO 5: ENVIAR WHATSAPP DE NOTIFICACIÓN AL CLIENTE usando API
+        // 🔥 ENVIAR WHATSAPP CON BUSINESS
         if (clienteAprobado) {
             try {
                 const telefonoLimpio = clienteAprobado.whatsapp.replace(/\D/g, '');
                 
-                const mensajeBienvenida = 
-`✅ *¡FELICIDADES! Has sido ACEPTADO en LAG.barberia*
-
-Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de acceso ha sido *APROBADA*.
-
-🎉 *Ya podés disfrutar de todos los beneficios:*
-• Reservar turnos online las 24/7
-• Ver el historial de tus reservas
-• Cancelar turnos desde la app
-• Recibir recordatorios automáticos
-
-📱 *¿Cómo reservar?*
-1. Ingresá a LAG.barberia desde tu celular
-2. Iniciá sesión con tu número +${clienteAprobado.whatsapp}
-3. Elegí servicio, barbero, fecha y hora
-4. ¡Confirmá tu turno!
-
-✂️ *Nivel que se nota*
-
-LAG.barberia - Donde el estilo se encuentra con la calidad`;
-
-                const encodedText = encodeURIComponent(mensajeBienvenida);
-                window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
+                // ✅ USAR LA FUNCIÓN ESPECÍFICA PARA CLIENTES APROBADOS
+                if (window.notificarClienteAprobado) {
+                    window.notificarClienteAprobado(telefonoLimpio, clienteAprobado.nombre);
+                } else {
+                    // Fallback
+                    const mensaje = `✅ ¡Hola ${clienteAprobado.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                    const encodedText = encodeURIComponent(mensaje);
+                    window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
+                }
                 
                 console.log('📤 Mensaje de bienvenida enviado a:', telefonoLimpio);
                 
                 // Notificar al admin
                 const adminPhone = "53357234";
                 const notificacionAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
-                const encodedAdmin = encodeURIComponent(notificacionAdmin);
-                window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedAdmin}`, '_blank');
+                
+                if (window.enviarWhatsAppUniversal) {
+                    window.enviarWhatsAppUniversal(adminPhone, notificacionAdmin);
+                } else {
+                    const encodedAdmin = encodeURIComponent(notificacionAdmin);
+                    window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedAdmin}`, '_blank');
+                }
                 
             } catch (error) {
                 console.error('Error enviando WhatsApp de bienvenida:', error);
@@ -404,7 +389,7 @@ LAG.barberia - Donde el estilo se encuentra con la calidad`;
     }
 };
 
-// FUNCIÓN: Rechazar cliente (ELIMINA la solicitud)
+// FUNCIÓN: Rechazar cliente
 window.rechazarCliente = async function(whatsapp) {
     console.log('❌ Rechazando cliente:', whatsapp);
     

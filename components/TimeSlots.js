@@ -1,10 +1,10 @@
-// components/TimeSlots.js - Versión para LAG.barberia (CON MEDIAS HORAS Y +2 HORAS)
+// components/TimeSlots.js - Versión para LAG.barberia (CON HORARIOS POR DÍA)
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
-    const [horariosBarbero, setHorariosBarbero] = React.useState(null);
+    const [horariosPorDia, setHorariosPorDia] = React.useState({});
     const [diaTrabaja, setDiaTrabaja] = React.useState(true);
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
 
@@ -43,13 +43,20 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         const cargarHorarios = async () => {
             setVerificacionCompleta(false);
             try {
-                console.log(`📅 Cargando horarios de ${worker.nombre}...`);
-                const horarios = await window.salonConfig.getHorariosBarbero(worker.id);
-                console.log(`✅ Horarios de ${worker.nombre}:`, horarios);
-                setHorariosBarbero(horarios);
+                console.log(`📅 Cargando horarios por día de ${worker.nombre}...`);
+                // Usar la nueva función para obtener horarios por día
+                const horarios = await window.salonConfig.getHorariosPorDia(worker.id);
+                console.log(`✅ Horarios por día de ${worker.nombre}:`, horarios);
+                setHorariosPorDia(horarios);
+                
+                // Si no hay horarios configurados, mostrar mensaje
+                const tieneHorarios = Object.keys(horarios).length > 0;
+                if (!tieneHorarios) {
+                    console.log('⚠️ No hay horarios configurados para este barbero');
+                }
             } catch (error) {
                 console.error('Error cargando horarios:', error);
-                setHorariosBarbero({ horas: [], dias: [] });
+                setHorariosPorDia({});
             }
         };
         
@@ -57,7 +64,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     }, [worker]);
 
     React.useEffect(() => {
-        if (!worker || !horariosBarbero || !date) {
+        if (!worker || !date) {
             setVerificacionCompleta(false);
             return;
         }
@@ -65,7 +72,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         console.log('🔍 Verificando disponibilidad para:', {
             worker: worker.nombre,
             fecha: date,
-            horarios: horariosBarbero
+            horariosPorDia
         });
 
         const [año, mes, día] = date.split('-').map(Number);
@@ -74,23 +81,22 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
         const diaSemana = diasSemana[fechaLocal.getDay()];
         
-        if (!horariosBarbero.dias || horariosBarbero.dias.length === 0) {
-            console.log('⚠️ No hay configuración de días, se asumen todos disponibles');
-            setDiaTrabaja(true);
-            setVerificacionCompleta(true);
-            return;
-        }
+        // Verificar si el día tiene horarios configurados
+        const horariosDelDia = horariosPorDia[diaSemana] || [];
+        const trabaja = horariosDelDia.length > 0;
         
-        const trabaja = horariosBarbero.dias.includes(diaSemana);
         console.log(`🎯 ¿${worker.nombre} trabaja el ${diaSemana}?`, trabaja);
+        if (!trabaja && horariosDelDia.length === 0) {
+            console.log(`⚠️ No hay horarios configurados para ${diaSemana}`);
+        }
         
         setDiaTrabaja(trabaja);
         setVerificacionCompleta(true);
         
-    }, [worker, horariosBarbero, date]);
+    }, [worker, horariosPorDia, date]);
 
     React.useEffect(() => {
-        if (!service || !date || !worker || !horariosBarbero || !verificacionCompleta) return;
+        if (!service || !date || !worker || !verificacionCompleta) return;
         
         if (!diaTrabaja) {
             setSlots([]);
@@ -101,24 +107,31 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
             setLoading(true);
             setError(null);
             try {
-                if (!horariosBarbero.horas || horariosBarbero.horas.length === 0) {
-                    console.log('⚠️ No hay horas configuradas para este barbero');
+                // Obtener el día de la semana de la fecha seleccionada
+                const [año, mes, día] = date.split('-').map(Number);
+                const fechaLocal = new Date(año, mes - 1, día);
+                const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+                const diaSemana = diasSemana[fechaLocal.getDay()];
+                
+                // Obtener los índices de horas para este día
+                const indicesDelDia = horariosPorDia[diaSemana] || [];
+                
+                if (indicesDelDia.length === 0) {
+                    console.log(`⚠️ No hay horas configuradas para ${diaSemana}`);
                     setSlots([]);
                     setLoading(false);
                     return;
                 }
                 
                 // Convertir índices a horas legibles
-                const baseSlots = horariosBarbero.horas.map(indice => 
-                    indiceToHoraLegible(indice)
-                );
+                const baseSlots = indicesDelDia.map(indice => indiceToHoraLegible(indice));
                 
-                console.log('📋 Slots base (convertidos):', baseSlots);
+                console.log(`📋 Slots base para ${diaSemana}:`, baseSlots);
                 
                 const todayStr = getCurrentLocalDate();
                 const esHoy = date === todayStr;
                 
-                // 🔥 OBTENER HORA MÍNIMA PERMITIDA (ACTUAL + 2 HORAS)
+                // Obtener hora mínima permitida (actual + 2 horas)
                 const ahora = new Date();
                 const horaActual = ahora.getHours();
                 const minutosActuales = ahora.getMinutes();
@@ -136,7 +149,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     const slotStart = timeToMinutes(slotStartStr);
                     const slotEnd = slotStart + service.duracion;
 
-                    // 🔥 VALIDACIÓN DE +2 HORAS PARA HOY
+                    // Validación de +2 horas para hoy
                     if (esHoy && slotStart < minAllowedMinutes) {
                         console.log(`⏰ Slot ${slotStartStr} es menor a hora mínima - EXCLUIDO`);
                         return false;
@@ -169,7 +182,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         };
 
         loadSlots();
-    }, [service, date, worker, horariosBarbero, diaTrabaja, verificacionCompleta]);
+    }, [service, date, worker, horariosPorDia, diaTrabaja, verificacionCompleta]);
 
     if (!service || !date || !worker) return null;
 
@@ -188,6 +201,13 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     }
 
     if (!diaTrabaja) {
+        // Obtener el nombre del día para el mensaje
+        const [año, mes, día] = date.split('-').map(Number);
+        const fechaLocal = new Date(año, mes - 1, día);
+        const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        const diaSemana = diasSemana[fechaLocal.getDay()];
+        const diaCapitalizado = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+        
         return (
             <div className="space-y-4 animate-fade-in">
                 <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -197,7 +217,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 <div className="text-center p-8 bg-yellow-50 rounded-xl border border-yellow-200">
                     <div className="icon-calendar-off text-4xl text-yellow-400 mb-3 mx-auto"></div>
                     <p className="text-gray-700 font-medium">
-                        {worker.nombre} no trabaja este día
+                        {worker.nombre} no trabaja los {diaCapitalizado}s
                     </p>
                     <p className="text-sm text-gray-500 mt-1">Elegí otro día de la semana</p>
                 </div>
@@ -229,7 +249,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     <p className="text-gray-700 font-medium">
                         No hay horarios disponibles para {worker.nombre} el {formatDateLocal(date)}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">Probá con otra fecha o verificá la configuración de horas</p>
+                    <p className="text-sm text-gray-500 mt-1">Probá con otra fecha</p>
                 </div>
             ) : (
                 <>
@@ -252,13 +272,11 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                         </div>
                     )}
                     
-                    {/* GRILLA DE HORARIOS (incluye medias horas) */}
+                    {/* Grilla de horarios */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
                         {slots.map(time24h => {
                             const time12h = formatTo12Hour(time24h);
                             const isSelected = selectedTime === time24h;
-                            
-                            // Detectar si es media hora para mostrar un ícono diferente
                             const esMediaHora = time24h.includes(':30');
                             
                             return (
@@ -280,7 +298,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     </div>
                     
                     <p className="text-xs text-gray-500 mt-3 text-center">
-                        ⏰ Horarios cada 30 minutos (9:00, 9:30, 10:00, 10:30, etc.)
+                        ⏰ Horarios cada 30 minutos
                     </p>
                 </>
             )}
