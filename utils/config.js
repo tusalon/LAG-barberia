@@ -111,60 +111,71 @@ window.salonConfig = {
         return { ...configuracionGlobal };
     },
     
-    guardar: async function(nuevaConfig) {
-        try {
-            const datosAGuardar = {
-                duracion_turnos: nuevaConfig.duracion_turnos || 60,
-                intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || 0,
-                modo_24h: nuevaConfig.modo_24h || false
-            };
-            
-            const checkResponse = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
-                {
-                    headers: {
-                        'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
-                    }
-                }
-            );
-            
-            const existe = await checkResponse.json();
-            
-            let response;
-            let url;
-            let method;
-            
-            if (existe && existe.length > 0) {
-                url = `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`;
-                method = 'PATCH';
-            } else {
-                url = `${window.SUPABASE_URL}/rest/v1/configuracion`;
-                method = 'POST';
-            }
-            
-            response = await fetch(url, {
-                method: method,
+   // utils/config.js - Actualizar la función guardar
+
+guardar: async function(nuevaConfig) {
+    try {
+        console.log('💾 Guardando configuración global:', nuevaConfig);
+        
+        const datosAGuardar = {
+            duracion_turnos: nuevaConfig.duracion_turnos || 60,
+            intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || 0,
+            modo_24h: nuevaConfig.modo_24h || false,
+            max_antelacion_dias: nuevaConfig.max_antelacion_dias || 30  // ← NUEVA LÍNEA
+        };
+        
+        const checkResponse = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
+            {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(datosAGuardar)
-            });
-            
-            if (!response.ok) return null;
-            
-            const data = await response.json();
-            configuracionGlobal = Array.isArray(data) ? data[0] : data;
-            return configuracionGlobal;
-            
-        } catch (error) {
-            console.error('Error guardando:', error);
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                }
+            }
+        );
+        
+        const existe = await checkResponse.json();
+        
+        let response;
+        let url;
+        let method;
+        
+        if (existe && existe.length > 0) {
+            url = `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`;
+            method = 'PATCH';
+        } else {
+            url = `${window.SUPABASE_URL}/rest/v1/configuracion`;
+            method = 'POST';
+        }
+        
+        response = await fetch(url, {
+            method: method,
+            headers: {
+                'apikey': window.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(datosAGuardar)
+        });
+        
+        if (!response.ok) {
+            const error = await response.text();
+            console.error('❌ Error guardando:', error);
             return null;
         }
-    },
+        
+        const data = await response.json();
+        configuracionGlobal = Array.isArray(data) ? data[0] : data;
+        
+        console.log('✅ Configuración guardada:', configuracionGlobal);
+        return configuracionGlobal;
+        
+    } catch (error) {
+        console.error('❌ Error guardando:', error);
+        return null;
+    }
+},
     
     getHorariosPorDia: async function(barberoId) {
         try {
