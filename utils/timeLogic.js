@@ -109,12 +109,12 @@ function calculateEndTime(startTimeStr, durationMinutes) {
     return minutesToTime(startMins + durationMinutes);
 }
 
-// 🔥 CONVERTIR ÍNDICE DE 30 MIN A HORA (0 = 00:00, 1 = 00:30, 2 = 01:00, etc.)
+/*// 🔥 CONVERTIR ÍNDICE DE 30 MIN A HORA (0 = 00:00, 1 = 00:30, 2 = 01:00, etc.)
 function indiceToHora(indice) {
     const horas = Math.floor(indice / 2);
     const minutos = indice % 2 === 0 ? '00' : '30';
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
-}
+}*/
 
 /*// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
 function horaToIndice(horaStr) {
