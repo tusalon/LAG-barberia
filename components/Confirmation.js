@@ -1,4 +1,4 @@
-// components/Confirmation.js - LAG.barberia (SOLO NOTIFICACIÓN WHATSAPP)
+// components/Confirmation.js - LAG.barberia (CON NOTIFICACIÓN AL DUEÑO)
 
 function Confirmation({ booking, onReset }) {
     if (!booking) {
@@ -6,7 +6,7 @@ function Confirmation({ booking, onReset }) {
         return null;
     }
 
-    // 🔥 Función para notificar al dueño por WhatsApp
+    // 🔥 FUNCIÓN PARA NOTIFICAR AL DUEÑO POR WHATSAPP
     const notificarDuenno = () => {
         try {
             // Obtener fecha con día de la semana
@@ -17,42 +17,54 @@ function Confirmation({ booking, onReset }) {
             // Formatear hora a 12h
             const horaFormateada = formatTo12Hour(booking.hora_inicio);
             
-            // 🔥 MENSAJE PARA EL DUEÑO
+            // Obtener nombre del barbero
+            const barbero = booking.barbero_nombre || booking.trabajador_nombre || 'No asignado';
+            
+            // 🔥 MENSAJE COMPLETO PARA EL DUEÑO
             const mensaje = 
-`📅 *NUEVO TURNO RESERVADO - LAG.barberia*
+`📅 *NUEVA RESERVA - LAG.barberia*
 
 👤 *Cliente:* ${booking.cliente_nombre}
 📱 *WhatsApp:* ${booking.cliente_whatsapp}
 💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)
 📆 *Fecha:* ${fechaConDia}
 ⏰ *Hora:* ${horaFormateada}
-👨‍🎨 *Barbero:* ${booking.barbero_nombre || booking.trabajador_nombre}
+👨‍🎨 *Barbero:* ${barbero}
 
-¡Gracias por elegir LAG.barberia! 
-Nivel que se Nota. ✂️`;
+✅ *La reserva ha sido confirmada exitosamente.*
 
-            const telefonoDueño = "53357234";
+✂️ *Nivel que se nota*`;
+
+            // Número del dueño (el mismo que usás para admin)
+            const telefonoDueño = "53357234"; // Cambialo si es necesario
+            
+            // Codificar el mensaje para URL
             const encodedText = encodeURIComponent(mensaje);
             
-            // Abrir WhatsApp con el mensaje
-            window.open(`https://api.whatsapp.com/send?phone=${telefonoDueño}&text=${encodedText}`, '_blank');
+            // Usar el helper universal si existe
+            if (window.enviarWhatsAppUniversal) {
+                window.enviarWhatsAppUniversal(telefonoDueño, mensaje);
+            } else {
+                // Fallback a la API de WhatsApp
+                window.open(`https://api.whatsapp.com/send?phone=${telefonoDueño}&text=${encodedText}`, '_blank');
+            }
             
-            console.log('📤 Notificación enviada al dueño');
+            console.log('📤 Notificación enviada al dueño:', telefonoDueño);
             
         } catch (error) {
             console.error('Error enviando notificación:', error);
         }
     };
 
-    // Enviar notificación automáticamente al cargar la confirmación
+    // 🔥 ENVIAR NOTIFICACIÓN AUTOMÁTICAMENTE AL CARGAR
     React.useEffect(() => {
         // Pequeño retraso para asegurar que todo esté cargado
         const timer = setTimeout(() => {
             notificarDuenno();
-        }, 1000);
+        }, 1500); // 1.5 segundos después de mostrar la confirmación
         
         return () => clearTimeout(timer);
-    }, []); // Solo se ejecuta una vez al montar el componente
+    }, []); // Solo se ejecuta una vez
 
     // Formatear fecha para mostrar
     const fechaConDia = window.formatFechaCompleta ? 
@@ -66,7 +78,7 @@ Nivel que se Nota. ✂️`;
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Turno Reservado!</h2>
-            <p className="text-gray-500 mb-6 max-w-xs mx-auto">Tu cita ha sido agendada correctamente</p>
+            <p className="text-gray-500 mb-4 max-w-xs mx-auto">Tu cita ha sido agendada correctamente</p>
 
             {/* Detalles del turno */}
             <div className="bg-gray-800 p-6 rounded-2xl shadow-sm border border-amber-600 w-full max-w-sm mb-6 relative overflow-hidden">
@@ -101,16 +113,16 @@ Nivel que se Nota. ✂️`;
                     
                     <div>
                         <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Barbero</div>
-                        <div className="font-medium text-amber-400">{booking.barbero_nombre || booking.trabajador_nombre}</div>
+                        <div className="font-medium text-amber-400">{booking.barbero_nombre || booking.trabajador_nombre || 'No asignado'}</div>
                     </div>
                 </div>
             </div>
 
-            {/* Mensaje de notificación */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 max-w-sm w-full">
-                <p className="text-green-700 text-sm flex items-center gap-2">
-                    <span>📱</span>
-                    <span>Se notificó al dueño por WhatsApp</span>
+            {/* Mensaje de confirmación de notificación */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 max-w-sm w-full">
+                <p className="text-blue-700 text-sm flex items-center gap-2">
+                    <span className="text-lg">📱</span>
+                    <span>El dueño ha sido notificado por WhatsApp</span>
                 </p>
             </div>
 
