@@ -79,6 +79,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         }
         setMostrarEditorPorDia(true);
     };
+    
 
     const handleGuardarConfigGlobal = async () => {
         if (modoRestringido) return;

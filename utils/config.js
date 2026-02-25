@@ -14,7 +14,7 @@ let configuracionGlobal = {
     duracion_turnos: 60,
     intervalo_entre_turnos: 0,
     modo_24h: false,
-    max_antelacion_dias: 30 // ← VALOR POR DEFECTO AGREGADO
+    max_antelacion_dias: 30
 };
 
 let horariosBarberos = {};
@@ -22,7 +22,7 @@ let ultimaActualizacion = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
 // ============================================
-// FUNCIONES AUXILIARES (SOLO UNA VEZ)
+// FUNCIONES AUXILIARES
 // ============================================
 const indiceToHoraLegible = (indice) => {
     const horas = Math.floor(indice / 2);
@@ -113,7 +113,7 @@ window.salonConfig = {
     },
     
     // ============================================
-    // FUNCIÓN GUARDAR CORREGIDA
+    // FUNCIÓN GUARDAR COMPLETA
     // ============================================
     guardar: async function(nuevaConfig) {
         try {
@@ -126,6 +126,8 @@ window.salonConfig = {
                 max_antelacion_dias: nuevaConfig.max_antelacion_dias || 30
             };
             
+            console.log('📤 Datos a enviar:', datosAGuardar);
+            
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
                 {
@@ -137,6 +139,7 @@ window.salonConfig = {
             );
             
             const existe = await checkResponse.json();
+            console.log('📋 Registro existente:', existe);
             
             let response;
             let url;
@@ -164,32 +167,32 @@ window.salonConfig = {
             });
             
             if (!response.ok) {
-                const error = await response.text();
-                console.error('❌ Error guardando configuración:', error);
-                alert('Error al guardar configuración: ' + error);
+                const errorText = await response.text();
+                console.error('❌ Error response:', errorText);
+                alert('Error al guardar: ' + errorText);
                 return null;
             }
             
             const data = await response.json();
+            console.log('✅ Datos guardados:', data);
             
-            // ✅ CORRECCIÓN: Actualizar configuracionGlobal correctamente
+            // Actualizar variable local
             if (Array.isArray(data) && data.length > 0) {
                 configuracionGlobal = data[0];
             } else if (data && typeof data === 'object') {
                 configuracionGlobal = data;
             } else {
-                // Si no hay datos, recargar la configuración
                 await cargarConfiguracionGlobal();
             }
             
-            console.log('✅ Configuración guardada exitosamente:', configuracionGlobal);
-            alert('✅ Configuración global guardada correctamente');
+            console.log('✅ Configuración actualizada:', configuracionGlobal);
+            alert('✅ Configuración guardada correctamente');
             
             return configuracionGlobal;
             
         } catch (error) {
-            console.error('❌ Error en guardar:', error);
-            alert('Error al guardar configuración: ' + error.message);
+            console.error('❌ Error:', error);
+            alert('Error: ' + error.message);
             return null;
         }
     },
