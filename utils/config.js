@@ -13,7 +13,7 @@ let ultimaActualizacion = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
 // ============================================
-// FUNCIONES AUXILIARES (UNA SOLA VEZ)
+// FUNCIONES AUXILIARES (SOLO UNA VEZ)
 // ============================================
 const indiceToHoraLegible = (indice) => {
     const horas = Math.floor(indice / 2);
@@ -37,19 +37,17 @@ async function cargarConfiguracionGlobal() {
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                 }
             }
         );
         
         if (!response.ok) {
-            console.log('⚠️ No se pudo cargar configuración, usando valores por defecto');
+            console.log('⚠️ No se pudo cargar configuración');
             return null;
         }
         
         const data = await response.json();
-        console.log('📋 Configuración cargada:', data);
         
         if (data && data.length > 0) {
             configuracionGlobal = data[0];
@@ -70,18 +68,14 @@ async function cargarHorariosBarberos() {
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                 }
             }
         );
         
-        if (!response.ok) {
-            return {};
-        }
+        if (!response.ok) return {};
         
         const data = await response.json();
-        console.log('📋 Horarios cargados:', data);
         
         const horarios = {};
         (data || []).forEach(item => {
@@ -105,20 +99,16 @@ async function cargarHorariosBarberos() {
 // ============================================
 window.salonConfig = {
     get: async function() {
-        console.log('🔍 Obteniendo configuración...');
         await cargarConfiguracionGlobal();
-        ultimaActualizacion = Date.now();
         return { ...configuracionGlobal };
     },
     
     guardar: async function(nuevaConfig) {
         try {
-            console.log('💾 Guardando configuración global:', nuevaConfig);
-            
             const datosAGuardar = {
-                duracion_turnos: nuevaConfig.duracion_turnos || nuevaConfig.duracionTurnos || 60,
-                intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || nuevaConfig.intervaloEntreTurnos || 0,
-                modo_24h: nuevaConfig.modo_24h !== undefined ? nuevaConfig.modo_24h : (nuevaConfig.modo24h || false)
+                duracion_turnos: nuevaConfig.duracion_turnos || 60,
+                intervalo_entre_turnos: nuevaConfig.intervalo_entre_turnos || 0,
+                modo_24h: nuevaConfig.modo_24h || false
             };
             
             const checkResponse = await fetch(
@@ -126,8 +116,7 @@ window.salonConfig = {
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                     }
                 }
             );
@@ -139,11 +128,9 @@ window.salonConfig = {
             let method;
             
             if (existe && existe.length > 0) {
-                console.log('🔄 Actualizando configuración ID:', existe[0].id);
                 url = `${window.SUPABASE_URL}/rest/v1/configuracion?id=eq.${existe[0].id}`;
                 method = 'PATCH';
             } else {
-                console.log('➕ Insertando nueva configuración');
                 url = `${window.SUPABASE_URL}/rest/v1/configuracion`;
                 method = 'POST';
             }
@@ -159,25 +146,14 @@ window.salonConfig = {
                 body: JSON.stringify(datosAGuardar)
             });
             
-            if (!response.ok) {
-                const error = await response.text();
-                console.error('❌ Error guardando configuración:', error);
-                alert('Error al guardar configuración: ' + error);
-                return null;
-            }
+            if (!response.ok) return null;
             
             const data = await response.json();
-            console.log('✅ Configuración guardada exitosamente:', data);
-            
             configuracionGlobal = Array.isArray(data) ? data[0] : data;
-            ultimaActualizacion = Date.now();
-            
-            alert('✅ Configuración global guardada correctamente');
             return configuracionGlobal;
             
         } catch (error) {
-            console.error('❌ Error en guardar:', error);
-            alert('Error al guardar configuración: ' + error.message);
+            console.error('Error guardando:', error);
             return null;
         }
     },
@@ -189,8 +165,7 @@ window.salonConfig = {
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                     }
                 }
             );
@@ -198,37 +173,26 @@ window.salonConfig = {
             if (!response.ok) return {};
             
             const data = await response.json();
-            if (data && data.length > 0) {
-                return data[0].horarios_por_dia || {};
-            }
-            return {};
+            return data[0]?.horarios_por_dia || {};
         } catch (error) {
-            console.error('Error obteniendo horarios por día:', error);
+            console.error('Error:', error);
             return {};
         }
     },
     
     guardarHorariosPorDia: async function(barberoId, horariosPorDia) {
         try {
-            console.log(`💾 Guardando horarios por día para barbero ${barberoId}:`, horariosPorDia);
-            
             const checkResponse = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id,horas,dias`,
+                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id`,
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                     }
                 }
             );
             
             const existe = await checkResponse.json();
-            
-            let response;
-            let url;
-            let method;
-            let body;
             
             const todasLasHoras = new Set();
             Object.values(horariosPorDia).forEach(horasArray => {
@@ -238,8 +202,12 @@ window.salonConfig = {
             
             const diasQueTrabajan = Object.keys(horariosPorDia).filter(dia => horariosPorDia[dia].length > 0);
             
+            let response;
+            let url;
+            let method;
+            let body;
+            
             if (existe && existe.length > 0) {
-                console.log('🔄 Actualizando registro existente ID:', existe[0].id);
                 url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`;
                 method = 'PATCH';
                 body = JSON.stringify({
@@ -248,7 +216,6 @@ window.salonConfig = {
                     dias: diasQueTrabajan
                 });
             } else {
-                console.log('➕ Insertando nuevo registro');
                 url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos`;
                 method = 'POST';
                 body = JSON.stringify({
@@ -270,33 +237,11 @@ window.salonConfig = {
                 body: body
             });
             
-            if (!response.ok) {
-                const error = await response.text();
-                console.error('Error guardando horarios:', error);
-                alert('Error al guardar horarios: ' + error);
-                return null;
-            }
-            
-            const data = await response.json();
-            console.log('✅ Horarios guardados exitosamente:', data);
-            
-            horariosBarberos[barberoId] = {
-                horariosPorDia: horariosPorDia,
-                horas: horasArray,
-                dias: diasQueTrabajan
-            };
-            
-            if (window.dispatchEvent) {
-                window.dispatchEvent(new Event('horariosActualizados'));
-            }
-            
-            alert('✅ Horarios guardados correctamente');
-            return Array.isArray(data) ? data[0] : data;
+            return response.ok;
             
         } catch (error) {
-            console.error('Error en guardarHorariosPorDia:', error);
-            alert('Error al guardar horarios: ' + error.message);
-            return null;
+            console.error('Error:', error);
+            return false;
         }
     },
     
@@ -307,8 +252,7 @@ window.salonConfig = {
                 {
                     headers: {
                         'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
+                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
                     }
                 }
             );
@@ -325,111 +269,15 @@ window.salonConfig = {
             }
             return { horas: [], dias: [], horariosPorDia: {} };
         } catch (error) {
-            console.error('Error obteniendo horarios:', error);
             return { horas: [], dias: [], horariosPorDia: {} };
         }
-    },
-    
-    guardarHorariosBarbero: async function(barberoId, horarios) {
-        if (horarios.horariosPorDia) {
-            return this.guardarHorariosPorDia(barberoId, horarios.horariosPorDia);
-        }
-        
-        try {
-            console.log(`💾 Guardando horarios para barbero ${barberoId} (formato antiguo):`, horarios);
-            
-            const checkResponse = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/horarios_barberos?barbero_id=eq.${barberoId}&select=id`,
-                {
-                    headers: {
-                        'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            
-            const existe = await checkResponse.json();
-            
-            let response;
-            let url;
-            let method;
-            let body;
-            
-            if (existe && existe.length > 0) {
-                console.log('🔄 Actualizando registro existente ID:', existe[0].id);
-                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos?id=eq.${existe[0].id}`;
-                method = 'PATCH';
-                body = JSON.stringify({
-                    horas: horarios.horas || [],
-                    dias: horarios.dias || []
-                });
-            } else {
-                console.log('➕ Insertando nuevo registro');
-                url = `${window.SUPABASE_URL}/rest/v1/horarios_barberos`;
-                method = 'POST';
-                body = JSON.stringify({
-                    barbero_id: barberoId,
-                    horas: horarios.horas || [],
-                    dias: horarios.dias || []
-                });
-            }
-            
-            response = await fetch(url, {
-                method: method,
-                headers: {
-                    'apikey': window.SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: body
-            });
-            
-            if (!response.ok) {
-                const error = await response.text();
-                console.error('Error guardando horarios:', error);
-                alert('Error al guardar horarios: ' + error);
-                return null;
-            }
-            
-            const data = await response.json();
-            console.log('✅ Horarios guardados exitosamente:', data);
-            
-            horariosBarberos[barberoId] = {
-                horas: horarios.horas || [],
-                dias: horarios.dias || []
-            };
-            
-            if (window.dispatchEvent) {
-                window.dispatchEvent(new Event('horariosActualizados'));
-            }
-            
-            alert('✅ Horarios guardados correctamente');
-            return Array.isArray(data) ? data[0] : data;
-            
-        } catch (error) {
-            console.error('Error en guardarHorariosBarbero:', error);
-            alert('Error al guardar horarios: ' + error.message);
-            return null;
-        }
-    },
-    
-    horasToIndices: function(horasLegibles) {
-        return horasLegibles.map(hora => horaToIndice(hora));
-    },
-    
-    indicesToHoras: function(indices) {
-        return indices.map(indice => indiceToHoraLegible(indice));
     }
 };
 
 // Cargar configuración al inicio
 setTimeout(async () => {
-    if (window.salonConfig) {
-        await window.salonConfig.get();
-        await cargarHorariosBarberos();
-    }
+    await cargarConfiguracionGlobal();
+    await cargarHorariosBarberos();
 }, 1000);
 
 console.log('✅ salonConfig inicializado');
