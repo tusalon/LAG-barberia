@@ -116,8 +116,8 @@ function indiceToHora(indice) {
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
 }
 
-// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
+/*// 🔥 CONVERTIR HORA A ÍNDICE DE 30 MIN
 function horaToIndice(horaStr) {
     const [hours, minutes] = horaStr.split(':').map(Number);
     return hours * 2 + (minutes === 30 ? 1 : 0);
-}
+}*/
