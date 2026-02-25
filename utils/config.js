@@ -1,4 +1,4 @@
-// utils/config.js - Configuración para LAG.barberia (CON HORARIOS POR DÍA)
+// utils/config.js - Configuración para LAG.barberia (CORREGIDO - SIN DUPLICADOS)
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
@@ -11,6 +11,19 @@ let configuracionGlobal = {
 let horariosBarberos = {};
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
+
+// Función para convertir índices a hora legible
+const indiceToHoraLegible = (indice) => {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+};
+
+// Función para convertir hora a índice
+const horaToIndice = (horaStr) => {
+    const [horas, minutos] = horaStr.split(':').map(Number);
+    return horas * 2 + (minutos === 30 ? 1 : 0);
+};
 
 async function cargarConfiguracionGlobal() {
     try {
@@ -39,7 +52,7 @@ async function cargarConfiguracionGlobal() {
             console.log('✅ Configuración global cargada:', configuracionGlobal);
         } else {
             console.log('⚠️ No hay configuración en la BD, insertando valores por defecto');
-            await window.salonConfig.guardar(configuracionGlobal);
+            await window.salonConfig?.guardar(configuracionGlobal);
         }
         return configuracionGlobal;
     } catch (error) {
@@ -87,19 +100,6 @@ async function cargarHorariosBarberos() {
         return {};
     }
 }
-
-// Función para convertir índices a hora legible
-const indiceToHoraLegible = (indice) => {
-    const horas = Math.floor(indice / 2);
-    const minutos = indice % 2 === 0 ? '00' : '30';
-    return `${horas.toString().padStart(2, '0')}:${minutos}`;
-};
-
-// Función para convertir hora a índice
-const horaToIndice = (horaStr) => {
-    const [horas, minutos] = horaStr.split(':').map(Number);
-    return horas * 2 + (minutos === 30 ? 1 : 0);
-};
 
 window.salonConfig = {
     get: async function() {
@@ -438,8 +438,10 @@ window.salonConfig = {
 
 // Cargar configuración al inicio
 setTimeout(async () => {
-    await window.salonConfig.get();
-    await cargarHorariosBarberos();
+    if (window.salonConfig) {
+        await window.salonConfig.get();
+        await cargarHorariosBarberos();
+    }
 }, 1000);
 
 console.log('✅ salonConfig inicializado');
