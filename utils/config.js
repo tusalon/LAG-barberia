@@ -1,4 +1,12 @@
-// utils/config.js - Configuración para LAG.barberia (VERSIÓN ÚNICA Y CORREGIDA)
+// utils/config.js - Configuración para LAG.barberia (CON PROTECCIÓN CONTRA DOBLE CARGA)
+
+// ============================================
+// PROTECCIÓN CONTRA DOBLE CARGA
+// ============================================
+if (window.__CONFIG_CARGADO) {
+    console.warn('⚠️ config.js ya fue cargado, ignorando segunda carga...');
+} else {
+    window.__CONFIG_CARGADO = true;
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
@@ -281,3 +289,5 @@ setTimeout(async () => {
 }, 1000);
 
 console.log('✅ salonConfig inicializado');
+
+} // ← Cierre del if/else
