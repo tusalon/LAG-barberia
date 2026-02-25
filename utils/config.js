@@ -1,4 +1,4 @@
-// utils/config.js - Configuración para LAG.barberia (CORREGIDO - SIN DUPLICADOS)
+// utils/config.js - Configuración para LAG.barberia (VERSIÓN ÚNICA Y CORREGIDA)
 
 console.log('⚙️ config.js cargado (modo Supabase)');
 
@@ -12,19 +12,23 @@ let horariosBarberos = {};
 let ultimaActualizacion = 0;
 const CACHE_DURATION = 5 * 60 * 1000;
 
-// Función para convertir índices a hora legible
+// ============================================
+// FUNCIONES AUXILIARES (UNA SOLA VEZ)
+// ============================================
 const indiceToHoraLegible = (indice) => {
     const horas = Math.floor(indice / 2);
     const minutos = indice % 2 === 0 ? '00' : '30';
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
 };
 
-// Función para convertir hora a índice
 const horaToIndice = (horaStr) => {
     const [horas, minutos] = horaStr.split(':').map(Number);
     return horas * 2 + (minutos === 30 ? 1 : 0);
 };
 
+// ============================================
+// FUNCIONES DE CARGA
+// ============================================
 async function cargarConfiguracionGlobal() {
     try {
         console.log('🌐 Cargando configuración global desde Supabase...');
@@ -50,9 +54,6 @@ async function cargarConfiguracionGlobal() {
         if (data && data.length > 0) {
             configuracionGlobal = data[0];
             console.log('✅ Configuración global cargada:', configuracionGlobal);
-        } else {
-            console.log('⚠️ No hay configuración en la BD, insertando valores por defecto');
-            await window.salonConfig?.guardar(configuracionGlobal);
         }
         return configuracionGlobal;
     } catch (error) {
@@ -85,9 +86,7 @@ async function cargarHorariosBarberos() {
         const horarios = {};
         (data || []).forEach(item => {
             horarios[item.barbero_id] = {
-                // Formato nuevo: { lunes: [9, 9.5, 10], martes: [14, 14.5, 15], ... }
                 horariosPorDia: item.horarios_por_dia || {},
-                // Mantener compatibilidad con formato antiguo
                 horas: item.horas || [],
                 dias: item.dias || []
             };
@@ -101,6 +100,9 @@ async function cargarHorariosBarberos() {
     }
 }
 
+// ============================================
+// OBJETO PRINCIPAL salonConfig
+// ============================================
 window.salonConfig = {
     get: async function() {
         console.log('🔍 Obteniendo configuración...');
@@ -119,8 +121,6 @@ window.salonConfig = {
                 modo_24h: nuevaConfig.modo_24h !== undefined ? nuevaConfig.modo_24h : (nuevaConfig.modo24h || false)
             };
             
-            console.log('📤 Datos a guardar (mapeados):', datosAGuardar);
-            
             const checkResponse = await fetch(
                 `${window.SUPABASE_URL}/rest/v1/configuracion?select=id`,
                 {
@@ -133,7 +133,6 @@ window.salonConfig = {
             );
             
             const existe = await checkResponse.json();
-            console.log('📋 Registro existente:', existe);
             
             let response;
             let url;
@@ -183,7 +182,6 @@ window.salonConfig = {
         }
     },
     
-    // ✅ NUEVA FUNCIÓN: Obtener horarios por día para un barbero
     getHorariosPorDia: async function(barberoId) {
         try {
             const response = await fetch(
@@ -201,7 +199,6 @@ window.salonConfig = {
             
             const data = await response.json();
             if (data && data.length > 0) {
-                // Devolver el objeto de horarios por día, o un objeto vacío si no existe
                 return data[0].horarios_por_dia || {};
             }
             return {};
@@ -211,7 +208,6 @@ window.salonConfig = {
         }
     },
     
-    // ✅ NUEVA FUNCIÓN: Guardar horarios por día
     guardarHorariosPorDia: async function(barberoId, horariosPorDia) {
         try {
             console.log(`💾 Guardando horarios por día para barbero ${barberoId}:`, horariosPorDia);
@@ -234,14 +230,12 @@ window.salonConfig = {
             let method;
             let body;
             
-            // Extraer todos los horarios únicos para mantener compatibilidad
             const todasLasHoras = new Set();
             Object.values(horariosPorDia).forEach(horasArray => {
                 horasArray.forEach(hora => todasLasHoras.add(hora));
             });
             const horasArray = Array.from(todasLasHoras).sort((a, b) => a - b);
             
-            // Extraer todos los días que trabajan
             const diasQueTrabajan = Object.keys(horariosPorDia).filter(dia => horariosPorDia[dia].length > 0);
             
             if (existe && existe.length > 0) {
@@ -250,8 +244,8 @@ window.salonConfig = {
                 method = 'PATCH';
                 body = JSON.stringify({
                     horarios_por_dia: horariosPorDia,
-                    horas: horasArray, // Mantener compatibilidad
-                    dias: diasQueTrabajan // Mantener compatibilidad
+                    horas: horasArray,
+                    dias: diasQueTrabajan
                 });
             } else {
                 console.log('➕ Insertando nuevo registro');
@@ -306,7 +300,6 @@ window.salonConfig = {
         }
     },
     
-    // Mantener compatibilidad con funciones anteriores
     getHorariosBarbero: async function(barberoId) {
         try {
             const response = await fetch(
@@ -324,7 +317,6 @@ window.salonConfig = {
             
             const data = await response.json();
             if (data && data.length > 0) {
-                // Devolver también el nuevo formato si existe
                 return {
                     horas: data[0].horas || [],
                     dias: data[0].dias || [],
@@ -339,12 +331,10 @@ window.salonConfig = {
     },
     
     guardarHorariosBarbero: async function(barberoId, horarios) {
-        // Si viene con el nuevo formato, usar guardarHorariosPorDia
         if (horarios.horariosPorDia) {
             return this.guardarHorariosPorDia(barberoId, horarios.horariosPorDia);
         }
         
-        // Si no, mantener compatibilidad
         try {
             console.log(`💾 Guardando horarios para barbero ${barberoId} (formato antiguo):`, horarios);
             
@@ -425,12 +415,10 @@ window.salonConfig = {
         }
     },
     
-    // ✅ FUNCIÓN PARA CONVERTIR HORAS LEGIBLES A ÍNDICES
     horasToIndices: function(horasLegibles) {
         return horasLegibles.map(hora => horaToIndice(hora));
     },
     
-    // ✅ FUNCIÓN PARA CONVERTIR ÍNDICES A HORAS LEGIBLES
     indicesToHoras: function(indices) {
         return indices.map(indice => indiceToHoraLegible(indice));
     }
