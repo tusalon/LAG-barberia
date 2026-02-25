@@ -9,9 +9,8 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
     const [maxAntelacionDias, setMaxAntelacionDias] = React.useState(30);
 
-    // 🔥 Función auxiliar para convertir índices a horas legibles
-    // Usa la función global si existe, o una local como fallback
-    const indiceToHoraLegible = window.indiceToHoraLegible || function(indice) {
+    // ✅ FUNCIÓN DEFINIDA CORRECTAMENTE
+    const indiceToHoraLegible = (indice) => {
         const horas = Math.floor(indice / 2);
         const minutos = indice % 2 === 0 ? '00' : '30';
         return `${horas.toString().padStart(2, '0')}:${minutos}`;
@@ -150,7 +149,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     return;
                 }
                 
-                // ✅ USAR LA FUNCIÓN LOCAL QUE DEFINIMOS AL PRINCIPIO
+                // ✅ USAR LA FUNCIÓN DEFINIDA ARRIBA
                 const baseSlots = indicesDelDia.map(indice => indiceToHoraLegible(indice));
                 
                 console.log(`📋 Slots base para ${diaSemana}:`, baseSlots);
@@ -207,7 +206,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         };
 
         loadSlots();
-    }, [service, date, worker, horariosPorDia, diaTrabaja, verificacionCompleta, maxAntelacionDias, indiceToHoraLegible]);
+    }, [service, date, worker, horariosPorDia, diaTrabaja, verificacionCompleta, maxAntelacionDias]);
 
     if (!service || !date || !worker) return null;
 
