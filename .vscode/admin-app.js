@@ -130,7 +130,7 @@ function AdminApp() {
                 await loadClientesPendientes();
                 await loadClientesAutorizados();
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
-                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya puede reservar turnos desde la app.`;
                 window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(mensaje)}`, '_blank');
             }
         } catch (error) {

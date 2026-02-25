@@ -133,7 +133,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                         else if (estado.estado === 'rechazado') {
                             setYaTieneSolicitud(false);
                             setEstadoRechazado(true);
-                            setError('Tu solicitud anterior fue rechazada. Podés volver a intentarlo.');
+                            setError('Tu solicitud anterior fue rechazada. Puedes volver a intentarlo.');
                         }
                         else {
                             setYaTieneSolicitud(true);
@@ -265,7 +265,7 @@ function ClientAuthScreen({ onAccessGranted }) {
                 </div>
                 
                 <div className="text-sm text-gray-500">
-                    <p>Mientras tanto, podés contactarnos:</p>
+                    <p>Mientras tanto, puede contactarnos:</p>
                     <a 
                         href="https://api.whatsapp.com/send?phone=53357234&text=Hola%20LAG.barberia%2C%20consulté%20mi%20solicitud%20de%20acceso" 
                         target="_blank" 

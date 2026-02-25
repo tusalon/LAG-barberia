@@ -121,3 +121,55 @@ function horaToIndice(horaStr) {
     const [hours, minutes] = horaStr.split(':').map(Number);
     return hours * 2 + (minutes === 30 ? 1 : 0);
 }*/
+// ============================================
+// FUNCIONES PARA MOSTRAR EL DÍA DE LA SEMANA
+// ============================================
+
+// Función para obtener el día de la semana en español
+function getDiaSemana(dateStr) {
+    if (!dateStr) return '';
+    
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const fecha = new Date(year, month - 1, day);
+    
+    const diasSemana = [
+        'domingo', 'lunes', 'martes', 'miércoles', 
+        'jueves', 'viernes', 'sábado'
+    ];
+    
+    return diasSemana[fecha.getDay()];
+}
+
+// Función para formatear fecha COMPLETA con día de la semana
+function formatFechaCompleta(dateStr) {
+    if (!dateStr) return '';
+    
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const fecha = new Date(year, month - 1, day);
+    
+    const diasSemana = [
+        'domingo', 'lunes', 'martes', 'miércoles', 
+        'jueves', 'viernes', 'sábado'
+    ];
+    
+    const meses = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    
+    const diaSemana = diasSemana[fecha.getDay()];
+    const dia = day;
+    const mes = meses[month - 1];
+    const año = year;
+    
+    // Poner primera letra en mayúscula
+    const diaSemanaCapitalizado = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+    
+    return `${diaSemanaCapitalizado} ${dia} de ${mes} de ${año}`;
+}
+
+// Hacer las funciones disponibles en toda la página
+window.getDiaSemana = getDiaSemana;
+window.formatFechaCompleta = formatFechaCompleta;
+
+console.log('✅ Funciones de fecha con día de la semana agregadas');

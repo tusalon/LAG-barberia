@@ -61,13 +61,13 @@ function Header({ cliente, onLogout, userRol }) {
                                     {userRol === 'admin' ? (
                                         <div className="space-y-1">
                                             <p className="font-semibold text-amber-400">👑 Acceso como dueño</p>
-                                            <p className="text-gray-400">Podés gestionar todo el sistema</p>
+                                            <p className="text-gray-400">Puede gestionar todo el sistema</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-1">
                                             <p className="font-semibold text-amber-400">✂️ Acceso como barbero</p>
                                             <p className="text-gray-400">Bienvenido, {cliente?.nombre}</p>
-                                            <p className="text-gray-500 text-xs">Podés ver tus reservas</p>
+                                            <p className="text-gray-500 text-xs">Puede ver tus reservas</p>
                                         </div>
                                     )}
                                 </div>

@@ -86,7 +86,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const autorizado = await window.verificarAccesoCliente(whatsapp);
         if (autorizado) {
             console.log('❌ Cliente ya está autorizado');
-            alert('Ya tenés acceso al sistema. Podés ingresar directamente.');
+            alert('Ya tenés acceso al sistema. Puede ingresar directamente.');
             return false;
         }
         
@@ -358,7 +358,7 @@ window.aprobarCliente = async function(whatsapp) {
                     window.notificarClienteAprobado(telefonoLimpio, clienteAprobado.nombre);
                 } else {
                     // Fallback
-                    const mensaje = `✅ ¡Hola ${clienteAprobado.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                    const mensaje = `✅ ¡Hola ${clienteAprobado.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya puede reservar turnos desde la app.`;
                     const encodedText = encodeURIComponent(mensaje);
                     window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
                 }

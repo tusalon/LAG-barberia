@@ -1,4 +1,4 @@
-// components/MyBookings.js - Pantalla de reservas del cliente (CON VALIDACIÓN DE 1 HORA)
+// components/MyBookings.js - Pantalla de reservas del cliente (CON VALIDACIÓN DE 1 HORA Y DÍA DE LA SEMANA)
 
 function MyBookings({ cliente, onVolver }) {
     const [bookings, setBookings] = React.useState([]);
@@ -83,11 +83,11 @@ function MyBookings({ cliente, onVolver }) {
             if (diffMinutos <= 0) {
                 return "⏰ El turno ya pasó";
             } else if (diffMinutos <= 60) {
-                return `⚠️ Faltan menos de ${diffMinutos} minutos - No podés cancelar`;
+                return `⚠️ Faltan menos de ${diffMinutos} minutos - No puedes cancelar`;
             } else if (diffHoras > 0) {
-                return `🕐 Faltan ${diffHoras}h ${minutosRestantes}m - Podés cancelar`;
+                return `🕐 Faltan ${diffHoras}h ${minutosRestantes}m - Puedes cancelar`;
             } else {
-                return `🕐 Faltan ${diffMinutos} minutos - Podés cancelar`;
+                return `🕐 Faltan ${diffMinutos} minutos - Puedes cancelar`;
             }
         } catch (error) {
             return "";
@@ -95,20 +95,31 @@ function MyBookings({ cliente, onVolver }) {
     };
 
     const handleCancelarReserva = async (id, bookingData) => {
+        // Validar si puede cancelar (menos de 1 hora)
         if (!puedeCancelar(bookingData.fecha, bookingData.hora_inicio)) {
-            const mensaje = `❌ No podés cancelar este turno porque faltan menos de 1 hora.
+            // 🔥 FECHA CON DÍA DE LA SEMANA
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(bookingData.fecha) : 
+                bookingData.fecha;
             
-📅 Tu turno es el ${bookingData.fecha} a las ${formatTo12Hour(bookingData.hora_inicio)}
+            const mensaje = `❌ No puedes cancelar este turno porque faltan menos de 1 hora.
+            
+📅 Tu turno es el ${fechaConDia} a las ${formatTo12Hour(bookingData.hora_inicio)}
 
 ⏰ Solo se permiten cancelaciones con al menos 1 hora de anticipación.
 
-Si no podés asistir, contactanos por WhatsApp al +53 53357234`;
+Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
             
             alert(mensaje);
             return;
         }
         
-        if (!confirm(`¿Estás seguro que querés cancelar tu turno del ${bookingData.fecha} a las ${formatTo12Hour(bookingData.hora_inicio)}?`)) {
+        // 🔥 FECHA CON DÍA DE LA SEMANA PARA CONFIRMACIÓN
+        const fechaConDiaConfirm = window.formatFechaCompleta ? 
+            window.formatFechaCompleta(bookingData.fecha) : 
+            bookingData.fecha;
+        
+        if (!confirm(`¿Estás seguro que querés cancelar tu turno del ${fechaConDiaConfirm} a las ${formatTo12Hour(bookingData.hora_inicio)}?`)) {
             return;
         }
         
@@ -131,13 +142,18 @@ Si no podés asistir, contactanos por WhatsApp al +53 53357234`;
                 throw new Error('Error al cancelar');
             }
             
-            // 🔥 Notificar al dueño por WhatsApp usando API
+            // 🔥 FECHA CON DÍA DE LA SEMANA PARA NOTIFICACIÓN AL DUEÑO
+            const fechaConDiaNotif = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(bookingData.fecha) : 
+                bookingData.fecha;
+            
+            // Notificar al dueño por WhatsApp
             const mensajeParaDueño = 
 `❌ *CANCELACIÓN DE CLIENTE - LAG.barberia*
 
 👤 *Cliente:* ${bookingData.cliente_nombre}
 📱 *WhatsApp:* ${bookingData.cliente_whatsapp}
-📅 *Fecha:* ${bookingData.fecha}
+📅 *Fecha:* ${fechaConDiaNotif}
 ⏰ *Hora:* ${formatTo12Hour(bookingData.hora_inicio)}
 💈 *Servicio:* ${bookingData.servicio}
 👨‍🎨 *Barbero:* ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
@@ -159,10 +175,11 @@ El cliente canceló su turno desde la app.`;
         }
     };
 
+    // Filtrar reservas según el estado seleccionado
     const reservasFiltradas = bookings.filter(booking => {
         if (filtro === 'activas') return booking.estado !== 'Cancelado';
         if (filtro === 'canceladas') return booking.estado === 'Cancelado';
-        return true;
+        return true; // 'todas'
     });
 
     const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;
@@ -269,6 +286,11 @@ El cliente canceló su turno desde la app.`;
                                                          puedeCancelar(booking.fecha, booking.hora_inicio);
                             const tiempoRestante = getMensajeTiempoRestante(booking.fecha, booking.hora_inicio);
                             
+                            // 🔥 FECHA CON DÍA DE LA SEMANA PARA MOSTRAR EN LA LISTA
+                            const fechaConDia = window.formatFechaCompleta ? 
+                                window.formatFechaCompleta(booking.fecha) : 
+                                booking.fecha;
+                            
                             return (
                                 <div
                                     key={booking.id}
@@ -282,7 +304,10 @@ El cliente canceló su turno desde la app.`;
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <span className="text-sm text-gray-500">{booking.fecha}</span>
+                                                {/* 🔥 FECHA COMPLETA CON DÍA DE LA SEMANA */}
+                                                <span className="text-sm text-amber-600 font-medium block mb-1">
+                                                    {fechaConDia}
+                                                </span>
                                                 <h3 className="font-bold text-lg">{booking.servicio}</h3>
                                             </div>
                                             <span className={`

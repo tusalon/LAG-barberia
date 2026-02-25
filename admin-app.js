@@ -126,12 +126,17 @@ const getCurrentLocalDate = () => {
 // ============================================
 const enviarCancelacionWhatsApp = (bookingData) => {
     try {
+        // Obtener fecha con día de la semana
+        const fechaConDia = window.formatFechaCompleta ? 
+            window.formatFechaCompleta(bookingData.fecha) : 
+            bookingData.fecha;
+        
         const mensaje = 
 `❌ *CANCELACIÓN DE TURNO - LAG.barberia*
 
 Hola *${bookingData.cliente_nombre}*, lamentamos informarte que tu turno ha sido cancelado.
 
-📅 *Fecha:* ${bookingData.fecha}
+📅 *Fecha:* ${fechaConDia}
 ⏰ *Hora:* ${formatTo12Hour(bookingData.hora_inicio)}
 💈 *Servicio:* ${bookingData.servicio}
 👨‍🎨 *Barbero:* ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
@@ -139,16 +144,16 @@ Hola *${bookingData.cliente_nombre}*, lamentamos informarte que tu turno ha sido
 🔔 *Motivo:* Cancelación por administración
 
 📱 *¿Querés reprogramar?*
-Podés hacerlo desde la app
+Puedes hacerlo desde la app
 
-Disculpá las molestias. Esperamos verte pronto en LAG.barberia ✂️
+Disculpe las molestias. Esperamos verte pronto en LAG.barberia ✂️
 
 LAG.barberia - Nivel que se nota`;
 
         const telefono = bookingData.cliente_whatsapp.replace(/\D/g, '');
         const encodedText = encodeURIComponent(mensaje);
         
-        // 🔥 Usar API de WhatsApp
+        // Usar API de WhatsApp
         window.open(`https://api.whatsapp.com/send?phone=${telefono}&text=${encodedText}`, '_blank');
         
         console.log('📤 Mensaje de cancelación enviado a:', telefono);
@@ -607,7 +612,7 @@ function AdminApp() {
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
                 
                 // 🔥 Usar API de WhatsApp
-                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
+                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya puedes reservar turnos desde la app.`;
                 const telefono = cliente.whatsapp.replace(/\D/g, '');
                 const encodedText = encodeURIComponent(mensaje);
                 window.open(`https://api.whatsapp.com/send?phone=${telefono}&text=${encodedText}`, '_blank');
@@ -1278,13 +1283,16 @@ function AdminApp() {
                         ) : (
                             <div className="space-y-3">
                                 {filteredBookings.map(b => (
-                                    <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
-                                        <div className="flex justify-between mb-2">
-                                            <span className="font-semibold">{b.fecha}</span>
-                                            <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
-                                                {formatTo12Hour(b.hora_inicio)}
-                                            </span>
-                                        </div>
+    <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
+        <div className="flex justify-between mb-2">
+            {/* 🔥 FECHA CON DÍA DE LA SEMANA */}
+            <span className="font-semibold">
+                {window.formatFechaCompleta ? window.formatFechaCompleta(b.fecha) : b.fecha}
+            </span>
+            <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                {formatTo12Hour(b.hora_inicio)}
+            </span>
+        </div>
                                         <div className="text-sm space-y-1">
                                             <p><span className="font-medium">👤 Cliente:</span> {b.cliente_nombre}</p>
                                             <p><span className="font-medium">📱 WhatsApp:</span> {b.cliente_whatsapp}</p>

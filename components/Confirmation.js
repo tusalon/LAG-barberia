@@ -1,12 +1,10 @@
-// components/Confirmation.js - Para LAG.barberia (VERSIÓN CORREGIDA)
+// components/Confirmation.js - Para LAG.barberia (CON DÍA DE LA SEMANA)
 
 function Confirmation({ booking, onReset }) {
     if (!booking) {
         console.error('❌ Error: booking no está definido');
         return null;
     }
-
-    const downloadLinkRef = React.useRef(null);
 
     React.useEffect(() => {
         console.log('📅 Generando archivo ICS para:', booking);
@@ -62,6 +60,11 @@ function Confirmation({ booking, onReset }) {
             
             const barberoNombre = booking.barbero_nombre || booking.trabajador_nombre || 'LAG.barberia';
             
+            // 🔥 FECHA CON DÍA PARA EL TÍTULO Y RECORDATORIOS
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(booking.fecha) : 
+                booking.fecha;
+            
             return `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//LAG.barberia//ES
@@ -73,7 +76,7 @@ DTSTAMP:${formatICSDate(new Date())}
 DTSTART:${formatICSDate(fechaInicio)}
 DTEND:${formatICSDate(fechaFin)}
 SUMMARY:${booking.servicio} - LAG.barberia
-DESCRIPTION:Reserva con ${barberoNombre}
+DESCRIPTION:Reserva con ${barberoNombre} - ${fechaConDia}
 LOCATION:LAG.barberia
 STATUS:CONFIRMED
 SEQUENCE:0
@@ -81,13 +84,13 @@ SEQUENCE:0
 BEGIN:VALARM
 TRIGGER:-P1D
 ACTION:DISPLAY
-DESCRIPTION:📅 Recordatorio: Tu turno en LAG.barberia es MAÑANA
+DESCRIPTION:📅 Recordatorio: Tu turno en LAG.barberia es MAÑANA (${fechaConDia})
 END:VALARM
 
 BEGIN:VALARM
 TRIGGER:-PT1H15M
 ACTION:DISPLAY
-DESCRIPTION:⏰ Recordatorio: Tu turno en LAG.barberia es en 1 hora y 15 minutos
+DESCRIPTION:⏰ Recordatorio: Tu turno en LAG.barberia es en 1 hora y 15 minutos (${fechaConDia})
 END:VALARM
 
 END:VEVENT
@@ -98,16 +101,21 @@ END:VCALENDAR`;
         }
     };
 
-    // 🔥 Función para compartir por WhatsApp usando API
+    // 🔥 Función para compartir por WhatsApp con fecha completa
     const compartirWhatsApp = () => {
         try {
+            // 🔥 FECHA CON DÍA DE LA SEMANA
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(booking.fecha) : 
+                booking.fecha;
+            
             const mensaje = 
 `📅 *TURNO CONFIRMADO - LAG.barberia*
 
 👤 *Cliente:* ${booking.cliente_nombre}
 📱 *WhatsApp:* ${booking.cliente_whatsapp}
 💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)
-📆 *Fecha:* ${booking.fecha}
+📆 *Fecha:* ${fechaConDia}
 ⏰ *Hora:* ${formatTo12Hour(booking.hora_inicio)}
 
 ✅ *Para recibir recordatorios automáticos:*
@@ -122,13 +130,23 @@ END:VCALENDAR`;
 ¡Gracias por elegir LAG.barberia! ✂️`;
 
             const encodedText = encodeURIComponent(mensaje);
-            const url = `https://api.whatsapp.com/send?phone=53357234&text=${encodedText}`;
-            window.open(url, '_blank');
+            
+            // Usar el helper universal si existe
+            if (window.enviarWhatsAppUniversal) {
+                window.enviarWhatsAppUniversal("53357234", mensaje);
+            } else {
+                window.open(`https://api.whatsapp.com/send?phone=53357234&text=${encodedText}`, '_blank');
+            }
         } catch (error) {
             console.error('Error al compartir:', error);
             alert('Error al abrir WhatsApp');
         }
     };
+
+    // 🔥 FECHA CON DÍA PARA MOSTRAR EN LOS DETALLES
+    const fechaConDia = window.formatFechaCompleta ? 
+        window.formatFechaCompleta(booking.fecha) : 
+        booking.fecha;
 
     return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 animate-fade-in">
@@ -205,6 +223,7 @@ END:VCALENDAR`;
                 </button>
             </div>
             
+            {/* Detalles del turno con fecha completa */}
             <div className="bg-gray-800 p-6 rounded-2xl shadow-sm border border-amber-600 w-full max-w-sm mb-8 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
                 <div className="space-y-4 text-left">
@@ -227,7 +246,8 @@ END:VCALENDAR`;
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Fecha</div>
-                            <div className="font-medium text-amber-400">{booking.fecha}</div>
+                            {/* 🔥 FECHA COMPLETA CON DÍA DE LA SEMANA */}
+                            <div className="font-medium text-amber-400 text-sm">{fechaConDia}</div>
                         </div>
                         <div>
                             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Hora</div>

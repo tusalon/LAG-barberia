@@ -215,7 +215,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
                         <div className="flex items-center gap-2">
                             <i className="icon-info"></i>
-                            <span>Podés configurar diferentes horarios para cada día de la semana</span>
+                            <span>Puede configurar diferentes horarios para cada día de la semana</span>
                         </div>
                     </div>
                 </div>
