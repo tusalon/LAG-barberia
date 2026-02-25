@@ -120,6 +120,35 @@ const getCurrentLocalDate = () => {
     return `${year}-${month}-${day}`;
 };
 
+const indiceToHoraLegible = (indice) => {
+    const horas = Math.floor(indice / 2);
+    const minutos = indice % 2 === 0 ? '00' : '30';
+    return `${horas.toString().padStart(2, '0')}:${minutos}`;
+};
+
+// ============================================
+// 🔥 FUNCIÓN PARA VERIFICAR SI UN TURNO YA PASÓ (VERSIÓN SIMPLE)
+// ============================================
+const turnoYaPaso = (fecha, horaInicio) => {
+    try {
+        const ahora = new Date();
+        const [year, month, day] = fecha.split('-').map(Number);
+        const [hours, minutes] = horaInicio.split(':').map(Number);
+        
+        const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
+        
+        console.log(`🔍 Comparando: ${fecha} ${horaInicio}`, {
+            turno: fechaTurno.toString(),
+            ahora: ahora.toString(),
+            paso: fechaTurno < ahora
+        });
+        
+        return fechaTurno < ahora;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
+    }
+};
 
 // ============================================
 // FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP (VERSIÓN API)
@@ -144,9 +173,9 @@ Hola *${bookingData.cliente_nombre}*, lamentamos informarte que tu turno ha sido
 🔔 *Motivo:* Cancelación por administración
 
 📱 *¿Querés reprogramar?*
-Puedes hacerlo desde la app
+Podés hacerlo desde la app
 
-Disculpe las molestias. Esperamos verte pronto en LAG.barberia ✂️
+Disculpá las molestias. Esperamos verte pronto en LAG.barberia ✂️
 
 LAG.barberia - Nivel que se nota`;
 
@@ -612,7 +641,7 @@ function AdminApp() {
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
                 
                 // 🔥 Usar API de WhatsApp
-                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya puedes reservar turnos desde la app.`;
+                const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
                 const telefono = cliente.whatsapp.replace(/\D/g, '');
                 const encodedText = encodeURIComponent(mensaje);
                 window.open(`https://api.whatsapp.com/send?phone=${telefono}&text=${encodedText}`, '_blank');
@@ -689,6 +718,17 @@ function AdminApp() {
         }
     };
 
+    // 🔥 EFECTO PARA RECALCULAR CADA MINUTO
+    React.useEffect(() => {
+        const intervalo = setInterval(() => {
+            console.log('⏰ Recalculando turnos pasados...');
+            // Forzar re-render copiando el array
+            setBookings(prev => [...prev]);
+        }, 60000); // Cada 60 segundos
+        
+        return () => clearInterval(intervalo);
+    }, []);
+
     React.useEffect(() => {
         fetchBookings();
         
@@ -731,20 +771,57 @@ function AdminApp() {
     };
 
     // ============================================
-    // FILTROS
+    // FILTROS (VERSIÓN FORZADA CON FILTRADO DE TURNOS PASADOS)
     // ============================================
     const getFilteredBookings = () => {
-        let filtered = filterDate
+        console.log('🔄 Aplicando filtros a', bookings.length, 'reservas');
+        
+        // PASO 1: Filtrar por fecha (si hay filtro activo)
+        let filtradas = filterDate
             ? bookings.filter(b => b.fecha === filterDate)
             : [...bookings];
         
+        console.log('📊 Después filtro fecha:', filtradas.length);
+        
+        // PASO 2: Filtrar turnos que YA PASARON (solo si no son cancelados)
+        const ahora = new Date();
+        const filtradasSinPasados = filtradas.filter(b => {
+            // Los cancelados siempre se muestran
+            if (b.estado === 'Cancelado') {
+                return true;
+            }
+            
+            // Verificar si el turno ya pasó
+            const [year, month, day] = b.fecha.split('-').map(Number);
+            const [hours, minutes] = b.hora_inicio.split(':').map(Number);
+            const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
+            
+            const paso = fechaTurno < ahora;
+            
+            if (paso) {
+                console.log(`🗑️ Ocultando: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
+            }
+            
+            return !paso; // Solo mostrar si NO pasó
+        });
+        
+        console.log('📊 Después filtrar pasados:', filtradasSinPasados.length);
+        console.log('🗑️ Se ocultaron', filtradas.length - filtradasSinPasados.length, 'turnos pasados');
+        
+        // PASO 3: Filtrar por estado
+        let resultado;
         if (statusFilter === 'activas') {
-            filtered = filtered.filter(b => b.estado !== 'Cancelado');
+            resultado = filtradasSinPasados.filter(b => b.estado !== 'Cancelado');
+            console.log('📊 Filtro activas:', resultado.length);
         } else if (statusFilter === 'canceladas') {
-            filtered = filtered.filter(b => b.estado === 'Cancelado');
+            resultado = filtradasSinPasados.filter(b => b.estado === 'Cancelado');
+            console.log('📊 Filtro canceladas:', resultado.length);
+        } else {
+            resultado = filtradasSinPasados;
+            console.log('📊 Filtro todas:', resultado.length);
         }
         
-        return filtered;
+        return resultado;
     };
 
     const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;
@@ -1221,7 +1298,7 @@ function AdminApp() {
                         {userRole === 'barbero' && barbero && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-blue-800 font-medium">
-                                    Hola {barbero.nombre} 👋 - Mostrando tus reservas ({bookings.length})
+                                    Hola {barbero.nombre} 👋 - Mostrando tus reservas ({filteredBookings.length})
                                 </p>
                             </div>
                         )}
@@ -1236,9 +1313,12 @@ function AdminApp() {
                                 />
                                 {filterDate && (
                                     <button onClick={() => setFilterDate('')} className="text-red-500 text-sm">
-                                        Limpiar
+                                        Limpiar filtro
                                     </button>
                                 )}
+                                <span className="text-xs text-gray-400">
+                                    (No se muestran turnos pasados)
+                                </span>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -1282,46 +1362,51 @@ function AdminApp() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {filteredBookings.map(b => (
-    <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
-        <div className="flex justify-between mb-2">
-            {/* 🔥 FECHA CON DÍA DE LA SEMANA */}
-            <span className="font-semibold">
-                {window.formatFechaCompleta ? window.formatFechaCompleta(b.fecha) : b.fecha}
-            </span>
-            <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
-                {formatTo12Hour(b.hora_inicio)}
-            </span>
-        </div>
-                                        <div className="text-sm space-y-1">
-                                            <p><span className="font-medium">👤 Cliente:</span> {b.cliente_nombre}</p>
-                                            <p><span className="font-medium">📱 WhatsApp:</span> {b.cliente_whatsapp}</p>
-                                            <p><span className="font-medium">💈 Servicio:</span> {b.servicio}</p>
-                                            <p><span className="font-medium">👨‍🎨 Barbero:</span> {b.barbero_nombre || b.trabajador_nombre}</p>
-                                        </div>
-                                        <div className="flex justify-between items-center mt-3 pt-2 border-t">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                                                ${b.estado === 'Reservado' ? 'bg-yellow-100 text-yellow-700' : 
-                                                  b.estado === 'Cancelado' ? 'bg-red-100 text-red-700' : 
-                                                  'bg-green-100 text-green-700'}`}>
-                                                {b.estado}
-                                            </span>
-                                            {b.estado === 'Reservado' && (
-                                                <button 
-                                                    onClick={() => handleCancel(b.id, b)} 
-                                                    className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-1"
-                                                >
-                                                    <span>❌</span> Cancelar
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                                
-                                {filteredBookings.length === 0 && (
+                                {filteredBookings.length === 0 ? (
                                     <div className="text-center py-12 bg-white rounded-xl">
                                         <p className="text-gray-500">No hay reservas para mostrar</p>
+                                        {bookings.length > filteredBookings.length && (
+                                            <p className="text-xs text-gray-400 mt-2">
+                                                (Se ocultaron {bookings.length - filteredBookings.length} turnos que ya pasaron)
+                                            </p>
+                                        )}
                                     </div>
+                                ) : (
+                                    filteredBookings.map(b => (
+                                        <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                                            <div className="flex justify-between mb-2">
+                                                {/* FECHA CON DÍA DE LA SEMANA */}
+                                                <span className="font-semibold">
+                                                    {window.formatFechaCompleta ? window.formatFechaCompleta(b.fecha) : b.fecha}
+                                                </span>
+                                                <span className="text-sm bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                                                    {formatTo12Hour(b.hora_inicio)}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm space-y-1">
+                                                <p><span className="font-medium">👤 Cliente:</span> {b.cliente_nombre}</p>
+                                                <p><span className="font-medium">📱 WhatsApp:</span> {b.cliente_whatsapp}</p>
+                                                <p><span className="font-medium">💈 Servicio:</span> {b.servicio}</p>
+                                                <p><span className="font-medium">👨‍🎨 Barbero:</span> {b.barbero_nombre || b.trabajador_nombre}</p>
+                                            </div>
+                                            <div className="flex justify-between items-center mt-3 pt-2 border-t">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                                                    ${b.estado === 'Reservado' ? 'bg-yellow-100 text-yellow-700' : 
+                                                      b.estado === 'Cancelado' ? 'bg-red-100 text-red-700' : 
+                                                      'bg-green-100 text-green-700'}`}>
+                                                    {b.estado}
+                                                </span>
+                                                {b.estado === 'Reservado' && (
+                                                    <button 
+                                                        onClick={() => handleCancel(b.id, b)} 
+                                                        className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center gap-1"
+                                                    >
+                                                        <span>❌</span> Cancelar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
                                 )}
                             </div>
                         )}
