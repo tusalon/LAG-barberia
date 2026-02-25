@@ -126,8 +126,8 @@ const indiceToHoraLegible = (indice) => {
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
 };
 
-// ============================================
-// 🔥 FUNCIÓN PARA VERIFICAR SI UN TURNO YA PASÓ
+/// ============================================
+// 🔥 FUNCIÓN PARA VERIFICAR SI UN TURNO YA PASÓ (CON LOGS)
 // ============================================
 const turnoYaPaso = (fecha, horaInicio) => {
     try {
@@ -137,8 +137,17 @@ const turnoYaPaso = (fecha, horaInicio) => {
         
         const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
         
+        console.log('🔍 Comparando:', {
+            turno: fechaTurno.toLocaleString(),
+            ahora: ahora.toLocaleString(),
+            diferencia: (fechaTurno - ahora) / (1000 * 60) + ' minutos'
+        });
+        
         // Si la fecha del turno es menor a la fecha actual, ya pasó
-        return fechaTurno < ahora;
+        const paso = fechaTurno < ahora;
+        console.log(`📅 Turno ${fecha} ${horaInicio} ${paso ? '✅ YA PASÓ' : '❌ AÚN NO PASA'}`);
+        
+        return paso;
     } catch (error) {
         console.error('Error verificando si el turno pasó:', error);
         return false;
@@ -763,18 +772,52 @@ function AdminApp() {
             ? bookings.filter(b => b.fecha === filterDate)
             : [...bookings];
         
-        // 🔥 FILTRAR TURNOS QUE YA PASARON
-        filtered = filtered.filter(b => {
-            // Si el estado es Cancelado, lo mostramos igual
-            if (b.estado === 'Cancelado') return true;
-            
-            // Verificar si el turno ya pasó
-            const paso = turnoYaPaso(b.fecha, b.hora_inicio);
-            if (paso) {
-                console.log(`🗑️ Ocultando turno pasado: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
-            }
-            return !paso; // Solo mostrar si NO pasó
-        });
+        // ============================================
+// FILTROS (MODIFICADO PARA OCULTAR TURNOS PASADOS)
+// ============================================
+const getFilteredBookings = () => {
+    console.log('🔄 Aplicando filtros... Total bookings:', bookings.length);
+    
+    // Primero, filtrar por fecha si hay filtro activo
+    let filtered = filterDate
+        ? bookings.filter(b => b.fecha === filterDate)
+        : [...bookings];
+    
+    console.log('📊 Después de filtro por fecha:', filtered.length);
+    
+    // 🔥 FILTRAR TURNOS QUE YA PASARON
+    const antesFiltro = filtered.length;
+    filtered = filtered.filter(b => {
+        // Si el estado es Cancelado, lo mostramos igual
+        if (b.estado === 'Cancelado') {
+            console.log(`📌 Turno cancelado ${b.fecha} ${b.hora_inicio} - SE MUESTRA`);
+            return true;
+        }
+        
+        // Verificar si el turno ya pasó
+        const paso = turnoYaPaso(b.fecha, b.hora_inicio);
+        if (paso) {
+            console.log(`🗑️ Ocultando turno pasado: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
+            return false;
+        }
+        return true;
+    });
+    
+    console.log(`📊 Se ocultaron ${antesFiltro - filtered.length} turnos pasados`);
+    
+    // Luego filtrar por estado
+    if (statusFilter === 'activas') {
+        filtered = filtered.filter(b => b.estado !== 'Cancelado');
+        console.log('📊 Filtro activas aplicado');
+    } else if (statusFilter === 'canceladas') {
+        filtered = filtered.filter(b => b.estado === 'Cancelado');
+        console.log('📊 Filtro canceladas aplicado');
+    }
+    
+    console.log('📊 Total después de todos los filtros:', filtered.length);
+    
+    return filtered;
+};
         
         // Luego filtrar por estado
         if (statusFilter === 'activas') {
