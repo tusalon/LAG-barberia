@@ -120,11 +120,6 @@ const getCurrentLocalDate = () => {
     return `${year}-${month}-${day}`;
 };
 
-const indiceToHoraLegible = (indice) => {
-    const horas = Math.floor(indice / 2);
-    const minutos = indice % 2 === 0 ? '00' : '30';
-    return `${horas.toString().padStart(2, '0')}:${minutos}`;
-};
 
 // ============================================
 // FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP (VERSIÓN API)
