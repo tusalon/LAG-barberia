@@ -1,4 +1,4 @@
-// components/TimeSlots.js - Versión para LAG.barberia (CON HORARIOS POR DÍA)
+// components/TimeSlots.js - Versión para LAG.barberia (CON HORARIOS POR DÍA Y ANTELACIÓN)
 
 function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [slots, setSlots] = React.useState([]);
@@ -7,15 +7,33 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     const [horariosPorDia, setHorariosPorDia] = React.useState({});
     const [diaTrabaja, setDiaTrabaja] = React.useState(true);
     const [verificacionCompleta, setVerificacionCompleta] = React.useState(false);
+    const [maxAntelacionDias, setMaxAntelacionDias] = React.useState(30);
 
-    // Función para formatear fecha local correctamente
+    // 🔥 Cargar configuración de antelación máxima
+    React.useEffect(() => {
+        const cargarConfiguracion = async () => {
+            try {
+                if (window.salonConfig) {
+                    const config = await window.salonConfig.get();
+                    console.log('⚙️ Configuración cargada en TimeSlots:', config);
+                    if (config && config.max_antelacion_dias) {
+                        setMaxAntelacionDias(config.max_antelacion_dias);
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando configuración:', error);
+            }
+        };
+        
+        cargarConfiguracion();
+    }, []);
+
     const formatDateLocal = (dateStr) => {
         if (!dateStr) return '';
         const [year, month, day] = dateStr.split('-').map(Number);
         return new Date(year, month - 1, day).toLocaleDateString();
     };
 
-    // Función para obtener fecha actual en formato YYYY-MM-DD
     const getCurrentLocalDate = () => {
         const hoy = new Date();
         const year = hoy.getFullYear();
@@ -24,13 +42,11 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         return `${year}-${month}-${day}`;
     };
 
-    // Función para convertir hora a minutos
     const timeToMinutes = (timeStr) => {
         const [hours, minutes] = timeStr.split(':').map(Number);
         return hours * 60 + minutes;
     };
 
-    // Función para convertir índice de 30 minutos a hora legible
     const indiceToHoraLegible = (indice) => {
         const horas = Math.floor(indice / 2);
         const minutos = indice % 2 === 0 ? '00' : '30';
@@ -44,12 +60,10 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
             setVerificacionCompleta(false);
             try {
                 console.log(`📅 Cargando horarios por día de ${worker.nombre}...`);
-                // Usar la nueva función para obtener horarios por día
                 const horarios = await window.salonConfig.getHorariosPorDia(worker.id);
                 console.log(`✅ Horarios por día de ${worker.nombre}:`, horarios);
                 setHorariosPorDia(horarios);
                 
-                // Si no hay horarios configurados, mostrar mensaje
                 const tieneHorarios = Object.keys(horarios).length > 0;
                 if (!tieneHorarios) {
                     console.log('⚠️ No hay horarios configurados para este barbero');
@@ -81,7 +95,6 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
         const diaSemana = diasSemana[fechaLocal.getDay()];
         
-        // Verificar si el día tiene horarios configurados
         const horariosDelDia = horariosPorDia[diaSemana] || [];
         const trabaja = horariosDelDia.length > 0;
         
@@ -107,13 +120,25 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
             setLoading(true);
             setError(null);
             try {
-                // Obtener el día de la semana de la fecha seleccionada
+                // 🔥 VALIDAR ANTELACIÓN MÁXIMA
+                const hoy = new Date();
+                const fechaSeleccionada = new Date(date + 'T00:00:00');
+                const diffTime = fechaSeleccionada - hoy;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays > maxAntelacionDias) {
+                    console.log(`🚫 Fecha ${date} supera antelación máxima de ${maxAntelacionDias} días`);
+                    setError(`Solo se puede reservar con hasta ${maxAntelacionDias} días de antelación`);
+                    setSlots([]);
+                    setLoading(false);
+                    return;
+                }
+                
                 const [año, mes, día] = date.split('-').map(Number);
                 const fechaLocal = new Date(año, mes - 1, día);
                 const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
                 const diaSemana = diasSemana[fechaLocal.getDay()];
                 
-                // Obtener los índices de horas para este día
                 const indicesDelDia = horariosPorDia[diaSemana] || [];
                 
                 if (indicesDelDia.length === 0) {
@@ -123,7 +148,6 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     return;
                 }
                 
-                // Convertir índices a horas legibles
                 const baseSlots = indicesDelDia.map(indice => indiceToHoraLegible(indice));
                 
                 console.log(`📋 Slots base para ${diaSemana}:`, baseSlots);
@@ -131,12 +155,11 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                 const todayStr = getCurrentLocalDate();
                 const esHoy = date === todayStr;
                 
-                // Obtener hora mínima permitida (actual + 2 horas)
                 const ahora = new Date();
                 const horaActual = ahora.getHours();
                 const minutosActuales = ahora.getMinutes();
                 const totalMinutosActual = horaActual * 60 + minutosActuales;
-                const minAllowedMinutes = totalMinutosActual + 120; // +2 horas
+                const minAllowedMinutes = totalMinutosActual + 120;
                 
                 console.log('🕐 Hora actual:', `${horaActual}:${minutosActuales}`);
                 console.log('⏱️ Hora mínima permitida (actual + 2h):', 
@@ -149,7 +172,6 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                     const slotStart = timeToMinutes(slotStartStr);
                     const slotEnd = slotStart + service.duracion;
 
-                    // Validación de +2 horas para hoy
                     if (esHoy && slotStart < minAllowedMinutes) {
                         console.log(`⏰ Slot ${slotStartStr} es menor a hora mínima - EXCLUIDO`);
                         return false;
@@ -182,7 +204,7 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
         };
 
         loadSlots();
-    }, [service, date, worker, horariosPorDia, diaTrabaja, verificacionCompleta]);
+    }, [service, date, worker, horariosPorDia, diaTrabaja, verificacionCompleta, maxAntelacionDias]);
 
     if (!service || !date || !worker) return null;
 
@@ -201,7 +223,6 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
     }
 
     if (!diaTrabaja) {
-        // Obtener el nombre del día para el mensaje
         const [año, mes, día] = date.split('-').map(Number);
         const fechaLocal = new Date(año, mes - 1, día);
         const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -272,7 +293,6 @@ function TimeSlots({ service, date, worker, onTimeSelect, selectedTime }) {
                         </div>
                     )}
                     
-                    {/* Grilla de horarios */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
                         {slots.map(time24h => {
                             const time12h = formatTo12Hour(time24h);

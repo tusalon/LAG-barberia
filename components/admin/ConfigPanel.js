@@ -1,22 +1,16 @@
-// components/admin/ConfigPanel.js - CON HORARIOS POR DÍA
+// components/admin/ConfigPanel.js - CON ANTELACIÓN MÁXIMA
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
     const [barberoSeleccionado, setBarberoSeleccionado] = React.useState(null);
-    const [modoEdicion, setModoEdicion] = React.useState('porDia'); // 'porDia' o 'tradicional'
     const [mostrarEditorPorDia, setMostrarEditorPorDia] = React.useState(false);
     const [configGlobal, setConfigGlobal] = React.useState({
         duracion_turnos: 60,
         intervalo_entre_turnos: 0,
-        modo_24h: false
+        modo_24h: false,
+        max_antelacion_dias: 30
     });
     const [cargando, setCargando] = React.useState(true);
-
-    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-    const diasNombres = {
-        lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
-        jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
-    };
 
     const opcionesDuracion = [
         { value: 30, label: '30 min', icon: '⏱️' },
@@ -25,6 +19,18 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         { value: 75, label: '75 min', icon: '⏳' },
         { value: 90, label: '90 min', icon: '🕐' },
         { value: 120, label: '120 min', icon: '🕑' }
+    ];
+
+    // 🔥 OPCIONES DE ANTELACIÓN
+    const opcionesAntelacion = [
+        { value: 3, label: '3 días', icon: '🔜' },
+        { value: 4, label: '4 días', icon: '📅' },
+        { value: 5, label: '5 días', icon: '📆' },
+        { value: 6, label: '6 días', icon: '🗓️' },
+        { value: 7, label: '7 días', icon: '📆' },
+        { value: 15, label: '15 días', icon: '📅' },
+        { value: 30, label: '30 días', icon: '📅' },
+        { value: 60, label: '60 días', icon: '📆' }
     ];
 
     React.useEffect(() => {
@@ -51,10 +57,12 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
+                console.log('📋 Configuración cargada:', config);
                 setConfigGlobal(config || {
                     duracion_turnos: 60,
                     intervalo_entre_turnos: 0,
-                    modo_24h: false
+                    modo_24h: false,
+                    max_antelacion_dias: 30
                 });
             }
         } catch (error) {
@@ -105,6 +113,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <h3 className="font-semibold text-lg mb-4">⚙️ Configuración General</h3>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        {/* Duración por defecto */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Duración por defecto (min)
@@ -122,8 +131,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                                             py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center
                                             ${configGlobal.duracion_turnos === opcion.value
                                                 ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'
-                                            }
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'}
                                         `}
                                     >
                                         <span className="text-lg mb-1">{opcion.icon}</span>
@@ -133,6 +141,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             </div>
                         </div>
                         
+                        {/* Intervalo entre turnos */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Intervalo entre turnos (min)
@@ -151,6 +160,38 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                         </div>
                     </div>
                     
+                    {/* 🔥 ANTELACIÓN MÁXIMA */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Antelación máxima para reservar
+                        </label>
+                        <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
+                            {opcionesAntelacion.map(opcion => (
+                                <button
+                                    key={opcion.value}
+                                    type="button"
+                                    onClick={() => setConfigGlobal({
+                                        ...configGlobal, 
+                                        max_antelacion_dias: opcion.value
+                                    })}
+                                    className={`
+                                        py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center
+                                        ${configGlobal.max_antelacion_dias === opcion.value
+                                            ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300'
+                                            : 'bg-white border border-gray-300 text-gray-700 hover:border-amber-400 hover:bg-amber-50'}
+                                    `}
+                                >
+                                    <span className="text-lg mb-1">{opcion.icon}</span>
+                                    <span>{opcion.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Los clientes solo podrán reservar con hasta esta cantidad de días de antelación
+                        </p>
+                    </div>
+                    
+                    {/* Modo 24h */}
                     <div className="mb-4">
                         <label className="flex items-center gap-3 cursor-pointer">
                             <input
@@ -215,7 +256,7 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
                         <div className="flex items-center gap-2">
                             <i className="icon-info"></i>
-                            <span>Puede configurar diferentes horarios para cada día de la semana</span>
+                            <span>Podés configurar diferentes horarios para cada día de la semana</span>
                         </div>
                     </div>
                 </div>
