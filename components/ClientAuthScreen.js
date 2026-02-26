@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO Y SIN LOGO
+// components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO, SIN OVERLAY SUPERIOR
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -17,8 +17,15 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     // Cargar imagen de fondo
     React.useEffect(() => {
         const img = new Image();
-        img.src = '/LAG-barberia/images/LAG.barberia.png';
-        img.onload = () => setImagenCargada(true);
+        img.src = '/LAG-barberia/images/LAG.barberia.jpg';
+        img.onload = () => {
+            console.log('✅ Imagen cargada correctamente');
+            setImagenCargada(true);
+        };
+        img.onerror = () => {
+            console.error('❌ Error cargando imagen');
+            setImagenCargada(true);
+        };
     }, []);
 
     const clienteYaTieneSolicitud = async (whatsapp) => {
@@ -203,17 +210,18 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     if (solicitudEnviada) {
         return (
             <div className="min-h-screen bg-white flex flex-col relative overflow-hidden animate-fade-in">
-                {/* Imagen de fondo */}
+                {/* Imagen de fondo - SIN OVERLAY SUPERIOR */}
                 <div className="absolute inset-0 z-0">
                     {!imagenCargada && (
                         <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                     )}
                     <img 
-                        src="/LAG-barberia/images/LAG.barberia.png"
+                        src="/LAG-barberia/images/LAG.barberia.jpg"
                         alt="Barbería LAG.barberia" 
                         className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/50"></div>
+                    {/* SOLO OVERLAY INFERIOR - quitado el superior */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
                 </div>
 
                 {/* Botón volver */}
@@ -272,17 +280,18 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
 
     return (
         <div className="min-h-screen bg-white flex flex-col relative overflow-hidden animate-fade-in">
-            {/* Imagen de fondo */}
+            {/* Imagen de fondo - SIN OVERLAY SUPERIOR */}
             <div className="absolute inset-0 z-0">
                 {!imagenCargada && (
                     <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                 )}
                 <img 
-                    src="/LAG-barberia/images/LAG.barberia.png"
+                    src="/LAG-barberia/images/LAG.barberia.jpg"
                     alt="Barbería LAG.barberia" 
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/50"></div>
+                {/* SOLO OVERLAY INFERIOR - quitado el superior */}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
             </div>
 
             {/* Botón volver */}
@@ -296,15 +305,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 </button>
             )}
             
-            {/* Contenido */}
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+            {/* Contenido - todo más arriba */}
+            <div className="relative z-10 flex flex-col items-center justify-start min-h-screen pt-16 p-6">
                 <div className="max-w-md w-full">
-                    {/* Solo título, sin eslogan */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-white mb-2">LAG.barberia</h1>
-                        <p className="text-gray-300">Acceso para clientes y barberos</p>
+                    {/* Título LAG.barberia y subtítulo juntos arriba */}
+                    <div className="text-center mb-4">
+                        <h1 className="text-4xl font-bold text-white drop-shadow-lg">LAG.barberia</h1>
+                        <p className="text-gray-200 text-lg mt-1 drop-shadow">Acceso para clientes y barberos</p>
                     </div>
 
+                    {/* Tabla de acceso (formulario) - más arriba */}
                     <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-amber-500/30">
                         <h2 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
                             <i className="icon-user-plus"></i>
@@ -485,24 +495,6 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 )}
                             </div>
                         </form>
-                    </div>
-
-                    {/* Features strip */}
-                    <div className="mt-8 hidden sm:block">
-                        <div className="flex justify-center gap-6 text-white/80 text-sm">
-                            <div className="flex items-center gap-2">
-                                <i className="icon-scissors text-amber-400"></i>
-                                Cortes Profesionales
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <i className="icon-star text-amber-400"></i>
-                                Productos Premium
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <i className="icon-coffee text-amber-400"></i>
-                                Ambiente Exclusivo
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
