@@ -321,7 +321,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                     required
                                 />
                             </div>
-                            <p className="text-xs text-gray-400 mt-1">Ingresá solo los números después del +53</p>
+                           <p className="text-xs text-gray-400 mt-1">Ingresá tu número de WhatsApp (8 dígitos después del +53)</p>
                         </div>
 
                         {verificando && (

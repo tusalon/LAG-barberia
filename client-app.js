@@ -1,4 +1,4 @@
-// client-app.js - Aplicación de clientes con flujo completo
+// client-app.js - Aplicación de clientes con flujo completo y scroll automático
 
 function ClientApp() {
     const [step, setStep] = React.useState('auth');
@@ -11,7 +11,9 @@ function ClientApp() {
     const [userRol, setUserRol] = React.useState('cliente');
     const [history, setHistory] = React.useState(['auth']);
 
-    // Detectar si hay sesión de admin/barbero al iniciar
+    // ============================================
+    // DETECTAR SESIÓN AL INICIAR
+    // ============================================
     React.useEffect(() => {
         const adminAuth = localStorage.getItem('adminAuth') === 'true';
         const barberoAuth = localStorage.getItem('barberoAuth');
@@ -34,13 +36,16 @@ function ClientApp() {
             try {
                 const clienteData = JSON.parse(savedCliente);
                 setCliente(clienteData);
+                setUserRol('cliente');
                 setStep('welcome');
                 setHistory(['auth', 'welcome']);
             } catch (e) {}
         }
     }, []);
 
-    // Manejo del botón físico "atrás"
+    // ============================================
+    // MANEJO DEL BOTÓN FÍSICO "ATRÁS"
+    // ============================================
     React.useEffect(() => {
         const handlePopState = (event) => {
             event.preventDefault();
@@ -51,6 +56,9 @@ function ClientApp() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, [history]);
 
+    // ============================================
+    // FUNCIONES DE NAVEGACIÓN
+    // ============================================
     const navigateTo = (newStep) => {
         setHistory(prev => [...prev, newStep]);
         setStep(newStep);
@@ -71,9 +79,49 @@ function ClientApp() {
         setStep(previousStep);
     };
 
+    // ============================================
+    // FUNCIONES DE SCROLL AUTOMÁTICO
+    // ============================================
+    React.useEffect(() => {
+        if (selectedService) {
+            setTimeout(() => {
+                document.getElementById('worker-section')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 300);
+        }
+    }, [selectedService]);
+
+    React.useEffect(() => {
+        if (selectedWorker) {
+            setTimeout(() => {
+                document.getElementById('calendar-section')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 300);
+        }
+    }, [selectedWorker]);
+
+    React.useEffect(() => {
+        if (selectedDate) {
+            setTimeout(() => {
+                document.getElementById('time-section')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 300);
+        }
+    }, [selectedDate]);
+
+    // ============================================
+    // MANEJO DE ACCESO
+    // ============================================
     const handleAccessGranted = (nombre, whatsapp) => {
         const clienteData = { nombre, whatsapp };
         setCliente(clienteData);
+        setUserRol('cliente');
         localStorage.setItem('clienteAuth', JSON.stringify(clienteData));
         navigateTo('welcome');
     };
@@ -89,6 +137,7 @@ function ClientApp() {
         setSelectedWorker(null);
         setSelectedDate('');
         setSelectedTime('');
+        setUserRol('cliente');
         setHistory(['auth']);
         setStep('auth');
     };
@@ -110,6 +159,9 @@ function ClientApp() {
         goBack();
     };
 
+    // ============================================
+    // RENDERIZADO DE PANTALLAS
+    // ============================================
     const renderStep = () => {
         switch(step) {
             case 'auth':
@@ -151,36 +203,47 @@ function ClientApp() {
                         />
                         
                         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+                            {/* SECCIÓN 1: SERVICIOS */}
                             <ServiceSelection 
                                 onSelect={setSelectedService} 
                                 selectedService={selectedService}
                             />
                             
+                            {/* SECCIÓN 2: BARBEROS (con id para scroll) */}
                             {selectedService && (
-                                <WorkerSelector 
-                                    onSelect={setSelectedWorker} 
-                                    selectedWorker={selectedWorker}
-                                />
+                                <div id="worker-section">
+                                    <WorkerSelector 
+                                        onSelect={setSelectedWorker} 
+                                        selectedWorker={selectedWorker}
+                                    />
+                                </div>
                             )}
                             
+                            {/* SECCIÓN 3: CALENDARIO (con id para scroll) */}
                             {selectedWorker && (
-                                <Calendar 
-                                    onDateSelect={setSelectedDate} 
-                                    selectedDate={selectedDate}
-                                    worker={selectedWorker}
-                                />
+                                <div id="calendar-section">
+                                    <Calendar 
+                                        onDateSelect={setSelectedDate} 
+                                        selectedDate={selectedDate}
+                                        worker={selectedWorker}
+                                    />
+                                </div>
                             )}
                             
+                            {/* SECCIÓN 4: HORARIOS (con id para scroll) */}
                             {selectedDate && (
-                                <TimeSlots 
-                                    service={selectedService}
-                                    date={selectedDate}
-                                    worker={selectedWorker}
-                                    onTimeSelect={setSelectedTime}
-                                    selectedTime={selectedTime}
-                                />
+                                <div id="time-section">
+                                    <TimeSlots 
+                                        service={selectedService}
+                                        date={selectedDate}
+                                        worker={selectedWorker}
+                                        onTimeSelect={setSelectedTime}
+                                        selectedTime={selectedTime}
+                                    />
+                                </div>
                             )}
                             
+                            {/* SECCIÓN 5: CONFIRMACIÓN (cuando se selecciona hora) */}
                             {selectedTime && (
                                 <BookingForm
                                     service={selectedService}
