@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN COMPLETA CON BOTÓN ATRÁS
+// components/ClientAuthScreen.js - VERSIÓN COMPLETA CORREGIDA
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -141,24 +141,8 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             return;
         }
         
-        if (esDuenno) {
-            // Dueño va directo al admin
-            localStorage.setItem('adminAuth', 'true');
-            localStorage.setItem('adminUser', 'Dueño');
-            localStorage.setItem('adminLoginTime', Date.now());
-            window.location.href = 'admin.html';
-            return;
-        }
-        
-        if (esBarbero && barberoInfo) {
-            // Barbero va directo al admin
-            localStorage.setItem('barberoAuth', JSON.stringify({
-                id: barberoInfo.id,
-                nombre: barberoInfo.nombre,
-                telefono: barberoInfo.telefono,
-                nivel: barberoInfo.nivel || 1
-            }));
-            window.location.href = 'admin.html';
+        // 🔥 Dueño y barbero ya no deberían llegar aquí porque tienen botones propios
+        if (esDuenno || esBarbero) {
             return;
         }
         
@@ -358,7 +342,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                             ¡Bienvenido Dueño!
                                         </p>
                                         <p className="text-amber-400 text-sm">
-                                            Al enviar el formulario accederás al panel.
+                                            Hacé clic en el botón de abajo para acceder al panel.
                                         </p>
                                     </div>
                                 </div>
@@ -376,7 +360,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                             ¡Hola {barberoInfo.nombre}!
                                         </p>
                                         <p className="text-amber-400 text-sm">
-                                            Al enviar el formulario accederás a tu panel.
+                                            Hacé clic en el botón de abajo para acceder a tu panel.
                                         </p>
                                     </div>
                                 </div>
@@ -413,9 +397,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         )}
 
                         <div className="space-y-3 pt-2">
+                            {/* 🔥 BOTÓN PARA DUEÑO - type="button" */}
                             {esDuenno && !verificando && (
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => {
+                                        localStorage.setItem('adminAuth', 'true');
+                                        localStorage.setItem('adminUser', 'Dueño');
+                                        localStorage.setItem('adminLoginTime', Date.now());
+                                        window.location.href = 'admin.html';
+                                    }}
                                     className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-yellow-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
                                     <span className="text-xl">⚡</span>
@@ -423,9 +414,19 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </button>
                             )}
 
+                            {/* 🔥 BOTÓN PARA BARBERO - type="button" */}
                             {esBarbero && barberoInfo && !verificando && (
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => {
+                                        localStorage.setItem('barberoAuth', JSON.stringify({
+                                            id: barberoInfo.id,
+                                            nombre: barberoInfo.nombre,
+                                            telefono: barberoInfo.telefono,
+                                            nivel: barberoInfo.nivel || 1
+                                        }));
+                                        window.location.href = 'admin.html';
+                                    }}
                                     className="w-full bg-gradient-to-r from-amber-700 to-amber-800 text-white py-4 rounded-xl font-bold hover:from-amber-800 hover:to-amber-900 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                 >
                                     <span className="text-xl">✂️</span>
@@ -433,6 +434,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </button>
                             )}
 
+                            {/* BOTÓN PARA CLIENTE AUTORIZADO */}
                             {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
                                 <button
                                     type="button"
@@ -444,6 +446,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </button>
                             )}
 
+                            {/* BOTÓN PARA SOLICITAR ACCESO (solo clientes no registrados) */}
                             {!clienteAutorizado && !esDuenno && !esBarbero && !verificando && (
                                 <button
                                     type="submit"
