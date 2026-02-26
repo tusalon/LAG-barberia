@@ -1,6 +1,6 @@
-// components/Header.js - Para LAG.barberia (solo muestra botón a dueño/barberos)
+// components/Header.js - Versión actualizada con botón "Mis Reservas"
 
-function Header({ cliente, onLogout, userRol }) {
+function Header({ cliente, onLogout, onMisReservas, userRol }) {
     const [mostrarOpcionesAdmin, setMostrarOpcionesAdmin] = React.useState(false);
     
     const goToAdmin = () => {
@@ -14,7 +14,6 @@ function Header({ cliente, onLogout, userRol }) {
         }
     };
 
-    // 🔥 Verificar si tiene acceso al panel (dueño o barbero)
     const tieneAcceso = userRol === 'admin' || userRol === 'barbero';
 
     return (
@@ -36,7 +35,19 @@ function Header({ cliente, onLogout, userRol }) {
                         </div>
                     )}
                     
-                    {/* 🔥 BOTÓN DE ADMIN - SOLO SI TIENE ACCESO (dueño o barbero) */}
+                    {/* 🔥 BOTÓN MIS RESERVAS - para clientes */}
+                    {cliente && onMisReservas && userRol === 'cliente' && (
+                        <button
+                            onClick={onMisReservas}
+                            className="flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-2 rounded-full transition-all"
+                            title="Mis Reservas"
+                        >
+                            <i className="icon-calendar"></i>
+                            <span className="text-sm font-medium hidden sm:inline">Mis Reservas</span>
+                        </button>
+                    )}
+                    
+                    {/* Botón de ADMIN - para dueño/barbero */}
                     {tieneAcceso && (
                         <div className="relative">
                             <button
@@ -50,12 +61,9 @@ function Header({ cliente, onLogout, userRol }) {
                                 <span className="text-sm font-medium hidden sm:inline">
                                     {userRol === 'admin' ? 'Admin' : 'Mi Panel'}
                                 </span>
-                                
-                                {/* Indicador de sesión activa */}
                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                             </button>
                             
-                            {/* Tooltip informativo */}
                             {mostrarOpcionesAdmin && (
                                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-amber-700 p-2 text-xs text-gray-300 z-50">
                                     {userRol === 'admin' ? (
@@ -75,7 +83,7 @@ function Header({ cliente, onLogout, userRol }) {
                         </div>
                     )}
 
-                    {/* Botón de logout para cliente (siempre visible) */}
+                    {/* Botón de logout */}
                     {cliente && onLogout && (
                         <button
                             onClick={onLogout}
