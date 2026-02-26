@@ -255,7 +255,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         className="text-amber-500 font-medium inline-flex items-center gap-1 mt-2"
                     >
                         <div className="icon-message-circle"></div>
-                        +53 53111111
+                        +53 53357234
                     </a>
                 </div>
             </div>
