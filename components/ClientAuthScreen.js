@@ -296,15 +296,11 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 </button>
             )}
             
-           {/* Contenido */}
-<div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-    <div className="max-w-md w-full">
-        {/* Solo título, sin eslogan */}
-        <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">LAG.barberia</h1>
-            <p className="text-gray-300">Acceso para clientes y barberos</p>
-        </div>
-                        
+            {/* Contenido */}
+            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+                <div className="max-w-md w-full">
+                    {/* Solo título, sin eslogan */}
+                    <div className="text-center mb-8">
                         <h1 className="text-4xl font-bold text-white mb-2">LAG.barberia</h1>
                         <p className="text-gray-300">Acceso para clientes y barberos</p>
                     </div>
@@ -491,7 +487,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         </form>
                     </div>
 
-                    {/* Features strip (igual que WelcomeScreen) */}
+                    {/* Features strip */}
                     <div className="mt-8 hidden sm:block">
                         <div className="flex justify-center gap-6 text-white/80 text-sm">
                             <div className="flex items-center gap-2">
