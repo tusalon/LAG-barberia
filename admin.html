@@ -102,5 +102,92 @@
         }
     });
 </script>
+<!-- 🔥 SISTEMA DE ACTUALIZACIONES ROBUSTO (para admin) -->
+<script>
+    // ============================================
+    // DETECCIÓN DE NUEVAS VERSIONES
+    // ============================================
+    let swRegistration = null;
+    let updateNotificationShown = false;
+
+    function showUpdateNotification() {
+        if (updateNotificationShown) return;
+        
+        const banner = document.createElement('div');
+        banner.id = 'update-notification';
+        banner.className = 'update-banner';
+        banner.innerHTML = `
+            <div class="banner-content">
+                <div class="banner-icon">✂️</div>
+                <div class="banner-text">
+                    <div class="banner-title">¡Nueva versión disponible!</div>
+                    <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
+                </div>
+                <button onclick="updateApp()" class="banner-button">Actualizar ahora</button>
+            </div>
+        `;
+        document.body.appendChild(banner);
+        updateNotificationShown = true;
+    }
+
+    window.updateApp = () => {
+        const notification = document.getElementById('update-notification');
+        if (notification) notification.remove();
+        
+        if (swRegistration && swRegistration.waiting) {
+            swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        
+        const reloadMsg = document.createElement('div');
+        reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
+        reloadMsg.id = 'reload-message';
+        reloadMsg.innerHTML = `
+            <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
+                <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 class="text-xl font-bold mb-2">Actualizando...</h3>
+                <p class="text-amber-100">El panel se recargará automáticamente</p>
+            </div>
+        `;
+        document.body.appendChild(reloadMsg);
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+    };
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/LAG-barberia/sw.js')
+                .then(registration => {
+                    swRegistration = registration;
+                    console.log('✅ Service Worker registrado en admin');
+
+                    if (registration.waiting) {
+                        showUpdateNotification();
+                    }
+
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                showUpdateNotification();
+                            }
+                        });
+                    });
+                });
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Service Worker cambiado, recargando admin...');
+                window.location.reload();
+            });
+        });
+
+        setInterval(() => {
+            if (swRegistration) {
+                swRegistration.update();
+            }
+        }, 30 * 60 * 1000);
+    }
+</script>
 </body>
 </html>

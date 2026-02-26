@@ -134,35 +134,115 @@
     <script type="text/babel" src="/LAG-barberia/components/ClientAuthScreen.js"></script>
     <script type="text/babel" src="/LAG-barberia/components/MyBookings.js"></script>
     
-    <!-- 🔥 CORREGIDO: Ahora carga la app de clientes, NO admin-app.js -->
+    <!-- App de clientes -->
     <script type="text/babel" src="/LAG-barberia/client-app.js"></script>
 
+    <!-- 🔥 SISTEMA DE ACTUALIZACIONES ROBUSTO -->
     <script>
-        if ('serviceWorker' in navigator) {
-            let updateNotificationShown = false;
+        // ============================================
+        // DETECCIÓN DE NUEVAS VERSIONES
+        // ============================================
+        let swRegistration = null;
+        let updateNotificationShown = false;
+        let updateBanner = null;
 
+        // Función para mostrar el banner de actualización
+        function showUpdateNotification() {
+            if (updateNotificationShown) return;
+            
+            updateBanner = document.createElement('div');
+            updateBanner.id = 'update-notification';
+            updateBanner.className = 'update-banner';
+            updateBanner.innerHTML = `
+                <div class="banner-content">
+                    <div class="banner-icon">✂️</div>
+                    <div class="banner-text">
+                        <div class="banner-title">¡Nueva versión disponible!</div>
+                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
+                    </div>
+                    <button onclick="updateApp()" class="banner-button">Actualizar ahora</button>
+                </div>
+            `;
+            document.body.appendChild(updateBanner);
+            updateNotificationShown = true;
+        }
+
+        // Función para actualizar la app
+        window.updateApp = () => {
+            const notification = document.getElementById('update-notification');
+            if (notification) notification.remove();
+            
+            if (swRegistration && swRegistration.waiting) {
+                // Enviar mensaje al service worker para que active la nueva versión
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            
+            // Mostrar mensaje de recarga
+            const reloadMsg = document.createElement('div');
+            reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
+            reloadMsg.id = 'reload-message';
+            reloadMsg.innerHTML = `
+                <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
+                    <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <h3 class="text-xl font-bold mb-2">Actualizando...</h3>
+                    <p class="text-amber-100">La app se recargará automáticamente</p>
+                </div>
+            `;
+            document.body.appendChild(reloadMsg);
+            
+            // Recargar después de 1.5 segundos
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        };
+
+        // Registrar Service Worker con manejo de actualizaciones
+        if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/LAG-barberia/sw.js')
                     .then(registration => {
-                        console.log('✅ Service Worker registrado para LAG.barberia');
+                        swRegistration = registration;
+                        console.log('✅ Service Worker registrado');
+
+                        // Si hay una versión esperando, notificar
+                        if (registration.waiting) {
+                            console.log('🔄 Nueva versión detectada al inicio');
+                            showUpdateNotification();
+                        }
+
+                        // Detectar cuando se encuentra una nueva versión
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 Nueva versión detectada');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('✅ Nueva versión lista para instalar');
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.log('❌ Error al registrar Service Worker:', error);
                     });
+
+                // Escuchar cambios en el service worker activo
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service Worker cambiado, recargando...');
+                    window.location.reload();
+                });
             });
         }
-    </script>
-    
-    <!-- Botón de instalación de la app (oculto por defecto) -->
-    <div id="install-button-container" class="fixed bottom-6 left-6 z-50 hidden">
-        <button id="install-button" class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-3 rounded-full shadow-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-105 flex items-center gap-2 border border-amber-400">
-            <span class="icon-download text-xl"></span>
-            <span class="font-semibold">Instalar App</span>
-            <span class="text-xs bg-amber-500 px-2 py-1 rounded-full animate-pulse">NUEVO</span>
-        </button>
-    </div>
 
-    <script>
+        // Verificar actualizaciones cada 30 minutos
+        setInterval(() => {
+            if (swRegistration) {
+                console.log('🔄 Verificando actualizaciones...');
+                swRegistration.update();
+            }
+        }, 30 * 60 * 1000); // 30 minutos
+
         // ============================================
         // INSTALACIÓN DE LA APP (PWA)
         // ============================================
@@ -189,73 +269,29 @@
         window.addEventListener('appinstalled', (e) => {
             console.log('✅ App instalada exitosamente');
             installContainer.classList.add('hidden');
-            showNotification('✅ App instalada', 'LAG.barberia ahora está en tu dispositivo');
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('✅ App instalada', { 
+                    body: 'LAG.barberia ahora está en tu dispositivo',
+                    icon: '/LAG-barberia/icons/icon-192x192.png'
+                });
+            }
         });
 
-        // Sistema de actualizaciones
-        function showUpdateNotification() {
-            const notification = document.createElement('div');
-            notification.id = 'update-notification';
-            notification.className = 'update-banner';
-            notification.innerHTML = `
-                <div class="banner-content">
-                    <div class="banner-icon">✂️</div>
-                    <div class="banner-text">
-                        <div class="banner-title">¡Nueva versión disponible!</div>
-                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
-                    </div>
-                    <button onclick="updateApp()" class="banner-button">Actualizar</button>
-                </div>
-            `;
-            document.body.appendChild(notification);
-        }
-
-        window.updateApp = () => {
-            const notification = document.getElementById('update-notification');
-            if (notification) notification.remove();
-            if (window.swRegistration && window.swRegistration.waiting) {
-                window.swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-            setTimeout(() => window.location.reload(), 1000);
-        };
-
-        if ('serviceWorker' in navigator) {
-            let swRegistration = null;
-            let updateNotificationShown = false;
-
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/LAG-barberia/sw.js')
-                    .then(registration => {
-                        window.swRegistration = registration;
-                        console.log('✅ Service Worker registrado');
-
-                        if (registration.waiting && !updateNotificationShown) {
-                            showUpdateNotification();
-                            updateNotificationShown = true;
-                        }
-
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !updateNotificationShown) {
-                                    showUpdateNotification();
-                                    updateNotificationShown = true;
-                                }
-                            });
-                        });
-                    });
-            });
-        }
-
-        function showNotification(title, message) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body: message, icon: '/LAG-barberia/icons/icon-192x192.png' });
-            }
-        }
-
+        // ============================================
+        // NOTIFICACIONES DEL NAVEGADOR
+        // ============================================
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
     </script>
+
+    <!-- Botón de instalación de la app (oculto por defecto) -->
+    <div id="install-button-container" class="fixed bottom-6 left-6 z-50 hidden">
+        <button id="install-button" class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-3 rounded-full shadow-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-105 flex items-center gap-2 border border-amber-400">
+            <span class="icon-download text-xl"></span>
+            <span class="font-semibold">Instalar App</span>
+            <span class="text-xs bg-amber-500 px-2 py-1 rounded-full animate-pulse">NUEVO</span>
+        </button>
+    </div>
 </body>
 </html>
