@@ -17,7 +17,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     // Cargar imagen de fondo
     React.useEffect(() => {
         const img = new Image();
-        img.src = '/LAG-barberia/images/LAG.barberia.jpg';
+        img.src = '/LAG-barberia/images/LAG.barberia.png';
         img.onload = () => {
             console.log('✅ Imagen cargada correctamente');
             setImagenCargada(true);
@@ -216,7 +216,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                     )}
                     <img 
-                        src="/LAG-barberia/images/LAG.barberia.jpg"
+                        src="/LAG-barberia/images/LAG.barberia.png"
                         alt="Barbería LAG.barberia" 
                         className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                     />
@@ -286,7 +286,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                     <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                 )}
                 <img 
-                    src="/LAG-barberia/images/LAG.barberia.jpg"
+                    src="/LAG-barberia/images/LAG.barberia.png"
                     alt="Barbería LAG.barberia" 
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                 />
