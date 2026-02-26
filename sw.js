@@ -59,17 +59,25 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // 🔥 IGNORAR PETICIONES A NTFY.SH (NOTIFICACIONES)
+  if (event.request.url.includes('ntfy.sh')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
         const fetchPromise = fetch(event.request)
           .then(networkResponse => {
             if (networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
+              // Solo cachear métodos GET
+              if (event.request.method === 'GET') {
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+                    cache.put(event.request, responseToCache);
+                  });
+              }
             }
             return networkResponse;
           })
