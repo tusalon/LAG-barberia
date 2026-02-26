@@ -1,6 +1,6 @@
-// components/Header.js - Versión actualizada con botón "Mis Reservas"
+// components/Header.js - Con botón de volver atrás
 
-function Header({ cliente, onLogout, onMisReservas, userRol }) {
+function Header({ cliente, onLogout, onMisReservas, onGoBack, userRol, showBackButton }) {
     const [mostrarOpcionesAdmin, setMostrarOpcionesAdmin] = React.useState(false);
     
     const goToAdmin = () => {
@@ -20,6 +20,16 @@ function Header({ cliente, onLogout, onMisReservas, userRol }) {
         <header className="bg-white shadow-sm sticky top-0 z-50">
             <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-2">
+                    {showBackButton && onGoBack && (
+                        <button
+                            onClick={onGoBack}
+                            className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors mr-2"
+                            title="Volver"
+                        >
+                            <i className="icon-arrow-left text-gray-600"></i>
+                        </button>
+                    )}
+                    
                     <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white">
                         <i className="icon-scissors text-lg"></i>
                     </div>
@@ -27,7 +37,6 @@ function Header({ cliente, onLogout, onMisReservas, userRol }) {
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    {/* Nombre del cliente */}
                     {cliente && (
                         <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
                             <i className="icon-user-check text-green-500"></i>
@@ -35,7 +44,6 @@ function Header({ cliente, onLogout, onMisReservas, userRol }) {
                         </div>
                     )}
                     
-                    {/* 🔥 BOTÓN MIS RESERVAS - para clientes */}
                     {cliente && onMisReservas && userRol === 'cliente' && (
                         <button
                             onClick={onMisReservas}
@@ -47,7 +55,6 @@ function Header({ cliente, onLogout, onMisReservas, userRol }) {
                         </button>
                     )}
                     
-                    {/* Botón de ADMIN - para dueño/barbero */}
                     {tieneAcceso && (
                         <div className="relative">
                             <button
@@ -83,7 +90,6 @@ function Header({ cliente, onLogout, onMisReservas, userRol }) {
                         </div>
                     )}
 
-                    {/* Botón de logout */}
                     {cliente && onLogout && (
                         <button
                             onClick={onLogout}

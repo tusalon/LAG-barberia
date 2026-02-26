@@ -1,8 +1,7 @@
-// client-app.js - Aplicación principal para clientes de LAG.barberia
+// client-app.js - Aplicación de clientes con flujo completo
 
 function ClientApp() {
-    // Estados principales
-    const [step, setStep] = React.useState('welcome');
+    const [step, setStep] = React.useState('auth');
     const [cliente, setCliente] = React.useState(null);
     const [selectedService, setSelectedService] = React.useState(null);
     const [selectedWorker, setSelectedWorker] = React.useState(null);
@@ -10,9 +9,10 @@ function ClientApp() {
     const [selectedTime, setSelectedTime] = React.useState('');
     const [bookingConfirmed, setBookingConfirmed] = React.useState(null);
     const [userRol, setUserRol] = React.useState('cliente');
+    const [history, setHistory] = React.useState(['auth']);
 
+    // Detectar si hay sesión de admin/barbero al iniciar
     React.useEffect(() => {
-        // Verificar si hay sesión de admin o barbero
         const adminAuth = localStorage.getItem('adminAuth') === 'true';
         const barberoAuth = localStorage.getItem('barberoAuth');
         
@@ -29,22 +29,57 @@ function ClientApp() {
             } catch (e) {}
         }
         
-        // Verificar si hay cliente en localStorage (sesión persistente)
         const savedCliente = localStorage.getItem('clienteAuth');
         if (savedCliente && !adminAuth && !barberoAuth) {
             try {
                 const clienteData = JSON.parse(savedCliente);
                 setCliente(clienteData);
-                setStep('service');
+                setStep('welcome');
+                setHistory(['auth', 'welcome']);
             } catch (e) {}
         }
     }, []);
+
+    // Manejo del botón físico "atrás"
+    React.useEffect(() => {
+        const handlePopState = (event) => {
+            event.preventDefault();
+            goBack();
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [history]);
+
+    const navigateTo = (newStep) => {
+        setHistory(prev => [...prev, newStep]);
+        setStep(newStep);
+    };
+
+    const goBack = () => {
+        if (history.length <= 1) {
+            if (confirm('¿Salir de la aplicación?')) {
+                window.close();
+            }
+            return;
+        }
+
+        const newHistory = [...history];
+        newHistory.pop();
+        const previousStep = newHistory[newHistory.length - 1];
+        setHistory(newHistory);
+        setStep(previousStep);
+    };
 
     const handleAccessGranted = (nombre, whatsapp) => {
         const clienteData = { nombre, whatsapp };
         setCliente(clienteData);
         localStorage.setItem('clienteAuth', JSON.stringify(clienteData));
-        setStep('service');
+        navigateTo('welcome');
+    };
+
+    const handleStartBooking = () => {
+        navigateTo('service');
     };
 
     const handleLogout = () => {
@@ -54,7 +89,8 @@ function ClientApp() {
         setSelectedWorker(null);
         setSelectedDate('');
         setSelectedTime('');
-        setStep('welcome');
+        setHistory(['auth']);
+        setStep('auth');
     };
 
     const resetBooking = () => {
@@ -67,22 +103,38 @@ function ClientApp() {
     };
 
     const goToMyBookings = () => {
-        setStep('mybookings');
+        navigateTo('mybookings');
+    };
+
+    const handleVolverDeMyBookings = () => {
+        goBack();
     };
 
     const renderStep = () => {
         switch(step) {
-            case 'welcome':
-                return <WelcomeScreen onStart={() => setStep('auth')} />;
-            
             case 'auth':
-                return <ClientAuthScreen onAccessGranted={handleAccessGranted} />;
+                return (
+                    <ClientAuthScreen 
+                        onAccessGranted={handleAccessGranted}
+                        onGoBack={history.length > 1 ? goBack : null}
+                    />
+                );
+            
+            case 'welcome':
+                return (
+                    <WelcomeScreen 
+                        onStart={handleStartBooking}
+                        onGoBack={goBack}
+                        cliente={cliente}
+                        userRol={userRol}
+                    />
+                );
             
             case 'mybookings':
                 return (
                     <MyBookings 
                         cliente={cliente} 
-                        onVolver={() => setStep('service')}
+                        onVolver={handleVolverDeMyBookings}
                     />
                 );
             
@@ -93,7 +145,9 @@ function ClientApp() {
                             cliente={cliente} 
                             onLogout={handleLogout}
                             onMisReservas={goToMyBookings}
+                            onGoBack={goBack}
                             userRol={userRol}
+                            showBackButton={true}
                         />
                         
                         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -136,7 +190,7 @@ function ClientApp() {
                                     cliente={cliente}
                                     onSubmit={(booking) => {
                                         setBookingConfirmed(booking);
-                                        setStep('confirmation');
+                                        navigateTo('confirmation');
                                     }}
                                     onCancel={() => setSelectedTime('')}
                                 />
@@ -150,8 +204,17 @@ function ClientApp() {
             case 'confirmation':
                 return (
                     <div className="min-h-screen bg-gray-50">
-                        <Header cliente={cliente} onLogout={handleLogout} userRol={userRol} />
-                        <Confirmation booking={bookingConfirmed} onReset={resetBooking} />
+                        <Header 
+                            cliente={cliente} 
+                            onLogout={handleLogout}
+                            onGoBack={goBack}
+                            userRol={userRol}
+                            showBackButton={true}
+                        />
+                        <Confirmation 
+                            booking={bookingConfirmed} 
+                            onReset={resetBooking}
+                        />
                     </div>
                 );
             
