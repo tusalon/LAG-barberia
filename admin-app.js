@@ -1,4 +1,4 @@
-// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CORREGIDA)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON TURNOS COMPLETADOS)
 
 // ============================================
 // FUNCIONES DE SUPABASE
@@ -74,6 +74,80 @@ async function createBooking(bookingData) {
 }
 
 // ============================================
+// 🔥 FUNCIÓN PARA MARCAR TURNOS COMO COMPLETADOS
+// ============================================
+async function marcarTurnosCompletados() {
+    try {
+        const ahora = new Date();
+        const hoy = ahora.toISOString().split('T')[0];
+        const horaActual = ahora.getHours();
+        const minutosActuales = ahora.getMinutes();
+        const totalMinutosActual = horaActual * 60 + minutosActuales;
+        
+        console.log('⏰ Verificando turnos para marcar como completados...');
+        
+        // Buscar turnos Reservados con fecha <= hoy
+        const response = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=lte.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
+            {
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            console.error('Error al buscar turnos para completar');
+            return;
+        }
+        
+        const turnos = await response.json();
+        
+        const turnosACompletar = turnos.filter(turno => {
+            // Si la fecha es menor a hoy, completar directamente
+            if (turno.fecha < hoy) return true;
+            
+            // Si es hoy, verificar si la hora de inicio ya pasó
+            if (turno.fecha === hoy) {
+                const [horas, minutos] = turno.hora_inicio.split(':').map(Number);
+                const totalMinutosTurno = horas * 60 + minutos;
+                return totalMinutosTurno <= totalMinutosActual;
+            }
+            
+            return false;
+        });
+        
+        if (turnosACompletar.length > 0) {
+            console.log(`✅ ${turnosACompletar.length} turnos a marcar como completados`);
+            
+            // Marcar cada turno como completado
+            for (const turno of turnosACompletar) {
+                console.log(`📝 Completando turno de ${turno.cliente_nombre} - ${turno.fecha} ${turno.hora_inicio}`);
+                
+                await fetch(
+                    `${window.SUPABASE_URL}/rest/v1/reservas?id=eq.${turno.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': window.SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ estado: 'Completado' })
+                    }
+                );
+            }
+            
+            console.log(`✅ ${turnosACompletar.length} turnos marcados como completados`);
+        }
+        
+    } catch (error) {
+        console.error('Error marcando turnos completados:', error);
+    }
+}
+
+// ============================================
 // FUNCIONES AUXILIARES
 // ============================================
 const timeToMinutes = (time) => {
@@ -127,35 +201,10 @@ const indiceToHoraLegible = (indice) => {
 };
 
 // ============================================
-// 🔥 FUNCIÓN PARA VERIFICAR SI UN TURNO YA PASÓ (VERSIÓN SIMPLE)
-// ============================================
-const turnoYaPaso = (fecha, horaInicio) => {
-    try {
-        const ahora = new Date();
-        const [year, month, day] = fecha.split('-').map(Number);
-        const [hours, minutes] = horaInicio.split(':').map(Number);
-        
-        const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
-        
-        console.log(`🔍 Comparando: ${fecha} ${horaInicio}`, {
-            turno: fechaTurno.toString(),
-            ahora: ahora.toString(),
-            paso: fechaTurno < ahora
-        });
-        
-        return fechaTurno < ahora;
-    } catch (error) {
-        console.error('Error:', error);
-        return false;
-    }
-};
-
-// ============================================
-// FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP (VERSIÓN API)
+// FUNCIÓN PARA ENVIAR MENSAJE DE CANCELACIÓN POR WHATSAPP
 // ============================================
 const enviarCancelacionWhatsApp = (bookingData) => {
     try {
-        // Obtener fecha con día de la semana
         const fechaConDia = window.formatFechaCompleta ? 
             window.formatFechaCompleta(bookingData.fecha) : 
             bookingData.fecha;
@@ -182,7 +231,6 @@ LAG.barberia - Nivel que se nota`;
         const telefono = bookingData.cliente_whatsapp.replace(/\D/g, '');
         const encodedText = encodeURIComponent(mensaje);
         
-        // Usar API de WhatsApp
         window.open(`https://api.whatsapp.com/send?phone=${telefono}&text=${encodedText}`, '_blank');
         
         console.log('📤 Mensaje de cancelación enviado a:', telefono);
@@ -217,9 +265,7 @@ function AdminApp() {
     const [errorClientes, setErrorClientes] = React.useState('');
     const [cargandoClientes, setCargandoClientes] = React.useState(false);
 
-    // ============================================
-    // MODAL PARA CREAR RESERVA MANUAL
-    // ============================================
+    // Modal para crear reserva manual
     const [showNuevaReservaModal, setShowNuevaReservaModal] = React.useState(false);
     const [nuevaReservaData, setNuevaReservaData] = React.useState({
         cliente_nombre: '',
@@ -640,7 +686,6 @@ function AdminApp() {
                 await loadClientesAutorizados();
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
                 
-                // 🔥 Usar API de WhatsApp
                 const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
                 const telefono = cliente.whatsapp.replace(/\D/g, '');
                 const encodedText = encodeURIComponent(mensaje);
@@ -690,7 +735,7 @@ function AdminApp() {
     };
 
     // ============================================
-    // FUNCIONES DE RESERVAS
+    // FUNCIONES DE RESERVAS (ACTUALIZADA)
     // ============================================
     const fetchBookings = async () => {
         setLoading(true);
@@ -706,7 +751,18 @@ function AdminApp() {
             
             if (Array.isArray(data)) {
                 data.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora_inicio.localeCompare(b.hora_inicio));
-                setBookings(data);
+                
+                // 🔥 Verificar si hay turnos que deban ser completados
+                await marcarTurnosCompletados();
+                
+                // Recargar datos después de marcar completados
+                if (userRole === 'barbero' && barbero) {
+                    data = await window.getReservasPorBarbero?.(barbero.id, false) || [];
+                } else {
+                    data = await getAllBookings();
+                }
+                
+                setBookings(Array.isArray(data) ? data : []);
             } else {
                 setBookings([]);
             }
@@ -718,12 +774,15 @@ function AdminApp() {
         }
     };
 
-    // 🔥 EFECTO PARA RECALCULAR CADA MINUTO
+    // 🔥 EFECTO PARA VERIFICAR CADA MINUTO
     React.useEffect(() => {
         const intervalo = setInterval(() => {
-            console.log('⏰ Recalculando turnos pasados...');
-            // Forzar re-render copiando el array
-            setBookings(prev => [...prev]);
+            console.log('⏰ Verificando turnos para completar...');
+            
+            marcarTurnosCompletados().then(() => {
+                fetchBookings();
+            });
+            
         }, 60000); // Cada 60 segundos
         
         return () => clearInterval(intervalo);
@@ -759,6 +818,7 @@ function AdminApp() {
         }
     };
 
+    // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
     const handleLogout = () => {
         if (confirm('¿Cerrar sesión?')) {
             localStorage.removeItem('adminAuth');
@@ -766,12 +826,14 @@ function AdminApp() {
             localStorage.removeItem('adminLoginTime');
             localStorage.removeItem('barberoAuth');
             localStorage.removeItem('userRole');
-            window.location.href = 'admin-login.html';
+            
+            console.log('🚪 Sesión cerrada, redirigiendo a la app de clientes');
+            window.location.href = 'index.html';
         }
     };
 
     // ============================================
-    // FILTROS (VERSIÓN FORZADA CON FILTRADO DE TURNOS PASADOS)
+    // FILTROS (ACTUALIZADO CON COMPLETADAS)
     // ============================================
     const getFilteredBookings = () => {
         console.log('🔄 Aplicando filtros a', bookings.length, 'reservas');
@@ -783,48 +845,25 @@ function AdminApp() {
         
         console.log('📊 Después filtro fecha:', filtradas.length);
         
-        // PASO 2: Filtrar turnos que YA PASARON (solo si no son cancelados)
-        const ahora = new Date();
-        const filtradasSinPasados = filtradas.filter(b => {
-            // Los cancelados siempre se muestran
-            if (b.estado === 'Cancelado') {
-                return true;
-            }
-            
-            // Verificar si el turno ya pasó
-            const [year, month, day] = b.fecha.split('-').map(Number);
-            const [hours, minutes] = b.hora_inicio.split(':').map(Number);
-            const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
-            
-            const paso = fechaTurno < ahora;
-            
-            if (paso) {
-                console.log(`🗑️ Ocultando: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
-            }
-            
-            return !paso; // Solo mostrar si NO pasó
-        });
-        
-        console.log('📊 Después filtrar pasados:', filtradasSinPasados.length);
-        console.log('🗑️ Se ocultaron', filtradas.length - filtradasSinPasados.length, 'turnos pasados');
-        
-        // PASO 3: Filtrar por estado
+        // PASO 2: Aplicar filtro de estado seleccionado
         let resultado;
         if (statusFilter === 'activas') {
-            resultado = filtradasSinPasados.filter(b => b.estado !== 'Cancelado');
-            console.log('📊 Filtro activas:', resultado.length);
+            resultado = filtradas.filter(b => b.estado === 'Reservado');
+        } else if (statusFilter === 'completadas') {
+            resultado = filtradas.filter(b => b.estado === 'Completado');
         } else if (statusFilter === 'canceladas') {
-            resultado = filtradasSinPasados.filter(b => b.estado === 'Cancelado');
-            console.log('📊 Filtro canceladas:', resultado.length);
-        } else {
-            resultado = filtradasSinPasados;
-            console.log('📊 Filtro todas:', resultado.length);
+            resultado = filtradas.filter(b => b.estado === 'Cancelado');
+        } else { // 'todas'
+            resultado = filtradas;
         }
+        
+        console.log('📊 Resultado final:', resultado.length);
         
         return resultado;
     };
 
-    const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;
+    const activasCount = bookings.filter(b => b.estado === 'Reservado').length;
+    const completadasCount = bookings.filter(b => b.estado === 'Completado').length;
     const canceladasCount = bookings.filter(b => b.estado === 'Cancelado').length;
     const filteredBookings = getFilteredBookings();
 
@@ -1317,7 +1356,7 @@ function AdminApp() {
                                     </button>
                                 )}
                                 <span className="text-xs text-gray-400">
-                                    (No se muestran turnos pasados)
+                                    (Filtros: Activas | Completadas | Canceladas)
                                 </span>
                             </div>
 
@@ -1331,6 +1370,16 @@ function AdminApp() {
                                     }`}
                                 >
                                     Activas ({activasCount})
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('completadas')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                        statusFilter === 'completadas' 
+                                            ? 'bg-blue-500 text-white' 
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Completadas ({completadasCount})
                                 </button>
                                 <button
                                     onClick={() => setStatusFilter('canceladas')}
@@ -1367,15 +1416,18 @@ function AdminApp() {
                                         <p className="text-gray-500">No hay reservas para mostrar</p>
                                         {bookings.length > filteredBookings.length && (
                                             <p className="text-xs text-gray-400 mt-2">
-                                                (Se ocultaron {bookings.length - filteredBookings.length} turnos que ya pasaron)
+                                                (Hay {bookings.length} reservas en total)
                                             </p>
                                         )}
                                     </div>
                                 ) : (
                                     filteredBookings.map(b => (
-                                        <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                                        <div key={b.id} className={`bg-white p-4 rounded-xl shadow-sm border-l-4 ${
+                                            b.estado === 'Reservado' ? 'border-l-amber-500' :
+                                            b.estado === 'Completado' ? 'border-l-green-500' :
+                                            'border-l-red-500'
+                                        }`}>
                                             <div className="flex justify-between mb-2">
-                                                {/* FECHA CON DÍA DE LA SEMANA */}
                                                 <span className="font-semibold">
                                                     {window.formatFechaCompleta ? window.formatFechaCompleta(b.fecha) : b.fecha}
                                                 </span>
@@ -1392,8 +1444,8 @@ function AdminApp() {
                                             <div className="flex justify-between items-center mt-3 pt-2 border-t">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold
                                                     ${b.estado === 'Reservado' ? 'bg-yellow-100 text-yellow-700' : 
-                                                      b.estado === 'Cancelado' ? 'bg-red-100 text-red-700' : 
-                                                      'bg-green-100 text-green-700'}`}>
+                                                      b.estado === 'Completado' ? 'bg-green-100 text-green-700' : 
+                                                      'bg-red-100 text-red-700'}`}>
                                                     {b.estado}
                                                 </span>
                                                 {b.estado === 'Reservado' && (

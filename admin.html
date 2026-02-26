@@ -87,5 +87,20 @@
             window.location.href = 'admin-login.html';
         })();
     </script>
+    <script>
+    // Prevenir que el usuario vuelva al admin con el botón "atrás"
+    window.addEventListener('pageshow', function(event) {
+        // Verificar si la página se cargó desde el caché (botón atrás)
+        if (event.persisted) {
+            const isAdmin = localStorage.getItem('adminAuth') === 'true';
+            const barberoAuth = localStorage.getItem('barberoAuth');
+            
+            if (!isAdmin && !barberoAuth) {
+                console.log('🔄 No hay sesión activa, redirigiendo a index.html');
+                window.location.replace('index.html');
+            }
+        }
+    });
+</script>
 </body>
 </html>
