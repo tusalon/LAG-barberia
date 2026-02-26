@@ -17,7 +17,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     // Cargar imagen de fondo
     React.useEffect(() => {
         const img = new Image();
-        img.src = '/LAG-barberia/images/LAG.barberia.jpg';
+        img.src = '/LAG-barberia/images/LAG.barberia.png';
         img.onload = () => setImagenCargada(true);
     }, []);
 
@@ -209,7 +209,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                     )}
                     <img 
-                        src="/LAG-barberia/images/LAG.barberia.jpg"
+                        src="/LAG-barberia/images/LAG.barberia.png"
                         alt="Barbería LAG.barberia" 
                         className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                     />
@@ -278,7 +278,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                     <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                 )}
                 <img 
-                    src="/LAG-barberia/images/LAG.barberia.jpg"
+                    src="/LAG-barberia/images/LAG.barberia.png"
                     alt="Barbería LAG.barberia" 
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                 />
@@ -296,15 +296,14 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 </button>
             )}
             
-            {/* Contenido */}
-            <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-                <div className="max-w-md w-full">
-                    {/* Eslogan (sin logo) */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-600/30 backdrop-blur-md border border-amber-500/50 text-amber-300 text-sm font-medium mb-4">
-                            <i className="icon-star text-xs"></i>
-                            <span>Nivel que se nota</span>
-                        </div>
+           {/* Contenido */}
+<div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+    <div className="max-w-md w-full">
+        {/* Solo título, sin eslogan */}
+        <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-2">LAG.barberia</h1>
+            <p className="text-gray-300">Acceso para clientes y barberos</p>
+        </div>
                         
                         <h1 className="text-4xl font-bold text-white mb-2">LAG.barberia</h1>
                         <p className="text-gray-300">Acceso para clientes y barberos</p>
