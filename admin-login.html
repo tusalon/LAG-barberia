@@ -17,16 +17,30 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-amber-900 min-h-screen flex items-center justify-center p-4">
+    
+    <!-- 🔥 REDIRECCIÓN AUTOMÁTICA SI YA HAY SESIÓN -->
+    <script>
+        (function() {
+            const isAdmin = localStorage.getItem('adminAuth') === 'true';
+            const barberoAuth = localStorage.getItem('barberoAuth');
+            
+            if (isAdmin || barberoAuth) {
+                console.log('🔐 Sesión activa detectada, redirigiendo a admin.html');
+                window.location.replace('admin.html');
+            }
+        })();
+    </script>
+
     <div class="bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8 animate-fade-in border border-amber-700">
         <div class="text-center mb-8">
-            <!-- 🔥 LOGO COMO ICONO (sin círculo de fondo) -->
+            <!-- LOGO COMO ICONO -->
             <div class="flex justify-center mb-4">
                 <div class="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
                     <i class="icon-scissors text-4xl text-white"></i>
                 </div>
             </div>
             
-            <!-- Eslogan opcional -->
+            <!-- Eslogan -->
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/30 backdrop-blur-sm border border-amber-500/50 text-amber-300 text-sm font-medium mb-2">
                 <i class="icon-star text-xs"></i>
                 <span>Nivel que se nota</span>
