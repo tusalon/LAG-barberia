@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN CON TABLA EN LA PARTE INFERIOR
+// components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO Y NOTIFICACIONES
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -17,7 +17,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     // Cargar imagen de fondo
     React.useEffect(() => {
         const img = new Image();
-        img.src = '/LAG-barberia/images/LAG.barberia.png';
+        img.src = '/LAG-barberia/images/LAG.barberia.jpg';
         img.onload = () => {
             console.log('✅ Imagen cargada correctamente');
             setImagenCargada(true);
@@ -190,6 +190,28 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             if (agregado) {
                 setSolicitudEnviada(true);
                 setError('');
+                
+                // 🔥 ENVIAR NOTIFICACIÓN AL DUEÑO POR NTFY
+                try {
+                    const mensaje = 
+`🆕 NUEVA SOLICITUD DE ACCESO
+
+👤 Nombre: ${nombre}
+📱 WhatsApp: +${whatsapp}`;
+
+                    fetch('https://ntfy.sh/lag-barberia', {
+                        method: 'POST',
+                        body: mensaje,
+                        headers: {
+                            'Title': '📋 Solicitud pendiente',
+                            'Priority': 'default',
+                            'Tags': 'tada'
+                        }
+                    });
+                    console.log('✅ Notificación enviada a ntfy');
+                } catch (error) {
+                    console.error('Error enviando notificación:', error);
+                }
             }
         } catch (err) {
             console.error('Error en submit:', err);
@@ -210,17 +232,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     if (solicitudEnviada) {
         return (
             <div className="min-h-screen bg-white flex flex-col relative overflow-hidden animate-fade-in">
-                {/* Imagen de fondo - SIN OVERLAY SUPERIOR */}
+                {/* Imagen de fondo */}
                 <div className="absolute inset-0 z-0">
                     {!imagenCargada && (
                         <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                     )}
                     <img 
-                        src="/LAG-barberia/images/LAG.barberia.png"
+                        src="/LAG-barberia/images/LAG.barberia.jpg"
                         alt="Barbería LAG.barberia" 
                         className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                     />
-                    {/* SOLO OVERLAY INFERIOR */}
                     <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/70 to-transparent"></div>
                 </div>
 
@@ -235,7 +256,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                     </button>
                 )}
                 
-                {/* Contenido - centrado verticalmente */}
+                {/* Contenido */}
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
                     <div className="w-24 h-24 bg-green-600 rounded-full flex items-center justify-center mb-6 mx-auto shadow-2xl">
                         <div className="icon-check text-5xl text-white"></div>
@@ -280,17 +301,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
 
     return (
         <div className="min-h-screen bg-white flex flex-col relative overflow-hidden animate-fade-in">
-            {/* Imagen de fondo - SIN OVERLAY SUPERIOR */}
+            {/* Imagen de fondo */}
             <div className="absolute inset-0 z-0">
                 {!imagenCargada && (
                     <div className="w-full h-full bg-gradient-to-br from-amber-900 to-gray-900 animate-pulse"></div>
                 )}
                 <img 
-                    src="/LAG-barberia/images/LAG.barberia.png"
+                    src="/LAG-barberia/images/LAG.barberia.jpg"
                     alt="Barbería LAG.barberia" 
                     className={`w-full h-full object-cover transition-opacity duration-500 ${imagenCargada ? 'opacity-100' : 'opacity-0'}`}
                 />
-                {/* SOLO OVERLAY INFERIOR - más alto para cubrir mejor la parte de abajo */}
                 <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/70 to-transparent"></div>
             </div>
 
@@ -305,16 +325,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 </button>
             )}
             
-            {/* Contenido - empuja la tabla hacia abajo */}
+            {/* Contenido */}
             <div className="relative z-10 flex flex-col justify-end min-h-screen p-6 pb-12">
                 <div className="max-w-md w-full mx-auto">
-                    {/* Título y subtítulo - van pegados arriba pero invisibles prácticamente */}
+                    {/* Título oculto (solo para estructura) */}
                     <div className="text-center mb-4 opacity-0 h-0">
                         <h1 className="text-4xl font-bold text-white">LAG.barberia</h1>
                         <p className="text-gray-200 text-lg">Acceso para clientes y barberos</p>
                     </div>
 
-                    {/* Tabla de acceso - en la parte inferior */}
+                    {/* Tabla de acceso */}
                     <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-amber-500/30">
                         <h2 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
                             <i className="icon-user-plus"></i>
