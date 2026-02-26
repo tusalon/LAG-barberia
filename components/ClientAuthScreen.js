@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO Y NOTIFICACIONES
+// components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO Y NOTIFICACIONES CORREGIDAS
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -191,24 +191,34 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 setSolicitudEnviada(true);
                 setError('');
                 
-                // 🔥 ENVIAR NOTIFICACIÓN AL DUEÑO POR NTFY
+                // 🔥 ENVIAR NOTIFICACIÓN AL DUEÑO POR NTFY (VERSIÓN CORREGIDA)
                 try {
-                    const mensaje = 
-`🆕 NUEVA SOLICITUD DE ACCESO
-
-👤 Nombre: ${nombre}
-📱 WhatsApp: +${whatsapp}`;
-
+                    // Eliminar caracteres especiales y emojis del mensaje
+                    const mensajeLimpio = `NUEVA SOLICITUD DE ACCESO\n\nNombre: ${nombre}\nWhatsApp: +${whatsapp}`;
+                    
+                    // Título sin emojis
+                    const tituloLimpio = 'Solicitud pendiente - LAG.barberia';
+                    
                     fetch('https://ntfy.sh/lag-barberia', {
                         method: 'POST',
-                        body: mensaje,
+                        body: mensajeLimpio,
                         headers: {
-                            'Title': '📋 Solicitud pendiente',
+                            'Title': tituloLimpio,
                             'Priority': 'default',
                             'Tags': 'tada'
                         }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('✅ Notificación enviada a ntfy');
+                        } else {
+                            console.error('❌ Error en respuesta:', response.status);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error enviando notificación:', error);
                     });
-                    console.log('✅ Notificación enviada a ntfy');
+                    
                 } catch (error) {
                     console.error('Error enviando notificación:', error);
                 }
