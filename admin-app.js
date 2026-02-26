@@ -802,21 +802,59 @@ function AdminApp() {
         });
     }, [userRole, userNivel, barbero]);
 
-    // ============================================
-    // FUNCIÓN DE CANCELACIÓN CON WHATSAPP
-    // ============================================
     const handleCancel = async (id, bookingData) => {
-        if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
+    if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
+    
+    const ok = await cancelBooking(id);
+    if (ok) {
+        enviarCancelacionWhatsApp(bookingData);
         
-        const ok = await cancelBooking(id);
-        if (ok) {
-            enviarCancelacionWhatsApp(bookingData);
-            alert('✅ Reserva cancelada y cliente notificado');
-            fetchBookings();
-        } else {
-            alert('❌ Error al cancelar');
+        // 🔥 NOTIFICAR AL DUEÑO POR NTFY
+        try {
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(bookingData.fecha) : 
+                bookingData.fecha;
+            
+            const mensajeLimpio = 
+`CANCELACION POR ADMIN
+
+Cliente: ${bookingData.cliente_nombre}
+WhatsApp: ${bookingData.cliente_whatsapp}
+Servicio: ${bookingData.servicio}
+Fecha: ${fechaConDia}
+Hora: ${formatTo12Hour(bookingData.hora_inicio)}
+Barbero: ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
+
+El administrador cancelo la reserva.`;
+
+            fetch('https://ntfy.sh/lag-barberia', {
+                method: 'POST',
+                body: mensajeLimpio,
+                headers: {
+                    'Title': 'Cancelacion por admin - LAG.barberia',
+                    'Priority': 'default',
+                    'Tags': 'x'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Notificación de cancelación enviada');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error enviando notificación:', error);
+            });
+            
+        } catch (error) {
+            console.error('Error enviando notificación:', error);
         }
-    };
+        
+        alert('✅ Reserva cancelada y cliente notificado');
+        fetchBookings();
+    } else {
+        alert('❌ Error al cancelar');
+    }
+};
 
     // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
     const handleLogout = () => {

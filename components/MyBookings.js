@@ -1,4 +1,4 @@
-// components/MyBookings.js - Pantalla de reservas del cliente (CON VALIDACIÓN DE 1 HORA Y DÍA DE LA SEMANA)
+// components/MyBookings.js - Pantalla de reservas del cliente (CON NOTIFICACIONES)
 
 function MyBookings({ cliente, onVolver }) {
     const [bookings, setBookings] = React.useState([]);
@@ -94,10 +94,51 @@ function MyBookings({ cliente, onVolver }) {
         }
     };
 
+    // 🔥 NOTIFICAR AL DUEÑO POR NTFY CUANDO UN CLIENTE CANCELA
+    const notificarCancelacion = (bookingData) => {
+        try {
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(bookingData.fecha) : 
+                bookingData.fecha;
+            
+            const mensajeLimpio = 
+`CANCELACION DE CLIENTE
+
+Cliente: ${bookingData.cliente_nombre}
+WhatsApp: ${bookingData.cliente_whatsapp}
+Servicio: ${bookingData.servicio}
+Fecha: ${fechaConDia}
+Hora: ${formatTo12Hour(bookingData.hora_inicio)}
+Barbero: ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
+
+El cliente cancelo su turno desde la app.`;
+
+            fetch('https://ntfy.sh/lag-barberia', {
+                method: 'POST',
+                body: mensajeLimpio,
+                headers: {
+                    'Title': 'Cancelacion de cliente - LAG.barberia',
+                    'Priority': 'default',
+                    'Tags': 'x'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Notificación de cancelación enviada');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error enviando notificación:', error);
+            });
+            
+        } catch (error) {
+            console.error('Error enviando notificación:', error);
+        }
+    };
+
     const handleCancelarReserva = async (id, bookingData) => {
         // Validar si puede cancelar (menos de 1 hora)
         if (!puedeCancelar(bookingData.fecha, bookingData.hora_inicio)) {
-            // 🔥 FECHA CON DÍA DE LA SEMANA
             const fechaConDia = window.formatFechaCompleta ? 
                 window.formatFechaCompleta(bookingData.fecha) : 
                 bookingData.fecha;
@@ -114,7 +155,6 @@ Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
             return;
         }
         
-        // 🔥 FECHA CON DÍA DE LA SEMANA PARA CONFIRMACIÓN
         const fechaConDiaConfirm = window.formatFechaCompleta ? 
             window.formatFechaCompleta(bookingData.fecha) : 
             bookingData.fecha;
@@ -142,27 +182,8 @@ Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
                 throw new Error('Error al cancelar');
             }
             
-            // 🔥 FECHA CON DÍA DE LA SEMANA PARA NOTIFICACIÓN AL DUEÑO
-            const fechaConDiaNotif = window.formatFechaCompleta ? 
-                window.formatFechaCompleta(bookingData.fecha) : 
-                bookingData.fecha;
-            
-            // Notificar al dueño por WhatsApp
-            const mensajeParaDueño = 
-`❌ *CANCELACIÓN DE CLIENTE - LAG.barberia*
-
-👤 *Cliente:* ${bookingData.cliente_nombre}
-📱 *WhatsApp:* ${bookingData.cliente_whatsapp}
-📅 *Fecha:* ${fechaConDiaNotif}
-⏰ *Hora:* ${formatTo12Hour(bookingData.hora_inicio)}
-💈 *Servicio:* ${bookingData.servicio}
-👨‍🎨 *Barbero:* ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
-
-El cliente canceló su turno desde la app.`;
-
-            const telefonoDueño = "53357234";
-            const encodedText = encodeURIComponent(mensajeParaDueño);
-            window.open(`https://api.whatsapp.com/send?phone=${telefonoDueño}&text=${encodedText}`, '_blank');
+            // 🔥 ENVIAR NOTIFICACIÓN
+            notificarCancelacion(bookingData);
             
             alert('✅ Turno cancelado correctamente');
             await cargarReservas();
@@ -286,7 +307,6 @@ El cliente canceló su turno desde la app.`;
                                                          puedeCancelar(booking.fecha, booking.hora_inicio);
                             const tiempoRestante = getMensajeTiempoRestante(booking.fecha, booking.hora_inicio);
                             
-                            // 🔥 FECHA CON DÍA DE LA SEMANA PARA MOSTRAR EN LA LISTA
                             const fechaConDia = window.formatFechaCompleta ? 
                                 window.formatFechaCompleta(booking.fecha) : 
                                 booking.fecha;
@@ -304,7 +324,6 @@ El cliente canceló su turno desde la app.`;
                                     <div className="p-4">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                {/* 🔥 FECHA COMPLETA CON DÍA DE LA SEMANA */}
                                                 <span className="text-sm text-amber-600 font-medium block mb-1">
                                                     {fechaConDia}
                                                 </span>

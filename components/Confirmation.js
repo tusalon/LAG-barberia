@@ -1,4 +1,4 @@
-// components/Confirmation.js - LAG.barberia (SOLO NOTIFICACIÓN WHATSAPP - SIN ICS)
+// components/Confirmation.js - CON NOTIFICACIÓN NTFY PARA RESERVAS (CORREGIDO)
 
 function Confirmation({ booking, onReset }) {
     if (!booking) {
@@ -6,7 +6,7 @@ function Confirmation({ booking, onReset }) {
         return null;
     }
 
-    // 🔥 FUNCIÓN PARA NOTIFICAR AL DUEÑO POR WHATSAPP
+    // 🔥 FUNCIÓN PARA NOTIFICAR AL DUEÑO POR NTFY
     const notificarDuenno = () => {
         try {
             // Obtener fecha con día de la semana
@@ -20,31 +20,37 @@ function Confirmation({ booking, onReset }) {
             // Obtener nombre del barbero
             const barbero = booking.barbero_nombre || booking.trabajador_nombre || 'No asignado';
             
-            // 🔥 MENSAJE PARA EL DUEÑO
-            const mensaje = 
-`📅 *NUEVA RESERVA - LAG.barberia*
+            // 🔥 MENSAJE PARA NTFY (sin emojis)
+            const mensajeLimpio = 
+`NUEVA RESERVA
 
-👤 *Cliente:* ${booking.cliente_nombre}
-📱 *WhatsApp:* ${booking.cliente_whatsapp}
-💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)
-📆 *Fecha:* ${fechaConDia}
-⏰ *Hora:* ${horaFormateada}
-👨‍🎨 *Barbero:* ${barbero}
+Cliente: ${booking.cliente_nombre}
+WhatsApp: ${booking.cliente_whatsapp}
+Servicio: ${booking.servicio} (${booking.duracion} min)
+Fecha: ${fechaConDia}
+Hora: ${horaFormateada}
+Barbero: ${barbero}`;
 
-✅ *La reserva ha sido confirmada exitosamente.*
-
-✂️ *Nivel que se nota*`;
-
-            // Número del dueño
-            const telefonoDueño = "53357234";
-            
-            // Codificar el mensaje para URL
-            const encodedText = encodeURIComponent(mensaje);
-            
-            // Abrir WhatsApp con el mensaje
-            window.open(`https://api.whatsapp.com/send?phone=${telefonoDueño}&text=${encodedText}`, '_blank');
-            
-            console.log('📤 Notificación enviada al dueño');
+            // Enviar a ntfy.sh
+            fetch('https://ntfy.sh/lag-barberia', {
+                method: 'POST',
+                body: mensajeLimpio,
+                headers: {
+                    'Title': 'Nueva reserva - LAG.barberia',
+                    'Priority': 'default',
+                    'Tags': 'tada'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Notificación de reserva enviada a ntfy');
+                } else {
+                    console.error('❌ Error en respuesta:', response.status);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error enviando notificación:', error);
+            });
             
         } catch (error) {
             console.error('Error enviando notificación:', error);
@@ -58,7 +64,7 @@ function Confirmation({ booking, onReset }) {
         }, 1500); // 1.5 segundos después de mostrar la confirmación
         
         return () => clearTimeout(timer);
-    }, []); // Solo se ejecuta una vez
+    }, []);
 
     // Formatear fecha para mostrar
     const fechaConDia = window.formatFechaCompleta ? 
@@ -120,7 +126,7 @@ function Confirmation({ booking, onReset }) {
                     </div>
                     <div className="text-left">
                         <p className="font-medium text-green-800">Dueño notificado</p>
-                        <p className="text-xs text-green-600">Se envió un WhatsApp con los detalles del turno</p>
+                        <p className="text-xs text-green-600">Se envió una notificación push al dueño</p>
                     </div>
                 </div>
             </div>
