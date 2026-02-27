@@ -86,6 +86,15 @@
 <body>
     <div id="root"></div>
 
+    <!-- Botón de instalación de la app (oculto por defecto) -->
+    <div id="install-button-container" class="fixed bottom-6 left-6 z-50 hidden">
+        <button id="install-button" class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-3 rounded-full shadow-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-105 flex items-center gap-2 border border-amber-400">
+            <span class="icon-download text-xl"></span>
+            <span class="font-semibold">Instalar App</span>
+            <span class="text-xs bg-amber-500 px-2 py-1 rounded-full animate-pulse">NUEVO</span>
+        </button>
+    </div>
+
     <!-- Scripts con rutas ABSOLUTAS que incluyen /LAG-barberia/ -->
     <script type="text/javascript" src="/LAG-barberia/utils/supabase-config.js"></script>
     <script type="text/javascript" src="/LAG-barberia/utils/storage.js"></script>
@@ -244,37 +253,81 @@
         }, 30 * 60 * 1000); // 30 minutos
 
         // ============================================
-        // INSTALACIÓN DE LA APP (PWA)
+        // INSTALACIÓN DE LA APP (PWA) - VERSIÓN CORREGIDA
         // ============================================
         let deferredPrompt;
-        const installButton = document.getElementById('install-button');
-        const installContainer = document.getElementById('install-button-container');
+        let installButton = null;
+        let installContainer = null;
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('📲 App lista para instalar');
-            e.preventDefault();
-            deferredPrompt = e;
-            installContainer.classList.remove('hidden');
-        });
+        // Función para inicializar los botones cuando existan
+        function initInstallButton() {
+            installButton = document.getElementById('install-button');
+            installContainer = document.getElementById('install-button-container');
+            
+            if (installButton && installContainer) {
+                // Eliminar event listener anterior si existe
+                installButton.removeEventListener('click', handleInstallClick);
+                // Agregar nuevo event listener
+                installButton.addEventListener('click', handleInstallClick);
+                console.log('✅ Botón de instalación inicializado');
+            } else {
+                console.log('⏳ Botones de instalación no disponibles aún');
+            }
+        }
 
-        installButton.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
+        // Manejador del clic de instalación
+        async function handleInstallClick() {
+            if (!deferredPrompt) {
+                console.log('⚠️ No hay prompt de instalación disponible');
+                return;
+            }
+            
+            console.log('📲 Mostrando prompt de instalación');
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`📲 Resultado de instalación: ${outcome}`);
             deferredPrompt = null;
-            installContainer.classList.add('hidden');
+            
+            if (installContainer) {
+                installContainer.classList.add('hidden');
+            }
+        }
+
+        // Escuchar el evento beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('📲 App lista para instalar');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Inicializar botones si ya existen
+            initInstallButton();
+            
+            // Mostrar el contenedor
+            if (installContainer) {
+                installContainer.classList.remove('hidden');
+            }
         });
 
+        // Escuchar cuando la app se instala
         window.addEventListener('appinstalled', (e) => {
             console.log('✅ App instalada exitosamente');
-            installContainer.classList.add('hidden');
+            if (installContainer) {
+                installContainer.classList.add('hidden');
+            }
+            
+            // Notificación opcional
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('✅ App instalada', { 
                     body: 'LAG.barberia ahora está en tu dispositivo',
                     icon: '/LAG-barberia/icons/icon-192x192.png'
                 });
             }
+        });
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            initInstallButton();
+            console.log('🔍 Verificando elementos de instalación...');
         });
 
         // ============================================
@@ -284,14 +337,5 @@
             Notification.requestPermission();
         }
     </script>
-
-    <!-- Botón de instalación de la app (oculto por defecto) -->
-    <div id="install-button-container" class="fixed bottom-6 left-6 z-50 hidden">
-        <button id="install-button" class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-3 rounded-full shadow-lg hover:from-amber-700 hover:to-amber-800 transition-all transform hover:scale-105 flex items-center gap-2 border border-amber-400">
-            <span class="icon-download text-xl"></span>
-            <span class="font-semibold">Instalar App</span>
-            <span class="text-xs bg-amber-500 px-2 py-1 rounded-full animate-pulse">NUEVO</span>
-        </button>
-    </div>
 </body>
 </html>
