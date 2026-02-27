@@ -1,5 +1,5 @@
-// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP BUSINESS)
-// AHORA ENVÍA SIEMPRE NOTIFICACIONES POR WHATSAPP
+// utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP + PUSH)
+// AHORA ENVÍA SIEMPRE NOTIFICACIONES POR WHATSAPP Y PUSH
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -79,7 +79,7 @@ window.obtenerEstadoSolicitud = async function(whatsapp) {
     }
 };
 
-// 🔥 FUNCIÓN PARA ENVIAR WHATSAPP (CORREGIDA)
+// 🔥 FUNCIÓN PARA ENVIAR WHATSAPP
 window.enviarWhatsAppNotificacion = function(telefono, mensaje) {
     try {
         console.log('📤 Enviando WhatsApp a:', telefono);
@@ -87,7 +87,7 @@ window.enviarWhatsAppNotificacion = function(telefono, mensaje) {
         const telefonoLimpio = telefono.replace(/\D/g, '');
         const encodedText = encodeURIComponent(mensaje);
         
-        // SIEMPRE usar API de WhatsApp (funciona en todos lados)
+        // Usar API de WhatsApp
         const url = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`;
         
         // Abrir en nueva pestaña
@@ -101,7 +101,41 @@ window.enviarWhatsAppNotificacion = function(telefono, mensaje) {
     }
 };
 
-// 🔥 FUNCIÓN PRINCIPAL: Agregar cliente pendiente (CON WHATSAPP)
+// 🔥 FUNCIÓN PARA ENVIAR NOTIFICACIÓN PUSH (ntfy.sh)
+window.enviarNotificacionPush = function(titulo, mensaje, etiqueta = 'tada') {
+    try {
+        console.log('📤 Enviando notificación push a ntfy.sh');
+        
+        // Eliminar emojis y caracteres especiales para ntfy
+        const mensajeLimpio = mensaje.replace(/[🆕✅❌📱👤💈📅⏰👨‍🎨🔔✂️]/g, '').trim();
+        const tituloLimpio = titulo.replace(/[🆕✅❌📱👤💈📅⏰👨‍🎨🔔✂️]/g, '').trim();
+        
+        fetch('https://ntfy.sh/lag-barberia', {
+            method: 'POST',
+            body: mensajeLimpio,
+            headers: {
+                'Title': tituloLimpio || 'LAG.barberia',
+                'Priority': 'default',
+                'Tags': etiqueta
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('✅ Notificación push enviada a ntfy');
+            } else {
+                console.error('❌ Error en respuesta ntfy:', response.status);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error enviando notificación push:', error);
+        });
+        
+    } catch (error) {
+        console.error('Error enviando notificación push:', error);
+    }
+};
+
+// 🔥 FUNCIÓN PRINCIPAL: Agregar cliente pendiente (CON WHATSAPP + PUSH)
 window.agregarClientePendiente = async function(nombre, whatsapp) {
     console.log('➕ Agregando cliente pendiente:', { nombre, whatsapp });
     
@@ -185,7 +219,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const newSolicitud = await response.json();
         console.log('✅ Solicitud creada:', newSolicitud);
         
-        // 🔥 ENVIAR WHATSAPP AL DUEÑO
+        // 🔥 ENVIAR AMBAS NOTIFICACIONES
         const adminPhone = "53357234";
         const fecha = new Date().toLocaleDateString('es-ES', { 
             weekday: 'long', 
@@ -196,6 +230,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
             minute: '2-digit'
         });
         
+        // Mensaje para WhatsApp (con emojis)
         const mensajeWhatsApp = 
 `🆕 *NUEVA SOLICITUD DE ACCESO - LAG.barberia*
 
@@ -209,7 +244,16 @@ Ingresá al panel de administración para aprobar o rechazar esta solicitud.
 
 ✂️ LAG.barberia - Nivel que se nota`;
 
+        // Mensaje para Push (sin emojis)
+        const mensajePush = `NUEVA SOLICITUD DE ACCESO\n\nNombre: ${nombre}\nWhatsApp: +${whatsapp.replace('53', '')}\nFecha: ${fecha}`;
+        
+        // Enviar WhatsApp
         window.enviarWhatsAppNotificacion(adminPhone, mensajeWhatsApp);
+        
+        // Enviar Push
+        window.enviarNotificacionPush('Solicitud pendiente - LAG.barberia', mensajePush, 'tada');
+        
+        console.log('✅ Ambas notificaciones enviadas: WhatsApp + Push');
         
         return true;
     } catch (error) {
@@ -303,7 +347,7 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN: Aprobar cliente (CON WHATSAPP)
+// 🔥 FUNCIÓN: Aprobar cliente (CON WHATSAPP + PUSH)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
@@ -386,12 +430,13 @@ window.aprobarCliente = async function(whatsapp) {
         
         console.log('✅ Cliente aprobado exitosamente:', clienteAprobado);
         
-        // 🔥 ENVIAR WHATSAPP AL CLIENTE APROBADO
+        // 🔥 ENVIAR AMBAS NOTIFICACIONES
         if (clienteAprobado) {
             try {
                 const telefonoLimpio = clienteAprobado.whatsapp.replace(/\D/g, '');
                 
-                const mensaje = 
+                // Mensaje para WhatsApp al cliente (con emojis)
+                const mensajeWhatsAppCliente = 
 `✅ *¡FELICIDADES! Has sido ACEPTADO en LAG.barberia*
 
 Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de acceso ha sido *APROBADA*.
@@ -410,16 +455,33 @@ Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de ac
 
 LAG.barberia - Donde el estilo se encuentra con la calidad`;
 
-                window.enviarWhatsAppNotificacion(telefonoLimpio, mensaje);
-                console.log('📤 Mensaje de bienvenida enviado a:', telefonoLimpio);
+                // Mensaje para Push al cliente (sin emojis)
+                const mensajePushCliente = `¡FELICIDADES! Has sido ACEPTADO en LAG.barberia\n\nHola ${clienteAprobado.nombre}, tu solicitud de acceso ha sido APROBADA. Ya puede reservar turnos desde la app.`;
+                
+                // Enviar WhatsApp al cliente
+                window.enviarWhatsAppNotificacion(telefonoLimpio, mensajeWhatsAppCliente);
+                
+                // Enviar Push al cliente (si tiene la app instalada)
+                window.enviarNotificacionPush('✅ Acceso aprobado - LAG.barberia', mensajePushCliente, 'white_check_mark');
+                
+                console.log('📤 Notificaciones de bienvenida enviadas a:', telefonoLimpio);
                 
                 // Notificar al admin
                 const adminPhone = "53357234";
-                const notificacionAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
-                window.enviarWhatsAppNotificacion(adminPhone, notificacionAdmin);
+                const fecha = new Date().toLocaleDateString('es-ES');
+                
+                // WhatsApp al admin
+                const mensajeWhatsAppAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
+                window.enviarWhatsAppNotificacion(adminPhone, mensajeWhatsAppAdmin);
+                
+                // Push al admin
+                const mensajePushAdmin = `Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado.`;
+                window.enviarNotificacionPush('Cliente aprobado - LAG.barberia', mensajePushAdmin, 'white_check_mark');
+                
+                console.log('✅ Ambas notificaciones enviadas al admin');
                 
             } catch (error) {
-                console.error('Error enviando WhatsApp de bienvenida:', error);
+                console.error('Error enviando notificaciones de bienvenida:', error);
             }
         }
         

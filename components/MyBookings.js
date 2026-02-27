@@ -1,4 +1,4 @@
-// components/MyBookings.js - Pantalla de reservas del cliente (CON WHATSAPP)
+// components/MyBookings.js - Pantalla de reservas del cliente (CON WHATSAPP + PUSH)
 
 function MyBookings({ cliente, onVolver }) {
     const [bookings, setBookings] = React.useState([]);
@@ -124,6 +124,34 @@ El cliente canceló su turno desde la app.`;
         }
     };
 
+    // 🔥 NOTIFICAR POR PUSH CUANDO UN CLIENTE CANCELA
+    const notificarCancelacionPush = (bookingData) => {
+        try {
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(bookingData.fecha) : 
+                bookingData.fecha;
+            
+            const mensajePush = 
+`CANCELACION DE CLIENTE
+
+Cliente: ${bookingData.cliente_nombre}
+WhatsApp: ${bookingData.cliente_whatsapp}
+Servicio: ${bookingData.servicio}
+Fecha: ${fechaConDia}
+Hora: ${formatTo12Hour(bookingData.hora_inicio)}
+Barbero: ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
+
+El cliente cancelo su turno desde la app.`;
+
+            if (window.enviarNotificacionPush) {
+                window.enviarNotificacionPush('Cancelación de cliente - LAG.barberia', mensajePush, 'x');
+                console.log('✅ Push de cancelación enviado');
+            }
+        } catch (error) {
+            console.error('Error enviando Push:', error);
+        }
+    };
+
     const handleCancelarReserva = async (id, bookingData) => {
         if (!puedeCancelar(bookingData.fecha, bookingData.hora_inicio)) {
             const fechaConDia = window.formatFechaCompleta ? 
@@ -169,8 +197,11 @@ Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
                 throw new Error('Error al cancelar');
             }
             
-            // 🔥 ENVIAR WHATSAPP
+            // 🔥 ENVIAR AMBAS NOTIFICACIONES
+            console.log('📤 Enviando notificaciones de cancelación...');
             notificarCancelacionWhatsApp(bookingData);
+            notificarCancelacionPush(bookingData);
+            console.log('✅ Ambas notificaciones de cancelación enviadas');
             
             alert('✅ Turno cancelado correctamente');
             await cargarReservas();
