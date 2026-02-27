@@ -1,4 +1,5 @@
 // components/ClientAuthScreen.js - VERSIÓN CON IMAGEN DE FONDO Y NOTIFICACIONES CORREGIDAS
+// AHORA ENVÍA TANTO NOTIFICACIONES PUSH (ntfy.sh) COMO WHATSAPP
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -148,6 +149,69 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
         }
     };
 
+    // 🔥 FUNCIÓN PARA ENVIAR NOTIFICACIONES POR NTFY (PUSH)
+    const enviarNotificacionPush = (nombre, whatsapp) => {
+        try {
+            // Eliminar caracteres especiales y emojis del mensaje
+            const mensajeLimpio = `NUEVA SOLICITUD DE ACCESO\n\nNombre: ${nombre}\nWhatsApp: +${whatsapp}`;
+            
+            // Título sin emojis
+            const tituloLimpio = 'Solicitud pendiente - LAG.barberia';
+            
+            fetch('https://ntfy.sh/lag-barberia', {
+                method: 'POST',
+                body: mensajeLimpio,
+                headers: {
+                    'Title': tituloLimpio,
+                    'Priority': 'default',
+                    'Tags': 'tada'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Notificación push enviada a ntfy');
+                } else {
+                    console.error('❌ Error en respuesta ntfy:', response.status);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error enviando notificación push:', error);
+            });
+            
+        } catch (error) {
+            console.error('Error enviando notificación push:', error);
+        }
+    };
+
+    // 🔥 FUNCIÓN PARA ENVIAR NOTIFICACIÓN POR WHATSAPP
+    const enviarNotificacionWhatsApp = (nombre, whatsapp) => {
+        try {
+            const adminPhone = "53357234";
+            const mensaje = `🆕 *NUEVA SOLICITUD DE ACCESO - LAG.barberia*
+
+👤 *Nombre:* ${nombre}
+📱 *WhatsApp:* +${whatsapp}
+
+⏰ *Fecha:* ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+🕐 *Hora:* ${new Date().toLocaleTimeString('es-ES')}
+
+Ingresá al panel de administración para aprobar o rechazar esta solicitud.`;
+
+            // Usar el helper universal de WhatsApp
+            if (window.enviarWhatsAppUniversal) {
+                window.enviarWhatsAppUniversal(adminPhone, mensaje);
+                console.log('✅ Notificación WhatsApp enviada al dueño');
+            } else {
+                // Fallback
+                const encodedText = encodeURIComponent(mensaje);
+                window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedText}`, '_blank');
+                console.log('✅ Notificación WhatsApp enviada (fallback)');
+            }
+        } catch (error) {
+            console.error('❌ Error enviando notificación WhatsApp:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -191,37 +255,18 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 setSolicitudEnviada(true);
                 setError('');
                 
-                // 🔥 ENVIAR NOTIFICACIÓN AL DUEÑO POR NTFY (VERSIÓN CORREGIDA)
-                try {
-                    // Eliminar caracteres especiales y emojis del mensaje
-                    const mensajeLimpio = `NUEVA SOLICITUD DE ACCESO\n\nNombre: ${nombre}\nWhatsApp: +${whatsapp}`;
-                    
-                    // Título sin emojis
-                    const tituloLimpio = 'Solicitud pendiente - LAG.barberia';
-                    
-                    fetch('https://ntfy.sh/lag-barberia', {
-                        method: 'POST',
-                        body: mensajeLimpio,
-                        headers: {
-                            'Title': tituloLimpio,
-                            'Priority': 'default',
-                            'Tags': 'tada'
-                        }
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            console.log('✅ Notificación enviada a ntfy');
-                        } else {
-                            console.error('❌ Error en respuesta:', response.status);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Error enviando notificación:', error);
-                    });
-                    
-                } catch (error) {
-                    console.error('Error enviando notificación:', error);
-                }
+                // 🔥 ENVIAR AMBAS NOTIFICACIONES: PUSH + WHATSAPP
+                console.log('📤 Enviando notificaciones al dueño...');
+                
+                // 1. Notificación push (ntfy.sh)
+                enviarNotificacionPush(nombre, numeroLimpio);
+                
+                // 2. Notificación por WhatsApp
+                setTimeout(() => {
+                    enviarNotificacionWhatsApp(nombre, numeroLimpio);
+                }, 500); // Pequeño delay para no saturar
+                
+                console.log('✅ Ambas notificaciones enviadas');
             }
         } catch (err) {
             console.error('Error en submit:', err);
@@ -291,6 +336,18 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         <p className="text-gray-300 text-sm text-center">
                             El dueño revisará tu solicitud y te contactará por WhatsApp.
                         </p>
+
+                        {/* 🔥 INDICADOR DE NOTIFICACIONES ENVIADAS */}
+                        <div className="mt-4 bg-green-900/30 border border-green-500/30 rounded-lg p-3">
+                            <div className="flex items-center gap-2 text-green-400 text-sm">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span>✅ Notificaciones enviadas al dueño</span>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                                <span>📱 WhatsApp</span>
+                                <span>🔔 Push</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div className="text-sm text-gray-400 text-center">

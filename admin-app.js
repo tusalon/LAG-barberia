@@ -1,4 +1,4 @@
-// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON TURNOS COMPLETADOS)
+// admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON TURNOS COMPLETADOS CORREGIDA)
 
 // ============================================
 // FUNCIONES DE SUPABASE
@@ -74,7 +74,7 @@ async function createBooking(bookingData) {
 }
 
 // ============================================
-// 🔥 FUNCIÓN PARA MARCAR TURNOS COMO COMPLETADOS
+// 🔥 FUNCIÓN CORREGIDA PARA MARCAR TURNOS COMO COMPLETADOS
 // ============================================
 async function marcarTurnosCompletados() {
     try {
@@ -85,10 +85,12 @@ async function marcarTurnosCompletados() {
         const totalMinutosActual = horaActual * 60 + minutosActuales;
         
         console.log('⏰ Verificando turnos para marcar como completados...');
+        console.log('📅 Fecha actual:', hoy);
+        console.log('🕐 Hora actual:', `${horaActual}:${minutosActuales}`);
         
-        // Buscar turnos Reservados con fecha <= hoy
-        const response = await fetch(
-            `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=lte.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
+        // 🔥 CORRECCIÓN: Buscar turnos Reservados con fecha MENOR a hoy (no menor o igual)
+        const responsePasados = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=lt.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
             {
                 headers: {
                     'apikey': window.SUPABASE_ANON_KEY,
@@ -97,33 +99,44 @@ async function marcarTurnosCompletados() {
             }
         );
         
-        if (!response.ok) {
-            console.error('Error al buscar turnos para completar');
+        if (!responsePasados.ok) {
+            console.error('Error al buscar turnos pasados para completar');
             return;
         }
         
-        const turnos = await response.json();
+        const turnosPasados = await responsePasados.json();
         
-        const turnosACompletar = turnos.filter(turno => {
-            // Si la fecha es menor a hoy, completar directamente
-            if (turno.fecha < hoy) return true;
-            
-            // Si es hoy, verificar si la hora de inicio ya pasó
-            if (turno.fecha === hoy) {
-                const [horas, minutos] = turno.hora_inicio.split(':').map(Number);
-                const totalMinutosTurno = horas * 60 + minutos;
-                return totalMinutosTurno <= totalMinutosActual;
+        // 🔥 También verificar turnos de HOY que ya hayan terminado
+        const responseHoy = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=eq.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
+            {
+                headers: {
+                    'apikey': window.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`
+                }
             }
-            
-            return false;
+        );
+        
+        const turnosHoy = responseHoy.ok ? await responseHoy.json() : [];
+        
+        // Filtrar turnos de hoy que ya terminaron
+        const turnosHoyTerminados = turnosHoy.filter(turno => {
+            const [horas, minutos] = turno.hora_fin.split(':').map(Number);
+            const totalMinutosFin = horas * 60 + minutos;
+            return totalMinutosFin <= totalMinutosActual;
         });
+        
+        console.log(`📊 Turnos de días pasados: ${turnosPasados.length}`);
+        console.log(`📊 Turnos de hoy terminados: ${turnosHoyTerminados.length}`);
+        
+        const turnosACompletar = [...turnosPasados, ...turnosHoyTerminados];
         
         if (turnosACompletar.length > 0) {
             console.log(`✅ ${turnosACompletar.length} turnos a marcar como completados`);
             
             // Marcar cada turno como completado
             for (const turno of turnosACompletar) {
-                console.log(`📝 Completando turno de ${turno.cliente_nombre} - ${turno.fecha} ${turno.hora_inicio}`);
+                console.log(`📝 Completando turno de ${turno.cliente_nombre} - ${turno.fecha} ${turno.hora_inicio} a ${turno.hora_fin}`);
                 
                 await fetch(
                     `${window.SUPABASE_URL}/rest/v1/reservas?id=eq.${turno.id}`,
@@ -140,6 +153,8 @@ async function marcarTurnosCompletados() {
             }
             
             console.log(`✅ ${turnosACompletar.length} turnos marcados como completados`);
+        } else {
+            console.log('⏰ No hay turnos para completar');
         }
         
     } catch (error) {
@@ -803,19 +818,19 @@ function AdminApp() {
     }, [userRole, userNivel, barbero]);
 
     const handleCancel = async (id, bookingData) => {
-    if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
-    
-    const ok = await cancelBooking(id);
-    if (ok) {
-        enviarCancelacionWhatsApp(bookingData);
+        if (!confirm(`¿Cancelar reserva de ${bookingData.cliente_nombre}?`)) return;
         
-        // 🔥 NOTIFICAR AL DUEÑO POR NTFY
-        try {
-            const fechaConDia = window.formatFechaCompleta ? 
-                window.formatFechaCompleta(bookingData.fecha) : 
-                bookingData.fecha;
+        const ok = await cancelBooking(id);
+        if (ok) {
+            enviarCancelacionWhatsApp(bookingData);
             
-            const mensajeLimpio = 
+            // 🔥 NOTIFICAR AL DUEÑO POR NTFY
+            try {
+                const fechaConDia = window.formatFechaCompleta ? 
+                    window.formatFechaCompleta(bookingData.fecha) : 
+                    bookingData.fecha;
+                
+                const mensajeLimpio = 
 `CANCELACION POR ADMIN
 
 Cliente: ${bookingData.cliente_nombre}
@@ -827,34 +842,34 @@ Barbero: ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No as
 
 El administrador cancelo la reserva.`;
 
-            fetch('https://ntfy.sh/lag-barberia', {
-                method: 'POST',
-                body: mensajeLimpio,
-                headers: {
-                    'Title': 'Cancelacion por admin - LAG.barberia',
-                    'Priority': 'default',
-                    'Tags': 'x'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log('✅ Notificación de cancelación enviada');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error enviando notificación:', error);
-            });
+                fetch('https://ntfy.sh/lag-barberia', {
+                    method: 'POST',
+                    body: mensajeLimpio,
+                    headers: {
+                        'Title': 'Cancelacion por admin - LAG.barberia',
+                        'Priority': 'default',
+                        'Tags': 'x'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ Notificación de cancelación enviada');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error enviando notificación:', error);
+                });
+                
+            } catch (error) {
+                console.error('Error enviando notificación:', error);
+            }
             
-        } catch (error) {
-            console.error('Error enviando notificación:', error);
+            alert('✅ Reserva cancelada y cliente notificado');
+            fetchBookings();
+        } else {
+            alert('❌ Error al cancelar');
         }
-        
-        alert('✅ Reserva cancelada y cliente notificado');
-        fetchBookings();
-    } else {
-        alert('❌ Error al cancelar');
-    }
-};
+    };
 
     // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
     const handleLogout = () => {
@@ -871,7 +886,7 @@ El administrador cancelo la reserva.`;
     };
 
     // ============================================
-    // FILTROS (ACTUALIZADO CON COMPLETADAS)
+    // FILTROS CORREGIDOS
     // ============================================
     const getFilteredBookings = () => {
         console.log('🔄 Aplicando filtros a', bookings.length, 'reservas');
@@ -1040,7 +1055,7 @@ El administrador cancelo la reserva.`;
                                                 setNuevaReservaData({...nuevaReservaData, cliente_whatsapp: value});
                                             }}
                                             className="w-full px-4 py-2 rounded-r-lg border border-gray-300"
-                                            placeholder="53111111"
+                                            placeholder="53357234"
                                         />
                                     </div>
                                     <p className="text-xs text-gray-400 mt-1">8 dígitos después del +53</p>

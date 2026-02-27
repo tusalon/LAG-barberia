@@ -126,8 +126,8 @@ const indiceToHoraLegible = (indice) => {
     return `${horas.toString().padStart(2, '0')}:${minutos}`;
 };
 
-/// ============================================
-// 🔥 FUNCIÓN PARA VERIFICAR SI UN TURNO YA PASÓ (CON LOGS)
+// ============================================
+// 🔥 FUNCIÓN CORREGIDA PARA VERIFICAR SI UN TURNO YA PASÓ
 // ============================================
 const turnoYaPaso = (fecha, horaInicio) => {
     try {
@@ -135,17 +135,38 @@ const turnoYaPaso = (fecha, horaInicio) => {
         const [year, month, day] = fecha.split('-').map(Number);
         const [hours, minutes] = horaInicio.split(':').map(Number);
         
-        const fechaTurno = new Date(year, month - 1, day, hours, minutes, 0);
+        // Crear fecha del turno (sin comparar hora aún)
+        const fechaTurno = new Date(year, month - 1, day);
+        const fechaHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
         
-        console.log('🔍 Comparando:', {
-            turno: fechaTurno.toLocaleString(),
-            ahora: ahora.toLocaleString(),
-            diferencia: (fechaTurno - ahora) / (1000 * 60) + ' minutos'
+        console.log('🔍 Comparando turno:', {
+            fechaTurno: fechaTurno.toLocaleDateString(),
+            fechaHoy: fechaHoy.toLocaleDateString(),
+            horaTurno: `${hours}:${minutes}`,
+            horaActual: `${ahora.getHours()}:${ahora.getMinutes()}`
         });
         
-        // Si la fecha del turno es menor a la fecha actual, ya pasó
-        const paso = fechaTurno < ahora;
-        console.log(`📅 Turno ${fecha} ${horaInicio} ${paso ? '✅ YA PASÓ' : '❌ AÚN NO PASA'}`);
+        // 🔥 CORRECCIÓN: Comparar fechas primero
+        if (fechaTurno > fechaHoy) {
+            // Fecha futura - NO pasó
+            console.log(`📅 Turno ${fecha} ${horaInicio} es FUTURO - NO PASÓ`);
+            return false;
+        }
+        
+        if (fechaTurno < fechaHoy) {
+            // Fecha pasada - SÍ pasó
+            console.log(`📅 Turno ${fecha} ${horaInicio} es FECHA PASADA - COMPLETAR`);
+            return true;
+        }
+        
+        // Es hoy - comparar hora
+        const horaActual = ahora.getHours();
+        const minutosActuales = ahora.getMinutes();
+        const totalMinutosActual = horaActual * 60 + minutosActuales;
+        const totalMinutosTurno = hours * 60 + minutes + 60; // +60 para considerar la duración
+        
+        const paso = totalMinutosTurno < totalMinutosActual;
+        console.log(`📅 Turno HOY ${fecha} ${horaInicio}: ${paso ? 'YA PASÓ' : 'AÚN NO PASA'}`);
         
         return paso;
     } catch (error) {
@@ -159,7 +180,6 @@ const turnoYaPaso = (fecha, horaInicio) => {
 // ============================================
 const enviarCancelacionWhatsApp = (bookingData) => {
     try {
-        // Obtener fecha con día de la semana
         const fechaConDia = window.formatFechaCompleta ? 
             window.formatFechaCompleta(bookingData.fecha) : 
             bookingData.fecha;
@@ -186,7 +206,6 @@ LAG.barberia - Nivel que se nota`;
         const telefono = bookingData.cliente_whatsapp.replace(/\D/g, '');
         const encodedText = encodeURIComponent(mensaje);
         
-        // Usar API de WhatsApp
         window.open(`https://api.whatsapp.com/send?phone=${telefono}&text=${encodedText}`, '_blank');
         
         console.log('📤 Mensaje de cancelación enviado a:', telefono);
@@ -644,7 +663,6 @@ function AdminApp() {
                 await loadClientesAutorizados();
                 alert(`✅ Cliente ${cliente.nombre} aprobado`);
                 
-                // 🔥 Usar API de WhatsApp
                 const mensaje = `✅ ¡Hola ${cliente.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya podés reservar turnos desde la app.`;
                 const telefono = cliente.whatsapp.replace(/\D/g, '');
                 const encodedText = encodeURIComponent(mensaje);
@@ -764,73 +782,53 @@ function AdminApp() {
     };
 
     // ============================================
-    // FILTROS (MODIFICADO PARA OCULTAR TURNOS PASADOS)
+    // FILTROS CORREGIDOS
     // ============================================
     const getFilteredBookings = () => {
+        console.log('🔄 Aplicando filtros... Total bookings:', bookings.length);
+        
         // Primero, filtrar por fecha si hay filtro activo
         let filtered = filterDate
             ? bookings.filter(b => b.fecha === filterDate)
             : [...bookings];
         
-        // ============================================
-// FILTROS (MODIFICADO PARA OCULTAR TURNOS PASADOS)
-// ============================================
-const getFilteredBookings = () => {
-    console.log('🔄 Aplicando filtros... Total bookings:', bookings.length);
-    
-    // Primero, filtrar por fecha si hay filtro activo
-    let filtered = filterDate
-        ? bookings.filter(b => b.fecha === filterDate)
-        : [...bookings];
-    
-    console.log('📊 Después de filtro por fecha:', filtered.length);
-    
-    // 🔥 FILTRAR TURNOS QUE YA PASARON
-    const antesFiltro = filtered.length;
-    filtered = filtered.filter(b => {
-        // Si el estado es Cancelado, lo mostramos igual
-        if (b.estado === 'Cancelado') {
-            console.log(`📌 Turno cancelado ${b.fecha} ${b.hora_inicio} - SE MUESTRA`);
-            return true;
-        }
+        console.log('📊 Después de filtro por fecha:', filtered.length);
         
-        // Verificar si el turno ya pasó
-        const paso = turnoYaPaso(b.fecha, b.hora_inicio);
-        if (paso) {
-            console.log(`🗑️ Ocultando turno pasado: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
-            return false;
-        }
-        return true;
-    });
-    
-    console.log(`📊 Se ocultaron ${antesFiltro - filtered.length} turnos pasados`);
-    
-    // Luego filtrar por estado
-    if (statusFilter === 'activas') {
-        filtered = filtered.filter(b => b.estado !== 'Cancelado');
-        console.log('📊 Filtro activas aplicado');
-    } else if (statusFilter === 'canceladas') {
-        filtered = filtered.filter(b => b.estado === 'Cancelado');
-        console.log('📊 Filtro canceladas aplicado');
-    }
-    
-    console.log('📊 Total después de todos los filtros:', filtered.length);
-    
-    return filtered;
-};
+        // 🔥 CORRECCIÓN: Solo ocultar turnos pasados si son Reservados
+        const antesFiltro = filtered.length;
+        filtered = filtered.filter(b => {
+            // Si el estado es Cancelado, lo mostramos siempre
+            if (b.estado === 'Cancelado') {
+                return true;
+            }
+            
+            // Verificar si el turno ya pasó (solo para Reservados)
+            const paso = turnoYaPaso(b.fecha, b.hora_inicio);
+            if (paso) {
+                console.log(`🗑️ Ocultando turno pasado: ${b.fecha} ${b.hora_inicio} - ${b.cliente_nombre}`);
+                return false;
+            }
+            return true;
+        });
+        
+        console.log(`📊 Se ocultaron ${antesFiltro - filtered.length} turnos pasados`);
         
         // Luego filtrar por estado
         if (statusFilter === 'activas') {
-            filtered = filtered.filter(b => b.estado !== 'Cancelado');
+            filtered = filtered.filter(b => b.estado === 'Reservado');
         } else if (statusFilter === 'canceladas') {
             filtered = filtered.filter(b => b.estado === 'Cancelado');
+        } else if (statusFilter === 'completadas') {
+            filtered = filtered.filter(b => b.estado === 'Completado');
         }
-        // Si es 'todas', no filtramos por estado adicional
+        
+        console.log('📊 Total después de todos los filtros:', filtered.length);
         
         return filtered;
     };
 
-    const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;
+    const activasCount = bookings.filter(b => b.estado === 'Reservado').length;
+    const completadasCount = bookings.filter(b => b.estado === 'Completado').length;
     const canceladasCount = bookings.filter(b => b.estado === 'Cancelado').length;
     const filteredBookings = getFilteredBookings();
 
@@ -1323,7 +1321,7 @@ const getFilteredBookings = () => {
                                     </button>
                                 )}
                                 <span className="text-xs text-gray-400">
-                                    (No se muestran turnos pasados)
+                                    (Filtros: Activas | Completadas | Canceladas)
                                 </span>
                             </div>
 
@@ -1337,6 +1335,16 @@ const getFilteredBookings = () => {
                                     }`}
                                 >
                                     Activas ({activasCount})
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('completadas')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                                        statusFilter === 'completadas' 
+                                            ? 'bg-blue-500 text-white' 
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Completadas ({completadasCount})
                                 </button>
                                 <button
                                     onClick={() => setStatusFilter('canceladas')}
@@ -1371,17 +1379,20 @@ const getFilteredBookings = () => {
                                 {filteredBookings.length === 0 ? (
                                     <div className="text-center py-12 bg-white rounded-xl">
                                         <p className="text-gray-500">No hay reservas para mostrar</p>
-                                        {bookings.length > 0 && (
+                                        {bookings.length > filteredBookings.length && (
                                             <p className="text-xs text-gray-400 mt-2">
-                                                (Se ocultaron {bookings.length - filteredBookings.length} turnos que ya pasaron)
+                                                (Hay {bookings.length} reservas en total)
                                             </p>
                                         )}
                                     </div>
                                 ) : (
                                     filteredBookings.map(b => (
-                                        <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                                        <div key={b.id} className={`bg-white p-4 rounded-xl shadow-sm border-l-4 ${
+                                            b.estado === 'Reservado' ? 'border-l-amber-500' :
+                                            b.estado === 'Completado' ? 'border-l-green-500' :
+                                            'border-l-red-500'
+                                        }`}>
                                             <div className="flex justify-between mb-2">
-                                                {/* FECHA CON DÍA DE LA SEMANA */}
                                                 <span className="font-semibold">
                                                     {window.formatFechaCompleta ? window.formatFechaCompleta(b.fecha) : b.fecha}
                                                 </span>
@@ -1398,8 +1409,8 @@ const getFilteredBookings = () => {
                                             <div className="flex justify-between items-center mt-3 pt-2 border-t">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold
                                                     ${b.estado === 'Reservado' ? 'bg-yellow-100 text-yellow-700' : 
-                                                      b.estado === 'Cancelado' ? 'bg-red-100 text-red-700' : 
-                                                      'bg-green-100 text-green-700'}`}>
+                                                      b.estado === 'Completado' ? 'bg-green-100 text-green-700' : 
+                                                      'bg-red-100 text-red-700'}`}>
                                                     {b.estado}
                                                 </span>
                                                 {b.estado === 'Reservado' && (
