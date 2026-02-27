@@ -1,4 +1,4 @@
-// components/Confirmation.js - CON NOTIFICACIÓN WHATSAPP PARA RESERVAS
+// components/Confirmation.js - CON WHATSAPP + PUSH PARA RESERVAS (CORREGIDO)
 
 function Confirmation({ booking, onReset }) {
     if (!booking) {
@@ -33,20 +33,86 @@ function Confirmation({ booking, onReset }) {
             if (window.enviarWhatsAppNotificacion) {
                 window.enviarWhatsAppNotificacion(adminPhone, mensaje);
                 console.log('✅ WhatsApp enviado al dueño');
+            } else {
+                // Fallback si la función no existe
+                console.log('⚠️ window.enviarWhatsAppNotificacion no existe');
+                const telefonoLimpio = adminPhone.replace(/\D/g, '');
+                const encodedText = encodeURIComponent(mensaje);
+                window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
             }
         } catch (error) {
             console.error('Error enviando WhatsApp:', error);
         }
     };
 
-    // 🔥 ENVIAR WHATSAPP AUTOMÁTICAMENTE
+    // 🔥 FUNCIÓN PARA ENVIAR NOTIFICACIÓN PUSH
+    const enviarPushDuenno = () => {
+        try {
+            const fechaConDia = window.formatFechaCompleta ? 
+                window.formatFechaCompleta(booking.fecha) : 
+                booking.fecha;
+            
+            const horaFormateada = formatTo12Hour(booking.hora_inicio);
+            const barbero = booking.barbero_nombre || booking.trabajador_nombre || 'No asignado';
+            
+            // Mensaje sin emojis para ntfy
+            const mensajePush = 
+`NUEVA RESERVA
+
+Cliente: ${booking.cliente_nombre}
+WhatsApp: ${booking.cliente_whatsapp}
+Servicio: ${booking.servicio} (${booking.duracion} min)
+Fecha: ${fechaConDia}
+Hora: ${horaFormateada}
+Barbero: ${barbero}
+
+Reserva confirmada automáticamente.`;
+
+            // Título sin emojis
+            const tituloPush = 'Nueva reserva - LAG.barberia';
+
+            // Enviar a ntfy.sh
+            fetch('https://ntfy.sh/lag-barberia', {
+                method: 'POST',
+                body: mensajePush,
+                headers: {
+                    'Title': tituloPush,
+                    'Priority': 'default',
+                    'Tags': 'tada'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Notificación push enviada a ntfy');
+                } else {
+                    console.error('❌ Error en respuesta ntfy:', response.status);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error enviando notificación push:', error);
+            });
+            
+        } catch (error) {
+            console.error('Error enviando Push:', error);
+        }
+    };
+
+    // 🔥 ENVIAR AMBAS NOTIFICACIONES AUTOMÁTICAMENTE
     React.useEffect(() => {
         const timer = setTimeout(() => {
+            console.log('📤 Enviando notificaciones al dueño...');
+            
+            // Enviar WhatsApp
             enviarWhatsAppDuenno();
-        }, 1500);
+            
+            // Enviar Push
+            enviarPushDuenno();
+            
+            console.log('✅ Ambas notificaciones enviadas: WhatsApp + Push');
+        }, 1500); // 1.5 segundos después de mostrar la confirmación
         
         return () => clearTimeout(timer);
-    }, []);
+    }, []); // Solo se ejecuta una vez al montar el componente
 
     const fechaConDia = window.formatFechaCompleta ? 
         window.formatFechaCompleta(booking.fecha) : 
@@ -99,15 +165,15 @@ function Confirmation({ booking, onReset }) {
                 </div>
             </div>
 
-            {/* Mensaje de confirmación de WhatsApp */}
+            {/* Mensaje de confirmación de AMBAS notificaciones */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 max-w-sm w-full">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-xl">
                         📱
                     </div>
                     <div className="text-left">
-                        <p className="font-medium text-green-800">Dueño notificado por WhatsApp</p>
-                        <p className="text-xs text-green-600">Se abrió WhatsApp automáticamente</p>
+                        <p className="font-medium text-green-800">Dueño notificado</p>
+                        <p className="text-xs text-green-600">✅ WhatsApp + Notificación Push enviados</p>
                     </div>
                 </div>
             </div>
