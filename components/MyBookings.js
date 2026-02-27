@@ -1,4 +1,4 @@
-// components/MyBookings.js - Pantalla de reservas del cliente (CON NOTIFICACIONES)
+// components/MyBookings.js - Pantalla de reservas del cliente (CON WHATSAPP)
 
 function MyBookings({ cliente, onVolver }) {
     const [bookings, setBookings] = React.useState([]);
@@ -94,50 +94,37 @@ function MyBookings({ cliente, onVolver }) {
         }
     };
 
-    // 🔥 NOTIFICAR AL DUEÑO POR NTFY CUANDO UN CLIENTE CANCELA
-    const notificarCancelacion = (bookingData) => {
+    // 🔥 NOTIFICAR POR WHATSAPP CUANDO UN CLIENTE CANCELA
+    const notificarCancelacionWhatsApp = (bookingData) => {
         try {
             const fechaConDia = window.formatFechaCompleta ? 
                 window.formatFechaCompleta(bookingData.fecha) : 
                 bookingData.fecha;
             
-            const mensajeLimpio = 
-`CANCELACION DE CLIENTE
+            const mensaje = 
+`❌ *CANCELACIÓN DE CLIENTE - LAG.barberia*
 
-Cliente: ${bookingData.cliente_nombre}
-WhatsApp: ${bookingData.cliente_whatsapp}
-Servicio: ${bookingData.servicio}
-Fecha: ${fechaConDia}
-Hora: ${formatTo12Hour(bookingData.hora_inicio)}
-Barbero: ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
+👤 *Cliente:* ${bookingData.cliente_nombre}
+📱 *WhatsApp:* ${bookingData.cliente_whatsapp}
+💈 *Servicio:* ${bookingData.servicio}
+📅 *Fecha:* ${fechaConDia}
+⏰ *Hora:* ${formatTo12Hour(bookingData.hora_inicio)}
+👨‍🎨 *Barbero:* ${bookingData.barbero_nombre || bookingData.trabajador_nombre || 'No asignado'}
 
-El cliente cancelo su turno desde la app.`;
+El cliente canceló su turno desde la app.`;
 
-            fetch('https://ntfy.sh/lag-barberia', {
-                method: 'POST',
-                body: mensajeLimpio,
-                headers: {
-                    'Title': 'Cancelacion de cliente - LAG.barberia',
-                    'Priority': 'default',
-                    'Tags': 'x'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log('✅ Notificación de cancelación enviada');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error enviando notificación:', error);
-            });
+            const adminPhone = "53357234";
             
+            if (window.enviarWhatsAppNotificacion) {
+                window.enviarWhatsAppNotificacion(adminPhone, mensaje);
+                console.log('✅ WhatsApp de cancelación enviado');
+            }
         } catch (error) {
-            console.error('Error enviando notificación:', error);
+            console.error('Error enviando WhatsApp:', error);
         }
     };
 
     const handleCancelarReserva = async (id, bookingData) => {
-        // Validar si puede cancelar (menos de 1 hora)
         if (!puedeCancelar(bookingData.fecha, bookingData.hora_inicio)) {
             const fechaConDia = window.formatFechaCompleta ? 
                 window.formatFechaCompleta(bookingData.fecha) : 
@@ -182,8 +169,8 @@ Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
                 throw new Error('Error al cancelar');
             }
             
-            // 🔥 ENVIAR NOTIFICACIÓN
-            notificarCancelacion(bookingData);
+            // 🔥 ENVIAR WHATSAPP
+            notificarCancelacionWhatsApp(bookingData);
             
             alert('✅ Turno cancelado correctamente');
             await cargarReservas();
@@ -196,11 +183,10 @@ Si no puede asistir, contactanos por WhatsApp al +53 53357234`;
         }
     };
 
-    // Filtrar reservas según el estado seleccionado
     const reservasFiltradas = bookings.filter(booking => {
         if (filtro === 'activas') return booking.estado !== 'Cancelado';
         if (filtro === 'canceladas') return booking.estado === 'Cancelado';
-        return true; // 'todas'
+        return true;
     });
 
     const activasCount = bookings.filter(b => b.estado !== 'Cancelado').length;

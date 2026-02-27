@@ -1,4 +1,5 @@
 // utils/auth-clients.js - VERSIÓN COMPLETA CORREGIDA (CON WHATSAPP BUSINESS)
+// AHORA ENVÍA SIEMPRE NOTIFICACIONES POR WHATSAPP
 
 console.log('🚀 auth-clients.js CARGADO (versión Supabase)');
 
@@ -78,7 +79,29 @@ window.obtenerEstadoSolicitud = async function(whatsapp) {
     }
 };
 
-// FUNCIÓN PRINCIPAL: Agregar cliente pendiente
+// 🔥 FUNCIÓN PARA ENVIAR WHATSAPP (CORREGIDA)
+window.enviarWhatsAppNotificacion = function(telefono, mensaje) {
+    try {
+        console.log('📤 Enviando WhatsApp a:', telefono);
+        
+        const telefonoLimpio = telefono.replace(/\D/g, '');
+        const encodedText = encodeURIComponent(mensaje);
+        
+        // SIEMPRE usar API de WhatsApp (funciona en todos lados)
+        const url = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`;
+        
+        // Abrir en nueva pestaña
+        window.open(url, '_blank');
+        
+        console.log('✅ WhatsApp enviado correctamente a:', telefonoLimpio);
+        return true;
+    } catch (error) {
+        console.error('❌ Error enviando WhatsApp:', error);
+        return false;
+    }
+};
+
+// 🔥 FUNCIÓN PRINCIPAL: Agregar cliente pendiente (CON WHATSAPP)
 window.agregarClientePendiente = async function(nombre, whatsapp) {
     console.log('➕ Agregando cliente pendiente:', { nombre, whatsapp });
     
@@ -162,16 +185,31 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const newSolicitud = await response.json();
         console.log('✅ Solicitud creada:', newSolicitud);
         
-        // Notificar al admin usando el helper
+        // 🔥 ENVIAR WHATSAPP AL DUEÑO
         const adminPhone = "53357234";
-        const text = `🆕 NUEVA SOLICITUD\n\n👤 ${nombre}\n📱 +${whatsapp}`;
+        const fecha = new Date().toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
         
-        if (window.enviarWhatsAppUniversal) {
-            window.enviarWhatsAppUniversal(adminPhone, text);
-        } else {
-            const encodedText = encodeURIComponent(text);
-            window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedText}`, '_blank');
-        }
+        const mensajeWhatsApp = 
+`🆕 *NUEVA SOLICITUD DE ACCESO - LAG.barberia*
+
+👤 *Nombre:* ${nombre}
+📱 *WhatsApp:* +${whatsapp.replace('53', '')}
+
+📅 *Fecha:* ${fecha}
+
+🔔 *Acción requerida:*
+Ingresá al panel de administración para aprobar o rechazar esta solicitud.
+
+✂️ LAG.barberia - Nivel que se nota`;
+
+        window.enviarWhatsAppNotificacion(adminPhone, mensajeWhatsApp);
         
         return true;
     } catch (error) {
@@ -265,7 +303,7 @@ window.getClientesAutorizados = async function() {
     }
 };
 
-// 🔥 FUNCIÓN: Aprobar cliente (CON WHATSAPP BUSINESS)
+// 🔥 FUNCIÓN: Aprobar cliente (CON WHATSAPP)
 window.aprobarCliente = async function(whatsapp) {
     console.log('✅ Aprobando cliente:', whatsapp);
     
@@ -348,33 +386,37 @@ window.aprobarCliente = async function(whatsapp) {
         
         console.log('✅ Cliente aprobado exitosamente:', clienteAprobado);
         
-        // 🔥 ENVIAR WHATSAPP CON BUSINESS
+        // 🔥 ENVIAR WHATSAPP AL CLIENTE APROBADO
         if (clienteAprobado) {
             try {
                 const telefonoLimpio = clienteAprobado.whatsapp.replace(/\D/g, '');
                 
-                // ✅ USAR LA FUNCIÓN ESPECÍFICA PARA CLIENTES APROBADOS
-                if (window.notificarClienteAprobado) {
-                    window.notificarClienteAprobado(telefonoLimpio, clienteAprobado.nombre);
-                } else {
-                    // Fallback
-                    const mensaje = `✅ ¡Hola ${clienteAprobado.nombre}! Tu acceso a LAG.barberia ha sido APROBADO. Ya puede reservar turnos desde la app.`;
-                    const encodedText = encodeURIComponent(mensaje);
-                    window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
-                }
-                
+                const mensaje = 
+`✅ *¡FELICIDADES! Has sido ACEPTADO en LAG.barberia*
+
+Hola *${clienteAprobado.nombre}*, nos complace informarte que tu solicitud de acceso ha sido *APROBADA*.
+
+🎉 *Ya puede reservar turnos:*
+• Reservar online las 24/7
+• Cancelar turnos desde la app
+• Recibir recordatorios automáticos
+
+📱 *Ingresar ahora mismo:*
+1. Abrir LAG.barberia desde tu celular
+2. Iniciar sesión con tu número
+3. Elegir servicio, barbero y horario
+
+✂️ *Nivel que se nota*
+
+LAG.barberia - Donde el estilo se encuentra con la calidad`;
+
+                window.enviarWhatsAppNotificacion(telefonoLimpio, mensaje);
                 console.log('📤 Mensaje de bienvenida enviado a:', telefonoLimpio);
                 
                 // Notificar al admin
                 const adminPhone = "53357234";
                 const notificacionAdmin = `✅ Cliente ${clienteAprobado.nombre} (+${clienteAprobado.whatsapp}) aprobado y notificado por WhatsApp.`;
-                
-                if (window.enviarWhatsAppUniversal) {
-                    window.enviarWhatsAppUniversal(adminPhone, notificacionAdmin);
-                } else {
-                    const encodedAdmin = encodeURIComponent(notificacionAdmin);
-                    window.open(`https://api.whatsapp.com/send?phone=${adminPhone}&text=${encodedAdmin}`, '_blank');
-                }
+                window.enviarWhatsAppNotificacion(adminPhone, notificacionAdmin);
                 
             } catch (error) {
                 console.error('Error enviando WhatsApp de bienvenida:', error);

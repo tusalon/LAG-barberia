@@ -1,4 +1,4 @@
-// components/Confirmation.js - CON NOTIFICACIÓN NTFY PARA RESERVAS (CORREGIDO)
+// components/Confirmation.js - CON NOTIFICACIÓN WHATSAPP PARA RESERVAS
 
 function Confirmation({ booking, onReset }) {
     if (!booking) {
@@ -6,67 +6,48 @@ function Confirmation({ booking, onReset }) {
         return null;
     }
 
-    // 🔥 FUNCIÓN PARA NOTIFICAR AL DUEÑO POR NTFY
-    const notificarDuenno = () => {
+    // 🔥 FUNCIÓN PARA ENVIAR WHATSAPP AL DUEÑO
+    const enviarWhatsAppDuenno = () => {
         try {
-            // Obtener fecha con día de la semana
             const fechaConDia = window.formatFechaCompleta ? 
                 window.formatFechaCompleta(booking.fecha) : 
                 booking.fecha;
             
-            // Formatear hora a 12h
             const horaFormateada = formatTo12Hour(booking.hora_inicio);
-            
-            // Obtener nombre del barbero
             const barbero = booking.barbero_nombre || booking.trabajador_nombre || 'No asignado';
             
-            // 🔥 MENSAJE PARA NTFY (sin emojis)
-            const mensajeLimpio = 
-`NUEVA RESERVA
+            const mensaje = 
+`🆕 *NUEVA RESERVA - LAG.barberia*
 
-Cliente: ${booking.cliente_nombre}
-WhatsApp: ${booking.cliente_whatsapp}
-Servicio: ${booking.servicio} (${booking.duracion} min)
-Fecha: ${fechaConDia}
-Hora: ${horaFormateada}
-Barbero: ${barbero}`;
+👤 *Cliente:* ${booking.cliente_nombre}
+📱 *WhatsApp:* ${booking.cliente_whatsapp}
+💈 *Servicio:* ${booking.servicio} (${booking.duracion} min)
+📅 *Fecha:* ${fechaConDia}
+⏰ *Hora:* ${horaFormateada}
+👨‍🎨 *Barbero:* ${barbero}
 
-            // Enviar a ntfy.sh
-            fetch('https://ntfy.sh/lag-barberia', {
-                method: 'POST',
-                body: mensajeLimpio,
-                headers: {
-                    'Title': 'Nueva reserva - LAG.barberia',
-                    'Priority': 'default',
-                    'Tags': 'tada'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    console.log('✅ Notificación de reserva enviada a ntfy');
-                } else {
-                    console.error('❌ Error en respuesta:', response.status);
-                }
-            })
-            .catch(error => {
-                console.error('❌ Error enviando notificación:', error);
-            });
+✅ Reserva confirmada automáticamente.`;
+
+            const adminPhone = "53357234";
             
+            if (window.enviarWhatsAppNotificacion) {
+                window.enviarWhatsAppNotificacion(adminPhone, mensaje);
+                console.log('✅ WhatsApp enviado al dueño');
+            }
         } catch (error) {
-            console.error('Error enviando notificación:', error);
+            console.error('Error enviando WhatsApp:', error);
         }
     };
 
-    // 🔥 ENVIAR NOTIFICACIÓN AUTOMÁTICAMENTE AL CARGAR
+    // 🔥 ENVIAR WHATSAPP AUTOMÁTICAMENTE
     React.useEffect(() => {
         const timer = setTimeout(() => {
-            notificarDuenno();
-        }, 1500); // 1.5 segundos después de mostrar la confirmación
+            enviarWhatsAppDuenno();
+        }, 1500);
         
         return () => clearTimeout(timer);
     }, []);
 
-    // Formatear fecha para mostrar
     const fechaConDia = window.formatFechaCompleta ? 
         window.formatFechaCompleta(booking.fecha) : 
         booking.fecha;
@@ -118,15 +99,15 @@ Barbero: ${barbero}`;
                 </div>
             </div>
 
-            {/* Mensaje de confirmación de notificación */}
+            {/* Mensaje de confirmación de WhatsApp */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 max-w-sm w-full">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-xl">
                         📱
                     </div>
                     <div className="text-left">
-                        <p className="font-medium text-green-800">Dueño notificado</p>
-                        <p className="text-xs text-green-600">Se envió una notificación push al dueño</p>
+                        <p className="font-medium text-green-800">Dueño notificado por WhatsApp</p>
+                        <p className="text-xs text-green-600">Se abrió WhatsApp automáticamente</p>
                     </div>
                 </div>
             </div>
