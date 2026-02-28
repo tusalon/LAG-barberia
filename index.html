@@ -3,92 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - LAG.barberia</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LAG.barberia - Reserva de Turnos</title>
+    <meta name="description" content="Reservá tu turno en LAG.barberia fácil y rápido">
+    
+    <!-- PWA - rutas con /LAG-barberia/ -->
+    <link rel="manifest" href="/LAG-barberia/manifest.json">
+    <meta name="theme-color" content="#c49b63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LAG.barberia">
+    <link rel="apple-touch-icon" href="/LAG-barberia/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/LAG-barberia/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/LAG-barberia/icons/icon-512x512.png">
+    
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .animate-fade-in {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
+<body>
     <div id="root"></div>
 
     <!-- Scripts con rutas relativas -->
-    <script type="text/javascript" src="utils/supabase-config.js?v=202402261533"></script>
-    <script type="text/javascript" src="utils/config.js?v=202402261533"></script>
-    <script type="text/javascript" src="utils/storage.js?v=202402261530"></script>
+    <script type="text/javascript" src="utils/supabase-config.js"></script>
+    <script type="text/javascript" src="utils/storage.js"></script>
+    <script type="text/javascript" src="utils/api.js"></script>
+    <script type="text/javascript" src="utils/timeLogic.js"></script>
+    <script type="text/javascript" src="utils/auth-clients.js"></script>
+    <script type="text/javascript" src="utils/auth-barberos.js"></script>
+    <script type="text/javascript" src="utils/config.js"></script>
+    <script type="text/javascript" src="utils/servicios.js"></script>
+    <script type="text/javascript" src="utils/barberos.js"></script>
+    <script type="text/javascript" src="utils/whatsapp-helper.js"></script>
 
-    <script type="text/javascript">
-        console.log('🔍 VERIFICACIÓN INICIAL ADMIN:');
-        console.log('  window.SUPABASE_URL:', window.SUPABASE_URL);
-        console.log('  window.SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? '✓ Definida' : '✗ Undefined');
-        console.log('  location.pathname:', window.location.pathname);
-        console.log('  location.origin:', window.location.origin);
-        
-        if (!window.SUPABASE_URL) {
-            console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida en admin.html');
-        } else {
-            console.log('✅ Supabase configurado correctamente en admin.html');
-        }
-    </script>
+    <!-- Componentes de clientes -->
+    <script type="text/babel" src="components/Header.js"></script>
+    <script type="text/babel" src="components/ServiceSelection.js"></script>
+    <script type="text/babel" src="components/WorkerSelector.js"></script>
+    <script type="text/babel" src="components/Calendar.js"></script>
+    <script type="text/babel" src="components/TimeSlots.js"></script>
+    <script type="text/babel" src="components/BookingForm.js"></script>
+    <script type="text/babel" src="components/Confirmation.js"></script>
+    <script type="text/babel" src="components/WelcomeScreen.js"></script>
+    <script type="text/babel" src="components/WhatsAppButton.js"></script>
+    <script type="text/babel" src="components/ClientAuthScreen.js"></script>
+    <script type="text/babel" src="components/MyBookings.js"></script>
+    
+    <!-- App de clientes -->
+    <script type="text/babel" src="client-app.js"></script>
 
-    <script type="text/javascript" src="utils/api.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/timeLogic.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/auth-clients.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/auth-barberos.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/servicios.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/barberos.js?v=202402261530"></script>
-
-    <script type="text/javascript">
-        console.log('🔍 VERIFICACIÓN DE CARGA ADMIN:');
-        console.log(' ✅ supabase-config:', window.SUPABASE_URL ? 'OK' : 'FALTA');
-        console.log(' ✅ SUPABASE_URL:', window.SUPABASE_URL);
-        console.log(' ✅ auth-barberos:', typeof window.verificarBarberoPorTelefono);
-        console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
-        console.log(' ✅ salonConfig:', typeof window.salonConfig);
-        console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
-        console.log(' ✅ storage:', typeof window.subirImagenServicio);
-    </script>
-
-    <script type="text/babel" src="components/admin/ConfigPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/ServiciosPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/BarberosPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/HorariosPorDiaPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="admin-app.js?v=202402261530"></script>
-
-    <script>
-        (function() {
-            const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            const barberoAuth = localStorage.getItem('barberoAuth');
-            
-            console.log('🔐 Verificando autenticación:', { isAdmin, barberoAuth: !!barberoAuth });
-            console.log('🔐 SUPABASE_URL en auth:', window.SUPABASE_URL);
-            
-            if (isAdmin) {
-                const loginTime = localStorage.getItem('adminLoginTime');
-                const isValidSession = loginTime && (Date.now() - parseInt(loginTime)) < 8 * 60 * 60 * 1000;
-                
-                if (!isValidSession) {
-                    localStorage.removeItem('adminAuth');
-                    localStorage.removeItem('adminUser');
-                    localStorage.removeItem('adminLoginTime');
-                    window.location.href = 'admin-login.html';
-                }
-                return;
-            }
-            
-            if (barberoAuth) {
-                console.log('👨‍🎨 Acceso como barbero');
-                return;
-            }
-            
-            console.log('🚫 No hay sesión, redirigiendo a login');
-            window.location.href = 'admin-login.html';
-        })();
-    </script>
-
-    <!-- Sistema de actualizaciones para admin -->
+    <!-- Sistema de actualizaciones -->
     <script>
         let swRegistration = null;
         let updateNotificationShown = false;
@@ -121,21 +99,7 @@
                 swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
             
-            const reloadMsg = document.createElement('div');
-            reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
-            reloadMsg.id = 'reload-message';
-            reloadMsg.innerHTML = `
-                <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
-                    <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <h3 class="text-xl font-bold mb-2">Actualizando...</h3>
-                    <p class="text-amber-100">El panel se recargará automáticamente</p>
-                </div>
-            `;
-            document.body.appendChild(reloadMsg);
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            window.location.reload();
         };
 
         if ('serviceWorker' in navigator) {
@@ -143,7 +107,7 @@
                 navigator.serviceWorker.register('/LAG-barberia/sw.js')
                     .then(registration => {
                         swRegistration = registration;
-                        console.log('✅ Service Worker registrado en admin');
+                        console.log('✅ Service Worker registrado');
 
                         if (registration.waiting) {
                             showUpdateNotification();
@@ -160,16 +124,10 @@
                     });
 
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('🔄 Service Worker cambiado, recargando admin...');
+                    console.log('🔄 Service Worker cambiado, recargando...');
                     window.location.reload();
                 });
             });
-
-            setInterval(() => {
-                if (swRegistration) {
-                    swRegistration.update();
-                }
-            }, 30 * 60 * 1000);
         }
     </script>
 </body>
