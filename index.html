@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Rservas.Roma</title>
+    <title>Admin - LAG.barberia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,7 +13,7 @@
 <body class="bg-gray-100">
     <div id="root"></div>
 
-    <!-- Scripts con rutas relativas y timestamp -->
+    <!-- Scripts con rutas relativas -->
     <script type="text/javascript" src="utils/supabase-config.js?v=202402261533"></script>
     <script type="text/javascript" src="utils/config.js?v=202402261533"></script>
     <script type="text/javascript" src="utils/storage.js?v=202402261530"></script>
@@ -37,7 +37,6 @@
     <script type="text/javascript" src="utils/auth-clients.js?v=202402261530"></script>
     <script type="text/javascript" src="utils/auth-barberos.js?v=202402261530"></script>
     <script type="text/javascript" src="utils/servicios.js?v=202402261530"></script>
-    <!-- 🔥 CORREGIDO: Ahora carga barberos.js en lugar de profesionales.js -->
     <script type="text/javascript" src="utils/barberos.js?v=202402261530"></script>
 
     <script type="text/javascript">
@@ -48,13 +47,12 @@
         console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
         console.log(' ✅ salonConfig:', typeof window.salonConfig);
         console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonBarberos:', typeof window.salonBarberos); // 👈 Esto ahora debería mostrar "object"
+        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
         console.log(' ✅ storage:', typeof window.subirImagenServicio);
     </script>
 
     <script type="text/babel" src="components/admin/ConfigPanel.js?v=202402261530"></script>
     <script type="text/babel" src="components/admin/ServiciosPanel.js?v=202402261530"></script>
-    <!-- 🔥 CORREGIDO: Ahora carga BarberosPanel.js en lugar de ProfesionalesPanel.js -->
     <script type="text/babel" src="components/admin/BarberosPanel.js?v=202402261530"></script>
     <script type="text/babel" src="components/admin/HorariosPorDiaPanel.js?v=202402261530"></script>
     <script type="text/babel" src="admin-app.js?v=202402261530"></script>
@@ -62,9 +60,9 @@
     <script>
         (function() {
             const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            const profesionalAuth = localStorage.getItem('profesionalAuth');
+            const barberoAuth = localStorage.getItem('barberoAuth');
             
-            console.log('🔐 Verificando autenticación:', { isAdmin, profesionalAuth: !!profesionalAuth });
+            console.log('🔐 Verificando autenticación:', { isAdmin, barberoAuth: !!barberoAuth });
             console.log('🔐 SUPABASE_URL en auth:', window.SUPABASE_URL);
             
             if (isAdmin) {
@@ -80,8 +78,8 @@
                 return;
             }
             
-            if (profesionalAuth) {
-                console.log('👩‍🎨 Acceso como profesional');
+            if (barberoAuth) {
+                console.log('👨‍🎨 Acceso como barbero');
                 return;
             }
             
@@ -106,7 +104,7 @@
                     <div class="banner-icon">✂️</div>
                     <div class="banner-text">
                         <div class="banner-title">¡Nueva versión disponible!</div>
-                        <div class="banner-subtitle">Actualizamos Rservas.Roma con mejoras</div>
+                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
                     </div>
                     <button onclick="updateApp()" class="banner-button">Actualizar ahora</button>
                 </div>
@@ -142,7 +140,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Rservas.Roma/sw.js')
+                navigator.serviceWorker.register('/LAG-barberia/sw.js')
                     .then(registration => {
                         swRegistration = registration;
                         console.log('✅ Service Worker registrado en admin');
@@ -175,4 +173,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
