@@ -173,3 +173,16 @@ window.getDiaSemana = getDiaSemana;
 window.formatFechaCompleta = formatFechaCompleta;
 
 console.log('✅ Funciones de fecha con día de la semana agregadas');
+// utils/timeLogic.js - Agregar al final
+
+// 🔥 FUNCIÓN PARA OBTENER FECHA LOCAL EN YYYY-MM-DD (CORREGIDA)
+function getFechaLocal() {
+    const ahora = new Date();
+    const year = ahora.getFullYear();
+    const month = (ahora.getMonth() + 1).toString().padStart(2, '0');
+    const day = ahora.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Exportar
+window.getFechaLocal = getFechaLocal;

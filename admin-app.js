@@ -74,21 +74,28 @@ async function createBooking(bookingData) {
 }
 
 // ============================================
-// 🔥 FUNCIÓN CORREGIDA PARA MARCAR TURNOS COMO COMPLETADOS
+// 🔥 FUNCIÓN CORREGIDA PARA MARCAR TURNOS COMO COMPLETADOS (CON ZONA HORARIA)
 // ============================================
 async function marcarTurnosCompletados() {
     try {
         const ahora = new Date();
-        const hoy = ahora.toISOString().split('T')[0];
+        
+        // 🔥 CORREGIDO: Obtener fecha LOCAL en formato YYYY-MM-DD
+        const año = ahora.getFullYear();
+        const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
+        const dia = ahora.getDate().toString().padStart(2, '0');
+        const hoy = `${año}-${mes}-${dia}`;
+        
         const horaActual = ahora.getHours();
         const minutosActuales = ahora.getMinutes();
         const totalMinutosActual = horaActual * 60 + minutosActuales;
         
         console.log('⏰ Verificando turnos para marcar como completados...');
-        console.log('📅 Fecha actual:', hoy);
-        console.log('🕐 Hora actual:', `${horaActual}:${minutosActuales}`);
+        console.log('📅 Fecha LOCAL actual:', hoy);
+        console.log('🕐 Hora LOCAL actual:', `${horaActual}:${minutosActuales}`);
+        console.log('🕒 UTC:', ahora.toISOString());
         
-        // 🔥 CORRECCIÓN: Buscar turnos Reservados con fecha MENOR a hoy (no menor o igual)
+        // Buscar turnos Reservados con fecha MENOR a hoy (días anteriores)
         const responsePasados = await fetch(
             `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=lt.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
             {
@@ -106,7 +113,7 @@ async function marcarTurnosCompletados() {
         
         const turnosPasados = await responsePasados.json();
         
-        // 🔥 También verificar turnos de HOY que ya hayan terminado
+        // También verificar turnos de HOY que ya hayan terminado
         const responseHoy = await fetch(
             `${window.SUPABASE_URL}/rest/v1/reservas?estado=eq.Reservado&fecha=eq.${hoy}&select=id,fecha,hora_inicio,hora_fin,cliente_nombre,servicio,barbero_nombre`,
             {
@@ -119,14 +126,14 @@ async function marcarTurnosCompletados() {
         
         const turnosHoy = responseHoy.ok ? await responseHoy.json() : [];
         
-        // Filtrar turnos de hoy que ya terminaron
+        // Filtrar turnos de hoy que ya terminaron (comparando hora_local)
         const turnosHoyTerminados = turnosHoy.filter(turno => {
             const [horas, minutos] = turno.hora_fin.split(':').map(Number);
             const totalMinutosFin = horas * 60 + minutos;
             return totalMinutosFin <= totalMinutosActual;
         });
         
-        console.log(`📊 Turnos de días pasados: ${turnosPasados.length}`);
+        console.log(`📊 Turnos de días pasados (fecha < ${hoy}): ${turnosPasados.length}`);
         console.log(`📊 Turnos de hoy terminados: ${turnosHoyTerminados.length}`);
         
         const turnosACompletar = [...turnosPasados, ...turnosHoyTerminados];
@@ -134,7 +141,6 @@ async function marcarTurnosCompletados() {
         if (turnosACompletar.length > 0) {
             console.log(`✅ ${turnosACompletar.length} turnos a marcar como completados`);
             
-            // Marcar cada turno como completado
             for (const turno of turnosACompletar) {
                 console.log(`📝 Completando turno de ${turno.cliente_nombre} - ${turno.fecha} ${turno.hora_inicio} a ${turno.hora_fin}`);
                 
