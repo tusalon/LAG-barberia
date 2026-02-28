@@ -94,7 +94,7 @@
         })();
     </script>
 
-    <!-- Sistema de actualizaciones para admin -->
+    <!-- Sistema de actualizaciones para admin (UNO SOLO) -->
     <script>
         let swRegistration = null;
         let updateNotificationShown = false;
@@ -104,15 +104,17 @@
             
             const banner = document.createElement('div');
             banner.id = 'update-notification';
-            banner.className = 'update-banner';
+            banner.className = 'fixed bottom-4 left-4 right-4 bg-amber-600 text-white p-4 rounded-lg shadow-lg z-50 max-w-md mx-auto';
             banner.innerHTML = `
-                <div class="banner-content">
-                    <div class="banner-icon">✂️</div>
-                    <div class="banner-text">
-                        <div class="banner-title">¡Nueva versión disponible!</div>
-                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl">✂️</div>
+                    <div class="flex-1">
+                        <div class="font-bold">¡Nueva versión disponible!</div>
+                        <div class="text-sm text-amber-100">Actualizamos LAG.barberia con mejoras</div>
                     </div>
-                    <button onclick="updateApp()" class="banner-button">Actualizar ahora</button>
+                    <button onclick="updateApp()" class="bg-white text-amber-600 px-4 py-2 rounded-lg font-bold hover:bg-amber-50 transition">
+                        Actualizar
+                    </button>
                 </div>
             `;
             document.body.appendChild(banner);
@@ -123,25 +125,24 @@
             const notification = document.getElementById('update-notification');
             if (notification) notification.remove();
             
-            if (swRegistration && swRegistration.waiting) {
-                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-            
             const reloadMsg = document.createElement('div');
             reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
-            reloadMsg.id = 'reload-message';
             reloadMsg.innerHTML = `
                 <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
                     <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
                     <h3 class="text-xl font-bold mb-2">Actualizando...</h3>
-                    <p class="text-amber-100">El panel se recargará automáticamente</p>
+                    <p class="text-amber-100">La app se recargará automáticamente</p>
                 </div>
             `;
             document.body.appendChild(reloadMsg);
             
+            if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            
             setTimeout(() => {
                 window.location.reload();
-            }, 1500);
+            }, 2000);
         };
 
         if ('serviceWorker' in navigator) {

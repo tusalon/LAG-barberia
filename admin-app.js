@@ -1,4 +1,24 @@
 // admin-app.js - LAG.barberia (VERSIÓN COMPLETA CON TURNOS COMPLETADOS CORREGIDA)
+// admin-app.js - PRINCIPIO DEL ARCHIVO
+
+// 🔥 DETECTOR DE VERSIONES ANTIGUAS
+console.log('🚀 ADMIN-APP.JS VERSIÓN:', '2024-03-01');
+
+window.addEventListener('error', function(e) {
+    console.error('❌ Error detectado, posible versión antigua:', e.message);
+    
+    if (e.message.includes('Failed to load') || e.message.includes('Unexpected token')) {
+        console.log('🔄 Forzando recarga por posible versión antigua...');
+        
+        if (window.swRegistration) {
+            window.swRegistration.unregister().then(() => {
+                window.location.reload();
+            });
+        } else {
+            window.location.reload();
+        }
+    }
+});
 
 // ============================================
 // FUNCIONES DE SUPABASE
