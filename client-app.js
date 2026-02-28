@@ -1,4 +1,4 @@
-// client-app.js - Aplicación de clientes con flujo completo y scroll automático
+// client-app.js - Aplicación de clientes con flujo completo
 
 function ClientApp() {
     const [step, setStep] = React.useState('auth');
@@ -18,6 +18,7 @@ function ClientApp() {
         const adminAuth = localStorage.getItem('adminAuth') === 'true';
         const barberoAuth = localStorage.getItem('barberoAuth');
         
+        // Si es admin o barbero, mostrar opción de ir al panel
         if (adminAuth) {
             setUserRol('admin');
         } else if (barberoAuth) {
@@ -31,6 +32,7 @@ function ClientApp() {
             } catch (e) {}
         }
         
+        // Si es cliente autorizado, ir a welcome
         const savedCliente = localStorage.getItem('clienteAuth');
         if (savedCliente && !adminAuth && !barberoAuth) {
             try {

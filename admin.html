@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Rservas.Roma</title>
+    <title>Admin - LAG.barberia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,7 +13,7 @@
 <body class="bg-gray-100">
     <div id="root"></div>
 
-    <!-- Scripts con rutas relativas y timestamp -->
+    <!-- Scripts con rutas relativas -->
     <script type="text/javascript" src="utils/supabase-config.js?v=202402261533"></script>
     <script type="text/javascript" src="utils/config.js?v=202402261533"></script>
     <script type="text/javascript" src="utils/storage.js?v=202402261530"></script>
@@ -37,7 +37,7 @@
     <script type="text/javascript" src="utils/auth-clients.js?v=202402261530"></script>
     <script type="text/javascript" src="utils/auth-barberos.js?v=202402261530"></script>
     <script type="text/javascript" src="utils/servicios.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/profesionales.js?v=202402261530"></script>
+    <script type="text/javascript" src="utils/barberos.js?v=202402261530"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA ADMIN:');
@@ -47,24 +47,32 @@
         console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
         console.log(' ✅ salonConfig:', typeof window.salonConfig);
         console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonProfesionales:', typeof window.salonProfesionales);
+        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
         console.log(' ✅ storage:', typeof window.subirImagenServicio);
     </script>
 
     <script type="text/babel" src="components/admin/ConfigPanel.js?v=202402261530"></script>
     <script type="text/babel" src="components/admin/ServiciosPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/ProfesionalesPanel.js?v=202402261530"></script>
+    <script type="text/babel" src="components/admin/BarberosPanel.js?v=202402261530"></script>
     <script type="text/babel" src="components/admin/HorariosPorDiaPanel.js?v=202402261530"></script>
     <script type="text/babel" src="admin-app.js?v=202402261530"></script>
 
     <script>
         (function() {
             const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            const profesionalAuth = localStorage.getItem('profesionalAuth');
+            const barberoAuth = localStorage.getItem('barberoAuth');
             
-            console.log('🔐 Verificando autenticación:', { isAdmin, profesionalAuth: !!profesionalAuth });
+            console.log('🔐 Verificando autenticación:', { isAdmin, barberoAuth: !!barberoAuth });
             console.log('🔐 SUPABASE_URL en auth:', window.SUPABASE_URL);
             
+            // Si no hay sesión, redirigir a index.html (ClientAuthScreen)
+            if (!isAdmin && !barberoAuth) {
+                console.log('🚫 No hay sesión, redirigiendo a ClientAuthScreen');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Verificar sesión de admin (8 horas de duración)
             if (isAdmin) {
                 const loginTime = localStorage.getItem('adminLoginTime');
                 const isValidSession = loginTime && (Date.now() - parseInt(loginTime)) < 8 * 60 * 60 * 1000;
@@ -73,18 +81,16 @@
                     localStorage.removeItem('adminAuth');
                     localStorage.removeItem('adminUser');
                     localStorage.removeItem('adminLoginTime');
-                    window.location.href = 'admin-login.html';
+                    window.location.href = 'index.html';
                 }
                 return;
             }
             
-            if (profesionalAuth) {
-                console.log('👩‍🎨 Acceso como profesional');
+            // Si es barbero, continuar
+            if (barberoAuth) {
+                console.log('👨‍🎨 Acceso como barbero');
                 return;
             }
-            
-            console.log('🚫 No hay sesión, redirigiendo a login');
-            window.location.href = 'admin-login.html';
         })();
     </script>
 
@@ -104,7 +110,7 @@
                     <div class="banner-icon">✂️</div>
                     <div class="banner-text">
                         <div class="banner-title">¡Nueva versión disponible!</div>
-                        <div class="banner-subtitle">Actualizamos Rservas.Roma con mejoras</div>
+                        <div class="banner-subtitle">Actualizamos LAG.barberia con mejoras</div>
                     </div>
                     <button onclick="updateApp()" class="banner-button">Actualizar ahora</button>
                 </div>
@@ -140,7 +146,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Rservas.Roma/sw.js')
+                navigator.serviceWorker.register('/LAG-barberia/sw.js')
                     .then(registration => {
                         swRegistration = registration;
                         console.log('✅ Service Worker registrado en admin');

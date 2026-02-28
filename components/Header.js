@@ -9,9 +9,8 @@ function Header({ cliente, onLogout, onMisReservas, onGoBack, userRol, showBackB
         
         if (isAdmin || barberoAuth) {
             window.location.href = 'admin.html';
-        } else {
-            window.location.href = 'admin-login.html';
         }
+        // Ya no hay fallback a admin-login.html porque no existe
     };
 
     const tieneAcceso = userRol === 'admin' || userRol === 'barbero';
@@ -75,7 +74,7 @@ function Header({ cliente, onLogout, onMisReservas, onGoBack, userRol, showBackB
                                 <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-amber-700 p-2 text-xs text-gray-300 z-50">
                                     {userRol === 'admin' ? (
                                         <div className="space-y-1">
-                                            <p className="font-semibold text-amber-400">👑 Acceso como dueño</p>
+                                            <p className="font-semibold text-amber-400">👑 Acceso como administrador</p>
                                             <p className="text-gray-400">Puede gestionar todo el sistema</p>
                                         </div>
                                     ) : (

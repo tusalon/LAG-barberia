@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN CON NOTIFICACIONES WHATSAPP CORREGIDAS
+// components/ClientAuthScreen.js - VERSIÓN UNIFICADA (sin admin-login.html)
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -11,7 +11,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [estadoRechazado, setEstadoRechazado] = React.useState(false);
     const [esBarbero, setEsBarbero] = React.useState(false);
     const [barberoInfo, setBarberoInfo] = React.useState(null);
-    const [esDuenno, setEsDuenno] = React.useState(false);
+    const [esAdmin, setEsAdmin] = React.useState(false);
     const [imagenCargada, setImagenCargada] = React.useState(false);
 
     // Cargar imagen de fondo
@@ -28,26 +28,6 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
         };
     }, []);
 
-    const clienteYaTieneSolicitud = async (whatsapp) => {
-        try {
-            const response = await fetch(
-                `${window.SUPABASE_URL}/rest/v1/cliente_solicitudes?whatsapp=eq.${whatsapp}&select=estado`,
-                {
-                    headers: {
-                        'apikey': window.SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_ANON_KEY}`,
-                    }
-                }
-            );
-            if (!response.ok) return false;
-            const data = await response.json();
-            return data.length > 0;
-        } catch (error) {
-            console.error('Error verificando solicitud:', error);
-            return false;
-        }
-    };
-
     const verificarNumero = async (numero) => {
         if (numero.length < 8) {
             setClienteAutorizado(null);
@@ -55,7 +35,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             setEstadoRechazado(false);
             setEsBarbero(false);
             setBarberoInfo(null);
-            setEsDuenno(false);
+            setEsAdmin(false);
             setError('');
             return;
         }
@@ -66,22 +46,24 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
         const numeroCompleto = `53${numeroLimpio}`;
         
         try {
+            // Verificar si es ADMIN (dueño)
             if (numeroLimpio === '53357234') {
-                setEsDuenno(true);
+                setEsAdmin(true);
                 setEsBarbero(false);
                 setBarberoInfo(null);
                 setClienteAutorizado(null);
-                setError('👑 Acceso como dueño detectado');
+                setError('👑 Acceso como administrador detectado');
                 setVerificando(false);
                 return;
             }
             
+            // Verificar si es BARBERO
             if (window.verificarBarberoPorTelefono) {
                 const barbero = await window.verificarBarberoPorTelefono(numeroLimpio);
                 if (barbero) {
                     setEsBarbero(true);
                     setBarberoInfo(barbero);
-                    setEsDuenno(false);
+                    setEsAdmin(false);
                     setClienteAutorizado(null);
                     setError('👨‍🎨 Acceso como barbero detectado');
                     setVerificando(false);
@@ -89,32 +71,20 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                 }
             }
             
-            const yaExiste = await clienteYaTieneSolicitud(numeroCompleto);
-            if (yaExiste) {
-                const pendiente = await window.isClientePendiente?.(numeroCompleto);
-                if (pendiente) {
-                    setError('Ya tenés una solicitud pendiente. El dueño te contactará pronto.');
-                } else {
-                    setError('Este número ya fue registrado anteriormente.');
-                }
-                setVerificando(false);
-                return;
-            }
-            
-            setEsDuenno(false);
-            setEsBarbero(false);
-            setBarberoInfo(null);
-            
+            // Verificar si es CLIENTE AUTORIZADO
             const existe = await window.verificarAccesoCliente(numeroCompleto);
             
             if (existe) {
                 setClienteAutorizado(existe);
                 setYaTieneSolicitud(false);
                 setEstadoRechazado(false);
+                setEsBarbero(false);
+                setEsAdmin(false);
                 setError('');
             } else {
                 setClienteAutorizado(null);
                 
+                // Verificar si tiene solicitud pendiente
                 if (window.obtenerEstadoSolicitud) {
                     const estado = await window.obtenerEstadoSolicitud(numeroCompleto);
                     
@@ -156,7 +126,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             return;
         }
         
-        if (esDuenno || esBarbero) {
+        if (esAdmin || esBarbero) {
             return;
         }
         
@@ -170,18 +140,6 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             
             if (autorizado) {
                 onAccessGranted(autorizado.nombre, numeroCompleto);
-                return;
-            }
-            
-            const yaExiste = await clienteYaTieneSolicitud(numeroCompleto);
-            if (yaExiste) {
-                const pendiente = await window.isClientePendiente?.(numeroCompleto);
-                if (pendiente) {
-                    setError('Ya tenés una solicitud pendiente.');
-                } else {
-                    setError('Este número ya fue registrado anteriormente.');
-                }
-                setVerificando(false);
                 return;
             }
             
@@ -259,16 +217,8 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                         </div>
                         
                         <p className="text-gray-300 text-sm text-center">
-                            El dueño revisará tu solicitud y te contactará por WhatsApp.
+                            El administrador revisará tu solicitud y te contactará por WhatsApp.
                         </p>
-
-                        {/* 🔥 INDICADOR DE WHATSAPP ENVIADO */}
-                        <div className="mt-4 bg-green-900/30 border border-green-500/30 rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-green-400 text-sm">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span>✅ Se abrió WhatsApp para notificar al dueño</span>
-                            </div>
-                        </div>
                     </div>
                     
                     <div className="text-sm text-gray-400 text-center">
@@ -316,13 +266,8 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             {/* Contenido */}
             <div className="relative z-10 flex flex-col justify-end min-h-screen p-6 pb-12">
                 <div className="max-w-md w-full mx-auto">
-                    {/* Título oculto (solo para estructura) */}
-                    <div className="text-center mb-4 opacity-0 h-0">
-                        <h1 className="text-4xl font-bold text-white">LAG.barberia</h1>
-                        <p className="text-gray-200 text-lg">Acceso para clientes y barberos</p>
-                    </div>
-
-                    {/* Tabla de acceso */}
+                    
+                    {/* Tabla de acceso unificada */}
                     <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-amber-500/30">
                         <h2 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
                             <i className="icon-user-plus"></i>
@@ -339,12 +284,12 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                     value={nombre}
                                     onChange={(e) => setNombre(e.target.value)}
                                     className={`w-full px-4 py-3 rounded-lg border ${
-                                        esDuenno || esBarbero 
+                                        esAdmin || esBarbero 
                                             ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-not-allowed' 
                                             : 'bg-gray-800/50 border-gray-600 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 backdrop-blur-sm'
                                     } outline-none transition`}
                                     placeholder="Ej: Juan Pérez"
-                                    disabled={esDuenno || esBarbero}
+                                    disabled={esAdmin || esBarbero}
                                 />
                             </div>
 
@@ -379,15 +324,15 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </div>
                             )}
 
-                            {esDuenno && !verificando && (
+                            {esAdmin && !verificando && (
                                 <div className="bg-gradient-to-r from-amber-900/80 to-amber-800/80 backdrop-blur-sm border-2 border-amber-500 rounded-lg p-4">
                                     <div className="flex items-start gap-3">
                                         <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                                            D
+                                            A
                                         </div>
                                         <div className="flex-1">
                                             <p className="text-amber-300 font-bold text-xl">
-                                                ¡Bienvenido Dueño!
+                                                ¡Bienvenido Administrador!
                                             </p>
                                             <p className="text-amber-400 text-sm">
                                                 Hacé clic en el botón de abajo para acceder al panel.
@@ -415,7 +360,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </div>
                             )}
 
-                            {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
+                            {clienteAutorizado && !verificando && !esAdmin && !esBarbero && (
                                 <div className="bg-gradient-to-r from-green-900/80 to-green-800/80 backdrop-blur-sm border-2 border-green-500 rounded-lg p-4">
                                     <div className="flex items-start gap-3">
                                         <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
@@ -433,7 +378,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </div>
                             )}
 
-                            {error && !esDuenno && !esBarbero && (
+                            {error && !esAdmin && !esBarbero && (
                                 <div className={`text-sm p-3 rounded-lg flex items-start gap-2 backdrop-blur-sm ${
                                     estadoRechazado 
                                         ? 'bg-yellow-900/80 text-yellow-300 border border-yellow-700' 
@@ -445,19 +390,19 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                             )}
 
                             <div className="space-y-3 pt-2">
-                                {esDuenno && !verificando && (
+                                {esAdmin && !verificando && (
                                     <button
                                         type="button"
                                         onClick={() => {
                                             localStorage.setItem('adminAuth', 'true');
-                                            localStorage.setItem('adminUser', 'Dueño');
+                                            localStorage.setItem('adminUser', 'Administrador');
                                             localStorage.setItem('adminLoginTime', Date.now());
                                             window.location.href = 'admin.html';
                                         }}
                                         className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-yellow-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
                                     >
                                         <span className="text-xl">⚡</span>
-                                        Ingresar como Dueño
+                                        Ingresar como Administrador
                                     </button>
                                 )}
 
@@ -480,7 +425,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                     </button>
                                 )}
 
-                                {clienteAutorizado && !verificando && !esDuenno && !esBarbero && (
+                                {clienteAutorizado && !verificando && !esAdmin && !esBarbero && (
                                     <button
                                         type="button"
                                         onClick={handleAccesoDirecto}
@@ -491,7 +436,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                     </button>
                                 )}
 
-                                {!clienteAutorizado && !esDuenno && !esBarbero && !verificando && (
+                                {!clienteAutorizado && !esAdmin && !esBarbero && !verificando && (
                                     <button
                                         type="submit"
                                         disabled={verificando || (yaTieneSolicitud && !estadoRechazado)}

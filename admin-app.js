@@ -871,20 +871,21 @@ El administrador cancelo la reserva.`;
         }
     };
 
-    // 🔥 FUNCIÓN DE LOGOUT ACTUALIZADA
-    const handleLogout = () => {
-        if (confirm('¿Cerrar sesión?')) {
-            localStorage.removeItem('adminAuth');
-            localStorage.removeItem('adminUser');
-            localStorage.removeItem('adminLoginTime');
-            localStorage.removeItem('barberoAuth');
-            localStorage.removeItem('userRole');
-            
-            console.log('🚪 Sesión cerrada, redirigiendo a la app de clientes');
-            window.location.href = 'index.html';
-        }
-    };
-
+    // 🔥 FUNCIÓN DE LOGOUT - Redirige a ClientAuthScreen
+const handleLogout = () => {
+    if (confirm('¿Cerrar sesión?')) {
+        // Limpiar TODOS los datos de autenticación
+        localStorage.removeItem('adminAuth');
+        localStorage.removeItem('adminUser');
+        localStorage.removeItem('adminLoginTime');
+        localStorage.removeItem('barberoAuth');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('clienteAuth'); // Por si acaso
+        
+        console.log('🚪 Sesión cerrada, redirigiendo a ClientAuthScreen');
+        window.location.href = 'index.html'; // ✅ Redirige a ClientAuthScreen
+    }
+};
     // ============================================
     // FILTROS CORREGIDOS
     // ============================================
