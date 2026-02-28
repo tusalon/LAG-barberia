@@ -1,4 +1,4 @@
-// components/admin/ConfigPanel.js - CON ANTELACIÓN MÁXIMA
+// components/admin/ConfigPanel.js - CON ANTELACIÓN MÁXIMA (CORREGIDO)
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
@@ -46,18 +46,19 @@ function ConfigPanel({ barberoId, modoRestringido }) {
     const cargarDatos = async () => {
         setCargando(true);
         try {
+            let barberosCargados = [];
+            // 1. Cargar barberos SIEMPRE (para el selector, incluso si el admin no tiene modoRestringido)
             if (window.salonBarberos) {
                 const lista = await window.salonBarberos.getAll(true);
-                setBarberos(lista || []);
-                
-                if (!modoRestringido && lista && lista.length > 0) {
-                    setBarberoSeleccionado(lista[0].id);
-                }
+                console.log('✅ Barberos cargados en ConfigPanel:', lista);
+                barberosCargados = lista || [];
+                setBarberos(barberosCargados);
             }
             
+            // 2. Si NO es modo restringido (admin), cargar config global
             if (!modoRestringido && window.salonConfig) {
                 const config = await window.salonConfig.get();
-                console.log('📋 Configuración cargada:', config);
+                console.log('📋 Configuración global cargada:', config);
                 setConfigGlobal(config || {
                     duracion_turnos: 60,
                     intervalo_entre_turnos: 0,
@@ -65,6 +66,12 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     max_antelacion_dias: 30
                 });
             }
+            
+            // 3. Seleccionar el primer barbero por defecto SOLO si no estamos en modo restringido y hay barberos
+            if (!modoRestringido && barberosCargados.length > 0 && !barberoSeleccionado) {
+                setBarberoSeleccionado(barberosCargados[0].id);
+            }
+            
         } catch (error) {
             console.error('Error cargando datos:', error);
         } finally {
@@ -242,6 +249,11 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             Configurar horarios por día
                         </button>
                     </div>
+                    {barberos.length === 0 && !cargando && (
+                        <p className="text-sm text-amber-600 mt-2">
+                            ⚠️ No hay barberos activos. Ve a la pestaña "Barberos" para crear uno.
+                        </p>
+                    )}
                 </div>
             )}
             
