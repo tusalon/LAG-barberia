@@ -94,7 +94,7 @@ function MyBookings({ cliente, onVolver }) {
         }
     };
 
-    // 🔥 NOTIFICAR POR WHATSAPP CUANDO UN CLIENTE CANCELA
+    // 🔥 NOTIFICAR POR WHATSAPP CUANDO UN CLIENTE CANCELA - CORREGIDO PARA IPHONE
     const notificarCancelacionWhatsApp = (bookingData) => {
         try {
             const fechaConDia = window.formatFechaCompleta ? 
@@ -115,10 +115,25 @@ El cliente canceló su turno desde la app.`;
 
             const adminPhone = "53357234";
             
-            if (window.enviarWhatsAppNotificacion) {
-                window.enviarWhatsAppNotificacion(adminPhone, mensaje);
-                console.log('✅ WhatsApp de cancelación enviado');
-            }
+            // ✅ CORREGIDO: Usar método que funciona en iPhone
+            const telefonoLimpio = adminPhone.replace(/\D/g, '');
+            const encodedText = encodeURIComponent(mensaje);
+            
+            // Crear link invisible (funciona en iPhone)
+            const link = document.createElement('a');
+            link.href = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            // Limpiar después
+            setTimeout(() => {
+                document.body.removeChild(link);
+            }, 200);
+            
+            console.log('✅ WhatsApp de cancelación enviado');
         } catch (error) {
             console.error('Error enviando WhatsApp:', error);
         }

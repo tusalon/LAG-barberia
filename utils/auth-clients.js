@@ -135,7 +135,7 @@ window.enviarNotificacionPush = function(titulo, mensaje, etiqueta = 'tada') {
     }
 };
 
-// 🔥 FUNCIÓN PRINCIPAL: Agregar cliente pendiente (CON WHATSAPP + PUSH)
+// 🔥 FUNCIÓN PRINCIPAL: Agregar cliente pendiente (CON WHATSAPP + PUSH) - CORREGIDA PARA IPHONE
 window.agregarClientePendiente = async function(nombre, whatsapp) {
     console.log('➕ Agregando cliente pendiente:', { nombre, whatsapp });
     
@@ -219,7 +219,7 @@ window.agregarClientePendiente = async function(nombre, whatsapp) {
         const newSolicitud = await response.json();
         console.log('✅ Solicitud creada:', newSolicitud);
         
-        // 🔥 ENVIAR AMBAS NOTIFICACIONES
+        // 🔥 ENVIAR AMBAS NOTIFICACIONES - CORREGIDO PARA IPHONE
         const adminPhone = "53357234";
         const fecha = new Date().toLocaleDateString('es-ES', { 
             weekday: 'long', 
@@ -247,8 +247,23 @@ Ingresá al panel de administración para aprobar o rechazar esta solicitud.
         // Mensaje para Push (sin emojis)
         const mensajePush = `NUEVA SOLICITUD DE ACCESO\n\nNombre: ${nombre}\nWhatsApp: +${whatsapp.replace('53', '')}\nFecha: ${fecha}`;
         
-        // Enviar WhatsApp
-        window.enviarWhatsAppNotificacion(adminPhone, mensajeWhatsApp);
+        // ✅ CORREGIDO: Usar método que funciona en iPhone
+        const telefonoLimpio = adminPhone.replace(/\D/g, '');
+        const encodedText = encodeURIComponent(mensajeWhatsApp);
+        
+        // Crear link invisible (funciona en iPhone)
+        const link = document.createElement('a');
+        link.href = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Limpiar después
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 200);
         
         // Enviar Push
         window.enviarNotificacionPush('Solicitud pendiente - LAG.barberia', mensajePush, 'tada');

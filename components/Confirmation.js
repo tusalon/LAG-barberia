@@ -6,7 +6,7 @@ function Confirmation({ booking, onReset }) {
         return null;
     }
 
-    // 🔥 FUNCIÓN PARA ENVIAR WHATSAPP AL DUEÑO
+    // 🔥 FUNCIÓN PARA ENVIAR WHATSAPP AL DUEÑO - CORREGIDA PARA IPHONE
     const enviarWhatsAppDuenno = () => {
         try {
             const fechaConDia = window.formatFechaCompleta ? 
@@ -30,16 +30,25 @@ function Confirmation({ booking, onReset }) {
 
             const adminPhone = "53357234";
             
-            if (window.enviarWhatsAppNotificacion) {
-                window.enviarWhatsAppNotificacion(adminPhone, mensaje);
-                console.log('✅ WhatsApp enviado al dueño');
-            } else {
-                // Fallback si la función no existe
-                console.log('⚠️ window.enviarWhatsAppNotificacion no existe');
-                const telefonoLimpio = adminPhone.replace(/\D/g, '');
-                const encodedText = encodeURIComponent(mensaje);
-                window.open(`https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`, '_blank');
-            }
+            // ✅ CORREGIDO: Usar método que funciona en iPhone
+            const telefonoLimpio = adminPhone.replace(/\D/g, '');
+            const encodedText = encodeURIComponent(mensaje);
+            
+            // Crear link invisible (funciona en iPhone)
+            const link = document.createElement('a');
+            link.href = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${encodedText}`;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            // Limpiar después
+            setTimeout(() => {
+                document.body.removeChild(link);
+            }, 200);
+            
+            console.log('✅ WhatsApp enviado al dueño');
         } catch (error) {
             console.error('Error enviando WhatsApp:', error);
         }

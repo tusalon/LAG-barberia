@@ -124,6 +124,30 @@ window.enviarWhatsAppUniversal = function(telefono, mensaje) {
     }
 };
 
+// 🔥 FUNCIÓN ESPECÍFICA PARA NOTIFICACIONES AUTOMÁTICAS (funciona en iPhone)
+window.enviarWhatsAppNotificacion = function(telefono, mensaje) {
+    const telefonoLimpio = telefono.replace(/\D/g, '');
+    const mensajeCodificado = encodeURIComponent(mensaje);
+    
+    console.log('📤 [NOTIFICACIÓN] Enviando WhatsApp a:', telefonoLimpio);
+    
+    // Crear un link invisible y hacer click (funciona en iPhone)
+    const link = document.createElement('a');
+    link.href = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${mensajeCodificado}`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpiar después
+    setTimeout(() => {
+        document.body.removeChild(link);
+    }, 200);
+    
+    return true;
+};
+
 // 🔥 FUNCIÓN ACTUALIZADA: Notificar al cliente aprobado (CON DÍA DE LA SEMANA)
 window.notificarClienteAprobado = function(telefono, nombre) {
     // Obtener fecha actual con día de la semana
