@@ -1,4 +1,4 @@
-// components/admin/ConfigPanel.js - VERSIÓN CON DEBUG EXTREMO
+// components/admin/ConfigPanel.js - VERSIÓN LIMPIA (SIN DEBUG)
 
 function ConfigPanel({ barberoId, modoRestringido }) {
     const [barberos, setBarberos] = React.useState([]);
@@ -11,7 +11,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         max_antelacion_dias: 30
     });
     const [cargando, setCargando] = React.useState(true);
-    const [errorCarga, setErrorCarga] = React.useState(null);
 
     const opcionesDuracion = [
         { value: 30, label: '30 min', icon: '⏱️' },
@@ -34,71 +33,32 @@ function ConfigPanel({ barberoId, modoRestringido }) {
     ];
 
     React.useEffect(() => {
-        console.log('🔍 [ConfigPanel] Montado - modoRestringido:', modoRestringido, 'barberoId:', barberoId);
         cargarDatos();
     }, []);
 
     React.useEffect(() => {
         if (modoRestringido && barberoId) {
-            console.log('🔍 [ConfigPanel] Modo restringido, seleccionando barbero:', barberoId);
             setBarberoSeleccionado(barberoId);
         }
     }, [modoRestringido, barberoId]);
 
     const cargarDatos = async () => {
-        console.log('🔄 [ConfigPanel] Iniciando carga de datos');
         setCargando(true);
-        setErrorCarga(null);
-        
         try {
-            // PASO 1: Verificar si window.salonBarberos existe
-            console.log('🔍 [ConfigPanel] Verificando window.salonBarberos:', {
-                existe: !!window.salonBarberos,
-                tipo: typeof window.salonBarberos,
-                objeto: window.salonBarberos
-            });
-            
-            if (!window.salonBarberos) {
-                console.error('❌ [ConfigPanel] window.salonBarberos NO existe');
-                setErrorCarga('Error: sistema de barberos no disponible');
-                setBarberos([]);
-                setCargando(false);
-                return;
-            }
-            
-            // PASO 2: Intentar cargar barberos
-            console.log('📋 [ConfigPanel] Llamando a window.salonBarberos.getAll(true)...');
-            const listaBarberos = await window.salonBarberos.getAll(true);
-            console.log('✅ [ConfigPanel] Resultado de getAll:', {
-                existe: !!listaBarberos,
-                esArray: Array.isArray(listaBarberos),
-                longitud: listaBarberos?.length,
-                datos: listaBarberos
-            });
-            
-            if (listaBarberos && Array.isArray(listaBarberos)) {
-                console.log(`✅ [ConfigPanel] Se cargaron ${listaBarberos.length} barberos`);
-                setBarberos(listaBarberos);
+            // Cargar barberos
+            if (window.salonBarberos) {
+                const lista = await window.salonBarberos.getAll(true);
+                setBarberos(lista || []);
                 
-                // PASO 3: Seleccionar primer barbero si es admin
-                if (!modoRestringido && listaBarberos.length > 0) {
-                    const primerBarbero = listaBarberos[0];
-                    console.log('🎯 [ConfigPanel] Seleccionando primer barbero:', {
-                        id: primerBarbero.id,
-                        nombre: primerBarbero.nombre
-                    });
-                    setBarberoSeleccionado(primerBarbero.id);
+                // Seleccionar el primer barbero por defecto si es admin
+                if (!modoRestringido && lista && lista.length > 0) {
+                    setBarberoSeleccionado(lista[0].id);
                 }
-            } else {
-                console.warn('⚠️ [ConfigPanel] No se obtuvieron barberos o no es array');
-                setBarberos([]);
             }
             
-            // PASO 4: Cargar configuración global si es admin
+            // Cargar configuración global si es admin
             if (!modoRestringido && window.salonConfig) {
-                console.log('🌐 [ConfigPanel] Cargando configuración global...');
                 const config = await window.salonConfig.get();
-                console.log('📋 [ConfigPanel] Configuración global:', config);
                 setConfigGlobal(config || {
                     duracion_turnos: 60,
                     intervalo_entre_turnos: 0,
@@ -106,21 +66,11 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     max_antelacion_dias: 30
                 });
             }
-            
         } catch (error) {
-            console.error('❌ [ConfigPanel] Error en cargarDatos:', error);
-            setErrorCarga(error.message);
-            setBarberos([]);
+            console.error('Error cargando datos:', error);
         } finally {
-            console.log('✅ [ConfigPanel] Carga finalizada');
             setCargando(false);
         }
-    };
-
-    // Función para recargar manualmente
-    const handleRecargar = () => {
-        console.log('🔄 [ConfigPanel] Recargando manualmente...');
-        cargarDatos();
     };
 
     const abrirEditorPorDia = () => {
@@ -128,7 +78,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             alert('Seleccioná un barbero primero');
             return;
         }
-        console.log('📅 [ConfigPanel] Abriendo editor para barbero:', barberoSeleccionado);
         setMostrarEditorPorDia(true);
     };
 
@@ -136,11 +85,9 @@ function ConfigPanel({ barberoId, modoRestringido }) {
         if (modoRestringido) return;
         
         try {
-            console.log('💾 [ConfigPanel] Guardando config global:', configGlobal);
             await window.salonConfig.guardar(configGlobal);
             alert('✅ Configuración global guardada');
         } catch (error) {
-            console.error('❌ [ConfigPanel] Error guardando:', error);
             alert('Error al guardar configuración global');
         }
     };
@@ -161,27 +108,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
             <h2 className="text-xl font-bold mb-6">
                 {modoRestringido ? '⚙️ Mi Configuración' : '⚙️ Configuración de la Barbería'}
             </h2>
-            
-            {/* 🔥 PANEL DE DEBUG - Solo visible para admin */}
-            {!modoRestringido && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-800 mb-2">🔍 Estado de depuración</h3>
-                    <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">window.salonBarberos:</span> {window.salonBarberos ? '✅ Existe' : '❌ No existe'}</p>
-                        <p><span className="font-medium">Barberos en estado:</span> {barberos.length}</p>
-                        <p><span className="font-medium">Barbero seleccionado:</span> {barberoSeleccionado || 'ninguno'}</p>
-                        {errorCarga && (
-                            <p className="text-red-600"><span className="font-medium">Error:</span> {errorCarga}</p>
-                        )}
-                        <button
-                            onClick={handleRecargar}
-                            className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                        >
-                            🔄 Recargar datos
-                        </button>
-                    </div>
-                </div>
-            )}
             
             {!modoRestringido && (
                 <div className="mb-8 p-4 bg-gray-50 rounded-lg border">
@@ -299,18 +225,12 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                     <div className="flex gap-2">
                         <select
                             value={barberoSeleccionado || ''}
-                            onChange={(e) => {
-                                const valor = e.target.value;
-                                console.log('🎯 [ConfigPanel] Seleccionando barbero:', valor);
-                                setBarberoSeleccionado(valor ? parseInt(valor) : null);
-                            }}
+                            onChange={(e) => setBarberoSeleccionado(parseInt(e.target.value))}
                             className="flex-1 border rounded-lg px-3 py-2"
                         >
                             <option value="">Seleccione un barbero</option>
                             {barberos.map(b => (
-                                <option key={b.id} value={b.id}>
-                                    {b.nombre} {b.activo ? '' : '(inactivo)'}
-                                </option>
+                                <option key={b.id} value={b.id}>{b.nombre}</option>
                             ))}
                         </select>
                         
@@ -319,17 +239,13 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             disabled={!barberoSeleccionado}
                             className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Configurar horarios
+                            Configurar horarios por día
                         </button>
                     </div>
-                    
-                    {barberos.length === 0 && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-700 font-medium">❌ No hay barberos cargados</p>
-                            <p className="text-sm text-red-600 mt-1">
-                                Ve a la pestaña "Barberos" y crea al menos un barbero activo.
-                            </p>
-                        </div>
+                    {barberos.length === 0 && !cargando && (
+                        <p className="text-sm text-amber-600 mt-2">
+                            ⚠️ No hay barberos activos. Ve a la pestaña "Barberos" para crear uno.
+                        </p>
                     )}
                 </div>
             )}
@@ -360,7 +276,6 @@ function ConfigPanel({ barberoId, modoRestringido }) {
                             barberoId={barberoSeleccionado}
                             barberoNombre={barberos.find(b => b.id === barberoSeleccionado)?.nombre || 'Barbero'}
                             onGuardar={(horarios) => {
-                                console.log('✅ [ConfigPanel] Horarios guardados');
                                 setMostrarEditorPorDia(false);
                             }}
                             onCancelar={() => setMostrarEditorPorDia(false)}
