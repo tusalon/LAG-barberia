@@ -5,19 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - LAG.barberia</title>
     
-    <!-- PWA Admin - Usar rutas relativas -->
-    <link rel="manifest" href="manifest-admin.json">
+    <!-- PWA Admin - CON RUTAS ABSOLUTAS -->
+    <link rel="manifest" href="/LAG-barberia/manifest-admin.json">
     <meta name="theme-color" content="#c49b63">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Admin LAG">
-    <link rel="apple-touch-icon" href="icons/admin-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/admin-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="icons/admin-icon-512x512.png">
+    <link rel="apple-touch-icon" href="/LAG-barberia/icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/LAG-barberia/icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/LAG-barberia/icons/admin-icon-512x512.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
     <style>
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -26,42 +25,48 @@
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
+        .install-button {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 to-amber-900 min-h-screen flex items-center justify-center p-4">
     
-    <!-- 🔥 REDIRECCIÓN AUTOMÁTICA SI YA HAY SESIÓN -->
     <script>
+        // Redirección si ya hay sesión
         (function() {
-            const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            
-            if (isAdmin) {
-                console.log('🔐 Sesión admin activa, redirigiendo a admin.html');
-                window.location.replace('admin.html');
+            if (localStorage.getItem('adminAuth') === 'true') {
+                window.location.replace('/LAG-barberia/admin.html');
             }
         })();
     </script>
 
+    <!-- BOTÓN DE INSTALACIÓN (SIEMPRE VISIBLE POR AHORA) -->
+    <div id="install-container" class="fixed bottom-6 right-6 z-50">
+        <button id="install-button" class="bg-amber-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-amber-700 hover:scale-110 transition-all relative group">
+            <span class="text-2xl">📲</span>
+            <span class="absolute right-full mr-3 bg-gray-800 text-amber-400 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-amber-600">
+                Instalar Panel Admin
+            </span>
+        </button>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8 animate-fade-in border border-amber-700">
         <div class="text-center mb-8">
-            <!-- LOGO COMO ICONO -->
             <div class="flex justify-center mb-4">
                 <div class="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                    <i class="icon-shield-check text-4xl text-white"></i>
+                    <i class="text-4xl text-white">⚙️</i>
                 </div>
             </div>
             
-            <!-- Eslogan -->
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/30 backdrop-blur-sm border border-amber-500/50 text-amber-300 text-sm font-medium mb-2">
-                <i class="icon-star text-xs"></i>
                 <span>Panel de Administración</span>
             </div>
             
             <h1 class="text-3xl font-bold text-white">LAG.barberia</h1>
             <p class="text-amber-400">Acceso exclusivo para dueño</p>
         </div>
-        
-        <div id="mensaje" class="mb-4 text-sm text-center hidden"></div>
         
         <form id="loginForm" class="space-y-6">
             <div>
@@ -86,52 +91,18 @@
         
         <div id="errorMsg" class="mt-4 text-red-500 text-sm text-center hidden"></div>
         
-        <!-- Leyenda -->
         <div class="mt-6 text-center text-xs text-gray-400">
             <p><span class="font-bold text-amber-400">Solo para administradores</span></p>
         </div>
     </div>
 
-    <!-- Scripts con rutas RELATIVAS (CORREGIDO) -->
-    <script type="text/javascript" src="utils/supabase-config.js"></script>
-    <script type="text/javascript" src="utils/storage.js"></script>
+    <!-- SCRIPTS ESENCIALES -->
+    <script src="/LAG-barberia/utils/supabase-config.js"></script>
+    <script src="/LAG-barberia/utils/api.js"></script>
+    <script src="/LAG-barberia/utils/auth-barberos.js"></script>
 
-    <script type="text/javascript">
-        console.log('🔍 VERIFICACIÓN INICIAL LOGIN:');
-        console.log('  window.location.pathname:', window.location.pathname);
-        console.log('  window.location.origin:', window.location.origin);
-        console.log('  SUPABASE_URL:', window.SUPABASE_URL);
-        console.log('  SUPABASE_ANON_KEY:', window.SUPABASE_ANON_KEY ? '✓ Definida' : '✗ Undefined');
-        
-        if (!window.SUPABASE_URL) {
-            console.error('❌ ERROR CRÍTICO: SUPABASE_URL no está definida en login');
-        } else {
-            console.log('✅ Supabase configurado correctamente en login');
-        }
-    </script>
-
-    <script type="text/javascript" src="utils/api.js"></script>
-    <script type="text/javascript" src="utils/timeLogic.js"></script>
-    <script type="text/javascript" src="utils/auth-clients.js"></script>
-    <script type="text/javascript" src="utils/auth-barberos.js"></script>
-    <script type="text/javascript" src="utils/config.js"></script>
-    <script type="text/javascript" src="utils/servicios.js"></script>
-    <script type="text/javascript" src="utils/barberos.js"></script>
-
-    <script type="text/javascript">
-        console.log('🔍 VERIFICACIÓN DE CARGA LOGIN:');
-        console.log(' ✅ supabase-config:', window.SUPABASE_URL ? 'OK' : 'FALTA');
-        console.log(' ✅ SUPABASE_URL:', window.SUPABASE_URL);
-        console.log(' ✅ auth-barberos:', typeof window.verificarBarberoPorTelefono);
-        console.log(' ✅ auth-clientes:', typeof window.verificarAccesoCliente);
-        console.log(' ✅ loginBarbero:', typeof window.loginBarbero);
-        console.log(' ✅ salonConfig:', typeof window.salonConfig);
-        console.log(' ✅ salonServicios:', typeof window.salonServicios);
-        console.log(' ✅ salonBarberos:', typeof window.salonBarberos);
-    </script>
-
+    <!-- LOGIN SCRIPT -->
     <script>
-        // Credenciales del dueño
         const ADMIN_EMAIL = 'luisarielcuenta2021@gmail.com';
         const ADMIN_PASSWORD = 'LuisA.2026';
         
@@ -141,189 +112,62 @@
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('errorMsg');
-            const mensaje = document.getElementById('mensaje');
             
             errorMsg.classList.add('hidden');
-            mensaje.classList.add('hidden');
             
-            mensaje.textContent = 'Verificando...';
-            mensaje.classList.remove('hidden');
-            mensaje.classList.add('text-amber-400', 'bg-gray-700', 'p-2', 'rounded-lg');
-            
-            try {
-                console.log('🔐 Intentando login con email:', username);
-                
-                // Validar credenciales del dueño
-                if (username === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-                    console.log('✅ Login exitoso como dueño');
-                    
-                    localStorage.setItem('adminAuth', 'true');
-                    localStorage.setItem('adminUser', username);
-                    localStorage.setItem('adminLoginTime', Date.now());
-                    localStorage.setItem('userRole', 'admin');
-                    
-                    localStorage.removeItem('barberoAuth');
-                    localStorage.removeItem('clienteAuth');
-                    
-                    mensaje.classList.add('hidden');
-                    window.location.href = 'admin.html';
-                    return;
-                }
-                
-                // Si no coincide, error
-                console.log('❌ Login falló - credenciales incorrectas');
+            if (username === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+                localStorage.setItem('adminAuth', 'true');
+                localStorage.setItem('adminUser', username);
+                localStorage.setItem('adminLoginTime', Date.now());
+                window.location.href = '/LAG-barberia/admin.html';
+            } else {
                 errorMsg.textContent = 'Email o contraseña incorrectos';
                 errorMsg.classList.remove('hidden');
-                mensaje.classList.add('hidden');
-                
-            } catch (error) {
-                console.error('❌ Error en login:', error);
-                errorMsg.textContent = 'Error al conectar. Intentá de nuevo.';
-                errorMsg.classList.remove('hidden');
-                mensaje.classList.add('hidden');
             }
         });
     </script>
 
-    <!-- Sistema de actualizaciones para admin PWA -->
+    <!-- INSTALACIÓN PWA -->
     <script>
-        let swRegistration = null;
-        let updateNotificationShown = false;
-
-        function showUpdateNotification() {
-            if (updateNotificationShown) return;
-            
-            const banner = document.createElement('div');
-            banner.id = 'update-notification';
-            banner.className = 'fixed bottom-4 left-4 right-4 bg-amber-600 text-white p-4 rounded-lg shadow-lg z-50 max-w-md mx-auto';
-            banner.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="text-2xl">⚙️</div>
-                    <div class="flex-1">
-                        <div class="font-bold">¡Nueva versión del panel!</div>
-                        <div class="text-sm text-amber-100">Actualización disponible para administradores</div>
-                    </div>
-                    <button onclick="updateApp()" class="bg-white text-amber-600 px-4 py-2 rounded-lg font-bold hover:bg-amber-50 transition">
-                        Actualizar
-                    </button>
-                </div>
-            `;
-            document.body.appendChild(banner);
-            updateNotificationShown = true;
-        }
-
-        window.updateApp = () => {
-            const notification = document.getElementById('update-notification');
-            if (notification) notification.remove();
-            
-            const reloadMsg = document.createElement('div');
-            reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
-            reloadMsg.innerHTML = `
-                <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
-                    <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <h3 class="text-xl font-bold mb-2">Actualizando panel...</h3>
-                    <p class="text-amber-100">La app se recargará automáticamente</p>
-                </div>
-            `;
-            document.body.appendChild(reloadMsg);
-            
-            if (swRegistration && swRegistration.waiting) {
-                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        let deferredPrompt;
+        const installButton = document.getElementById('install-button');
+        
+        // Escuchar el evento beforeinstallprompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('✅ PWA lista para instalar');
+        });
+        
+        // Instalación al hacer clic
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                alert('La app ya está instalada o no es instalable en este navegador');
+                return;
             }
             
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        };
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('Resultado instalación:', outcome);
+            deferredPrompt = null;
+        });
+        
+        // Confirmación de instalación
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ App instalada correctamente');
+            alert('¡App instalada correctamente!');
+        });
+    </script>
 
+    <!-- SERVICE WORKER -->
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw-admin.js')
-                    .then(registration => {
-                        swRegistration = registration;
-                        console.log('✅ Service Worker ADMIN registrado');
-
-                        if (registration.waiting) {
-                            showUpdateNotification();
-                        }
-
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    showUpdateNotification();
-                                }
-                            });
-                        });
-                    });
-
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('🔄 Service Worker ADMIN cambiado, recargando...');
-                    window.location.reload();
-                });
+                navigator.serviceWorker.register('/LAG-barberia/sw-admin.js')
+                    .then(reg => console.log('✅ SW registrado:', reg.scope))
+                    .catch(err => console.error('❌ SW error:', err));
             });
-
-            setInterval(() => {
-                if (swRegistration) {
-                    swRegistration.update();
-                }
-            }, 30 * 60 * 1000);
         }
     </script>
-    <!-- BOTÓN DE INSTALACIÓN PWA - VERSIÓN FLOTANTE -->
-<div id="install-container" style="display: none;" class="fixed bottom-6 right-6 z-50">
-    <button id="install-button" class="bg-amber-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-amber-700 transition-transform hover:scale-110 relative group">
-        <span class="text-2xl">📲</span>
-        <span class="absolute right-full mr-3 bg-gray-800 text-amber-400 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-amber-600">
-            Instalar App
-        </span>
-    </button>
-</div>
-
-<script>
-    // Sistema de instalación PWA con botón físico
-    let deferredPrompt;
-    const installContainer = document.getElementById('install-container');
-    const installButton = document.getElementById('install-button');
-
-    // Detectar cuando la app es instalable
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        installContainer.style.display = 'block';
-        console.log('✅ App lista para instalar - Botón visible');
-    });
-
-    // Manejar clic en el botón
-    installButton.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-            console.log('⚠️ App no disponible para instalar');
-            return;
-        }
-        
-        // Mostrar el prompt de instalación
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`📱 Resultado instalación: ${outcome}`);
-        
-        // Ocultar el botón después de instalar
-        deferredPrompt = null;
-        installContainer.style.display = 'none';
-    });
-
-    // Verificar si ya está instalada
-    window.addEventListener('appinstalled', () => {
-        console.log('✅ App instalada correctamente');
-        installContainer.style.display = 'none';
-    });
-
-    // Opcional: Mostrar el botón si la app no está instalada pero es instalable
-    // (útil para debugging)
-    setTimeout(() => {
-        if (deferredPrompt) {
-            console.log('ℹ️ App instalable detectada, botón visible');
-        }
-    }, 3000);
-</script>
 </body>
 </html>
