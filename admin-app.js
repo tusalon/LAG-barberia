@@ -905,10 +905,10 @@ const handleLogout = () => {
         localStorage.removeItem('adminLoginTime');
         localStorage.removeItem('barberoAuth');
         localStorage.removeItem('userRole');
-        localStorage.removeItem('clienteAuth'); // Por si acaso
+        localStorage.removeItem('clienteAuth');
         
         console.log('🚪 Sesión cerrada, redirigiendo a admin-login.html');
-        window.location.href = 'admin-login.html';
+        window.location.href = '/LAG-barberia/admin-login.html';
     }
 };
     // ============================================

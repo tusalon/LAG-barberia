@@ -23,10 +23,10 @@
 <body class="bg-gray-100">
     <div id="root"></div>
 
-    <!-- Scripts con rutas relativas -->
-    <script type="text/javascript" src="utils/supabase-config.js?v=202402261533"></script>
-    <script type="text/javascript" src="utils/config.js?v=202402261533"></script>
-    <script type="text/javascript" src="utils/storage.js?v=202402261530"></script>
+    <!-- Scripts con rutas ABSOLUTAS para GitHub Pages -->
+    <script type="text/javascript" src="/LAG-barberia/utils/supabase-config.js?v=202402261533"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/config.js?v=202402261533"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/storage.js?v=202402261530"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN INICIAL ADMIN:');
@@ -42,12 +42,12 @@
         }
     </script>
 
-    <script type="text/javascript" src="utils/api.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/timeLogic.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/auth-clients.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/auth-barberos.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/servicios.js?v=202402261530"></script>
-    <script type="text/javascript" src="utils/barberos.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/api.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/timeLogic.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/auth-clients.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/auth-barberos.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/servicios.js?v=202402261530"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/barberos.js?v=202402261530"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA ADMIN:');
@@ -61,11 +61,11 @@
         console.log(' ✅ storage:', typeof window.subirImagenServicio);
     </script>
 
-    <script type="text/babel" src="components/admin/ConfigPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/ServiciosPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/BarberosPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="components/admin/HorariosPorDiaPanel.js?v=202402261530"></script>
-    <script type="text/babel" src="admin-app.js?v=202402261530"></script>
+    <script type="text/babel" src="/LAG-barberia/components/admin/ConfigPanel.js?v=202402261530"></script>
+    <script type="text/babel" src="/LAG-barberia/components/admin/ServiciosPanel.js?v=202402261530"></script>
+    <script type="text/babel" src="/LAG-barberia/components/admin/BarberosPanel.js?v=202402261530"></script>
+    <script type="text/babel" src="/LAG-barberia/components/admin/HorariosPorDiaPanel.js?v=202402261530"></script>
+    <script type="text/babel" src="/LAG-barberia/admin-app.js?v=202402261530"></script>
 
     <script>
         (function() {
@@ -78,7 +78,7 @@
             // Si no hay sesión, redirigir a index.html (ClientAuthScreen)
             if (!isAdmin && !barberoAuth) {
                 console.log('🚫 No hay sesión, redirigiendo a ClientAuthScreen');
-                window.location.href = 'index.html';
+                window.location.href = '/LAG-barberia/index.html';
                 return;
             }
             
@@ -91,7 +91,7 @@
                     localStorage.removeItem('adminAuth');
                     localStorage.removeItem('adminUser');
                     localStorage.removeItem('adminLoginTime');
-                    window.location.href = 'index.html';
+                    window.location.href = '/LAG-barberia/index.html';
                 }
                 return;
             }
@@ -104,7 +104,7 @@
         })();
     </script>
 
-    <!-- Sistema de actualizaciones para admin (UNO SOLO) -->
+    <!-- Sistema de actualizaciones para admin -->
     <script>
         let swRegistration = null;
         let updateNotificationShown = false;

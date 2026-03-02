@@ -37,7 +37,7 @@
             
             if (isAdmin) {
                 console.log('🔐 Sesión admin activa, redirigiendo a admin.html');
-                window.location.replace('admin.html');
+                window.location.replace('/LAG-barberia/admin.html');
             }
         })();
     </script>
@@ -92,9 +92,9 @@
         </div>
     </div>
 
-    <!-- Scripts con rutas relativas -->
-    <script type="text/javascript" src="utils/supabase-config.js"></script>
-    <script type="text/javascript" src="utils/storage.js"></script>
+    <!-- Scripts con rutas ABSOLUTAS para GitHub Pages -->
+    <script type="text/javascript" src="/LAG-barberia/utils/supabase-config.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/storage.js"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN INICIAL LOGIN:');
@@ -110,13 +110,13 @@
         }
     </script>
 
-    <script type="text/javascript" src="utils/api.js"></script>
-    <script type="text/javascript" src="utils/timeLogic.js"></script>
-    <script type="text/javascript" src="utils/auth-clients.js"></script>
-    <script type="text/javascript" src="utils/auth-barberos.js"></script>
-    <script type="text/javascript" src="utils/config.js"></script>
-    <script type="text/javascript" src="utils/servicios.js"></script>
-    <script type="text/javascript" src="utils/barberos.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/api.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/timeLogic.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/auth-clients.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/auth-barberos.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/config.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/servicios.js"></script>
+    <script type="text/javascript" src="/LAG-barberia/utils/barberos.js"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA LOGIN:');
@@ -166,7 +166,7 @@
                     localStorage.removeItem('clienteAuth');
                     
                     mensaje.classList.add('hidden');
-                    window.location.href = 'admin.html';
+                    window.location.href = '/LAG-barberia/admin.html';
                     return;
                 }
                 
