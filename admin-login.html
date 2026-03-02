@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - LAG.barberia</title>
     
-    <!-- PWA Admin -->
-    <link rel="manifest" href="/LAG-barberia/manifest-admin.json">
+    <!-- PWA Admin - Usar rutas relativas -->
+    <link rel="manifest" href="manifest-admin.json">
     <meta name="theme-color" content="#c49b63">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Admin LAG">
-    <link rel="apple-touch-icon" href="/LAG-barberia/icons/admin-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/LAG-barberia/icons/admin-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/LAG-barberia/icons/admin-icon-512x512.png">
+    <link rel="apple-touch-icon" href="icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/admin-icon-512x512.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
@@ -37,7 +37,7 @@
             
             if (isAdmin) {
                 console.log('🔐 Sesión admin activa, redirigiendo a admin.html');
-                window.location.replace('/LAG-barberia/admin.html');
+                window.location.replace('admin.html');
             }
         })();
     </script>
@@ -92,9 +92,9 @@
         </div>
     </div>
 
-    <!-- Scripts con rutas ABSOLUTAS para GitHub Pages -->
-    <script type="text/javascript" src="/LAG-barberia/utils/supabase-config.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/storage.js"></script>
+    <!-- Scripts con rutas RELATIVAS (CORREGIDO) -->
+    <script type="text/javascript" src="utils/supabase-config.js"></script>
+    <script type="text/javascript" src="utils/storage.js"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN INICIAL LOGIN:');
@@ -110,13 +110,13 @@
         }
     </script>
 
-    <script type="text/javascript" src="/LAG-barberia/utils/api.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/timeLogic.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/auth-clients.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/auth-barberos.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/config.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/servicios.js"></script>
-    <script type="text/javascript" src="/LAG-barberia/utils/barberos.js"></script>
+    <script type="text/javascript" src="utils/api.js"></script>
+    <script type="text/javascript" src="utils/timeLogic.js"></script>
+    <script type="text/javascript" src="utils/auth-clients.js"></script>
+    <script type="text/javascript" src="utils/auth-barberos.js"></script>
+    <script type="text/javascript" src="utils/config.js"></script>
+    <script type="text/javascript" src="utils/servicios.js"></script>
+    <script type="text/javascript" src="utils/barberos.js"></script>
 
     <script type="text/javascript">
         console.log('🔍 VERIFICACIÓN DE CARGA LOGIN:');
@@ -166,7 +166,7 @@
                     localStorage.removeItem('clienteAuth');
                     
                     mensaje.classList.add('hidden');
-                    window.location.href = '/LAG-barberia/admin.html';
+                    window.location.href = 'admin.html';
                     return;
                 }
                 
@@ -238,7 +238,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/LAG-barberia/sw-admin.js')
+                navigator.serviceWorker.register('sw-admin.js')
                     .then(registration => {
                         swRegistration = registration;
                         console.log('✅ Service Worker ADMIN registrado');
