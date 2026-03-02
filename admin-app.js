@@ -896,8 +896,7 @@ El administrador cancelo la reserva.`;
             alert('❌ Error al cancelar');
         }
     };
-
-    // 🔥 FUNCIÓN DE LOGOUT - Redirige a ClientAuthScreen
+// 🔥 FUNCIÓN DE LOGOUT - Redirige a admin-login.html
 const handleLogout = () => {
     if (confirm('¿Cerrar sesión?')) {
         // Limpiar TODOS los datos de autenticación
@@ -908,8 +907,8 @@ const handleLogout = () => {
         localStorage.removeItem('userRole');
         localStorage.removeItem('clienteAuth'); // Por si acaso
         
-        console.log('🚪 Sesión cerrada, redirigiendo a ClientAuthScreen');
-        window.location.href = 'index.html'; // ✅ Redirige a ClientAuthScreen
+        console.log('🚪 Sesión cerrada, redirigiendo a admin-login.html');
+        window.location.href = 'admin-login.html';
     }
 };
     // ============================================

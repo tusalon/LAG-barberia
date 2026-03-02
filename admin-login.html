@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - LAG.barberia</title>
+    
+    <!-- PWA Admin -->
+    <link rel="manifest" href="/LAG-barberia/manifest-admin.json">
+    <meta name="theme-color" content="#c49b63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Admin LAG">
+    <link rel="apple-touch-icon" href="/LAG-barberia/icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/LAG-barberia/icons/admin-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/LAG-barberia/icons/admin-icon-512x512.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
     <style>
@@ -22,10 +34,9 @@
     <script>
         (function() {
             const isAdmin = localStorage.getItem('adminAuth') === 'true';
-            const barberoAuth = localStorage.getItem('barberoAuth');
             
-            if (isAdmin || barberoAuth) {
-                console.log('🔐 Sesión activa detectada, redirigiendo a admin.html');
+            if (isAdmin) {
+                console.log('🔐 Sesión admin activa, redirigiendo a admin.html');
                 window.location.replace('admin.html');
             }
         })();
@@ -36,29 +47,28 @@
             <!-- LOGO COMO ICONO -->
             <div class="flex justify-center mb-4">
                 <div class="w-20 h-20 bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl shadow-xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                    <i class="icon-scissors text-4xl text-white"></i>
+                    <i class="icon-shield-check text-4xl text-white"></i>
                 </div>
             </div>
             
             <!-- Eslogan -->
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-600/30 backdrop-blur-sm border border-amber-500/50 text-amber-300 text-sm font-medium mb-2">
                 <i class="icon-star text-xs"></i>
-                <span>Nivel que se nota</span>
+                <span>Panel de Administración</span>
             </div>
             
             <h1 class="text-3xl font-bold text-white">LAG.barberia</h1>
-            <p class="text-amber-400">Acceso al Panel</p>
+            <p class="text-amber-400">Acceso exclusivo para dueño</p>
         </div>
         
         <div id="mensaje" class="mb-4 text-sm text-center hidden"></div>
         
         <form id="loginForm" class="space-y-6">
             <div>
-                <label class="block text-sm font-medium text-amber-400 mb-2">Usuario / Teléfono</label>
-                <input type="text" id="username" required
+                <label class="block text-sm font-medium text-amber-400 mb-2">Email</label>
+                <input type="email" id="username" required
                        class="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
-                       placeholder="LAG.barberia o 53357234">
-                <p class="text-xs text-gray-400 mt-1">Dueño: LAG.barberia | Barberos: usá tu teléfono</p>
+                       placeholder="luisarielcuenta2021@gmail.com">
             </div>
             
             <div>
@@ -70,16 +80,15 @@
             
             <button type="submit" 
                     class="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-3 rounded-lg font-semibold hover:from-amber-700 hover:to-amber-800 transition transform hover:scale-105">
-                Entrar
+                Entrar al Panel
             </button>
         </form>
         
         <div id="errorMsg" class="mt-4 text-red-500 text-sm text-center hidden"></div>
         
-        <!-- Leyenda sin emojis -->
+        <!-- Leyenda -->
         <div class="mt-6 text-center text-xs text-gray-400">
-            <p><span class="font-bold text-amber-400">Dueño:</span> usuario <strong>LAG.barberia</strong> | contraseña <strong></strong></p>
-            <p class="mt-1"><span class="font-bold text-amber-400">Barberos:</span> usá tu teléfono</p>
+            <p><span class="font-bold text-amber-400">Solo para administradores</span></p>
         </div>
     </div>
 
@@ -123,8 +132,8 @@
 
     <script>
         // Credenciales del dueño
-        const ADMIN_USERNAME = 'LAG.barberia';
-        const ADMIN_PASSWORD = 'lag2026';
+        const ADMIN_EMAIL = 'luisarielcuenta2021@gmail.com';
+        const ADMIN_PASSWORD = 'LuisA.2026';
         
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -142,10 +151,10 @@
             mensaje.classList.add('text-amber-400', 'bg-gray-700', 'p-2', 'rounded-lg');
             
             try {
-                console.log('🔐 Intentando login con:', { username, password: '***' });
-                console.log('🔐 SUPABASE_URL en login:', window.SUPABASE_URL);
+                console.log('🔐 Intentando login con email:', username);
                 
-                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                // Validar credenciales del dueño
+                if (username === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
                     console.log('✅ Login exitoso como dueño');
                     
                     localStorage.setItem('adminAuth', 'true');
@@ -154,48 +163,16 @@
                     localStorage.setItem('userRole', 'admin');
                     
                     localStorage.removeItem('barberoAuth');
+                    localStorage.removeItem('clienteAuth');
                     
                     mensaje.classList.add('hidden');
                     window.location.href = 'admin.html';
                     return;
                 }
                 
-                if (/^\d+$/.test(username)) {
-                    console.log('🔍 Intentando login como barbero:', username);
-                    
-                    if (typeof window.loginBarbero !== 'function') {
-                        console.error('❌ loginBarbero no está disponible');
-                        errorMsg.textContent = 'Error: Sistema de autenticación no disponible';
-                        errorMsg.classList.remove('hidden');
-                        mensaje.classList.add('hidden');
-                        return;
-                    }
-                    
-                    const barbero = await window.loginBarbero(username, password);
-                    
-                    if (barbero) {
-                        console.log('✅ Login exitoso como barbero:', barbero.nombre);
-                        
-                        localStorage.setItem('barberoAuth', JSON.stringify({
-                            id: barbero.id,
-                            nombre: barbero.nombre,
-                            telefono: barbero.telefono,
-                            nivel: barbero.nivel || 1
-                        }));
-                        localStorage.setItem('userRole', 'barbero');
-                        
-                        localStorage.removeItem('adminAuth');
-                        localStorage.removeItem('adminUser');
-                        
-                        mensaje.classList.add('hidden');
-                        window.location.href = 'admin.html';
-                        return;
-                    } else {
-                        console.log('❌ Login falló - credenciales incorrectas');
-                    }
-                }
-                
-                errorMsg.textContent = 'Usuario o contraseña incorrectos';
+                // Si no coincide, error
+                console.log('❌ Login falló - credenciales incorrectas');
+                errorMsg.textContent = 'Email o contraseña incorrectos';
                 errorMsg.classList.remove('hidden');
                 mensaje.classList.add('hidden');
                 
@@ -206,25 +183,92 @@
                 mensaje.classList.add('hidden');
             }
         });
+    </script>
 
-        setTimeout(() => {
-            console.log('🔍 VERIFICACIÓN FINAL LOGIN:');
-            console.log('  SUPABASE_URL:', window.SUPABASE_URL);
-            console.log('  loginBarbero:', typeof window.loginBarbero);
-            console.log('  verificarBarberoPorTelefono:', typeof window.verificarBarberoPorTelefono);
+    <!-- Sistema de actualizaciones para admin PWA -->
+    <script>
+        let swRegistration = null;
+        let updateNotificationShown = false;
+
+        function showUpdateNotification() {
+            if (updateNotificationShown) return;
             
-            if (typeof window.loginBarbero === 'function') {
-                console.log('✅ loginBarbero está disponible');
-            } else {
-                console.error('❌ loginBarbero NO está disponible');
+            const banner = document.createElement('div');
+            banner.id = 'update-notification';
+            banner.className = 'fixed bottom-4 left-4 right-4 bg-amber-600 text-white p-4 rounded-lg shadow-lg z-50 max-w-md mx-auto';
+            banner.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl">⚙️</div>
+                    <div class="flex-1">
+                        <div class="font-bold">¡Nueva versión del panel!</div>
+                        <div class="text-sm text-amber-100">Actualización disponible para administradores</div>
+                    </div>
+                    <button onclick="updateApp()" class="bg-white text-amber-600 px-4 py-2 rounded-lg font-bold hover:bg-amber-50 transition">
+                        Actualizar
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+            updateNotificationShown = true;
+        }
+
+        window.updateApp = () => {
+            const notification = document.getElementById('update-notification');
+            if (notification) notification.remove();
+            
+            const reloadMsg = document.createElement('div');
+            reloadMsg.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]';
+            reloadMsg.innerHTML = `
+                <div class="bg-amber-600 text-white p-6 rounded-2xl shadow-2xl text-center max-w-xs mx-4">
+                    <div class="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <h3 class="text-xl font-bold mb-2">Actualizando panel...</h3>
+                    <p class="text-amber-100">La app se recargará automáticamente</p>
+                </div>
+            `;
+            document.body.appendChild(reloadMsg);
+            
+            if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
             
-            if (window.SUPABASE_URL) {
-                console.log('✅ SUPABASE_URL configurada correctamente');
-            } else {
-                console.error('❌ SUPABASE_URL sigue siendo undefined');
-            }
-        }, 2000);
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        };
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/LAG-barberia/sw-admin.js')
+                    .then(registration => {
+                        swRegistration = registration;
+                        console.log('✅ Service Worker ADMIN registrado');
+
+                        if (registration.waiting) {
+                            showUpdateNotification();
+                        }
+
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                    });
+
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service Worker ADMIN cambiado, recargando...');
+                    window.location.reload();
+                });
+            });
+
+            setInterval(() => {
+                if (swRegistration) {
+                    swRegistration.update();
+                }
+            }, 30 * 60 * 1000);
+        }
     </script>
 </body>
 </html>

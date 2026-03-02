@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - LAG.barberia</title>
+    
+    <!-- PWA Admin -->
+    <link rel="manifest" href="/LAG-barberia/manifest-admin.json">
+    <meta name="theme-color" content="#c49b63">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Admin LAG">
+    <link rel="apple-touch-icon" href="/LAG-barberia/icons/admin-icon-192x192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -147,7 +157,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/LAG-barberia/sw.js')
+                navigator.serviceWorker.register('/LAG-barberia/sw-admin.js')
                     .then(registration => {
                         swRegistration = registration;
                         console.log('✅ Service Worker registrado en admin');

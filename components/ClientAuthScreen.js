@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN UNIFICADA (sin admin-login.html)
+// components/ClientAuthScreen.js - VERSIÓN MODIFICADA (sin acceso admin)
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -46,13 +46,13 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
         const numeroCompleto = `53${numeroLimpio}`;
         
         try {
-            // Verificar si es ADMIN (dueño)
+            // 🔥 NUEVO: Verificar si es ADMIN (dueño) - RECHAZAR ACCESO
             if (numeroLimpio === '53357234') {
                 setEsAdmin(true);
                 setEsBarbero(false);
                 setBarberoInfo(null);
                 setClienteAutorizado(null);
-                setError('👑 Acceso como administrador detectado');
+                setError('❌ Acceso restringido. Por favor, utiliza el panel de administración dedicado.');
                 setVerificando(false);
                 return;
             }
@@ -267,7 +267,7 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             <div className="relative z-10 flex flex-col justify-end min-h-screen p-6 pb-12">
                 <div className="max-w-md w-full mx-auto">
                     
-                    {/* Tabla de acceso unificada */}
+                    {/* Tabla de acceso */}
                     <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl shadow-2xl border border-amber-500/30">
                         <h2 className="text-lg font-semibold text-amber-400 mb-4 flex items-center gap-2">
                             <i className="icon-user-plus"></i>
@@ -325,17 +325,17 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                             )}
 
                             {esAdmin && !verificando && (
-                                <div className="bg-gradient-to-r from-amber-900/80 to-amber-800/80 backdrop-blur-sm border-2 border-amber-500 rounded-lg p-4">
+                                <div className="bg-gradient-to-r from-red-900/80 to-red-800/80 backdrop-blur-sm border-2 border-red-500 rounded-lg p-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                                            A
+                                        <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                            ⚠️
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-amber-300 font-bold text-xl">
-                                                ¡Bienvenido Administrador!
+                                            <p className="text-red-300 font-bold text-lg">
+                                                Acceso restringido
                                             </p>
-                                            <p className="text-amber-400 text-sm">
-                                                Hacé clic en el botón de abajo para acceder al panel.
+                                            <p className="text-red-400 text-sm">
+                                                El administrador debe usar el panel dedicado.
                                             </p>
                                         </div>
                                     </div>
@@ -391,19 +391,14 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
 
                             <div className="space-y-3 pt-2">
                                 {esAdmin && !verificando && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            localStorage.setItem('adminAuth', 'true');
-                                            localStorage.setItem('adminUser', 'Administrador');
-                                            localStorage.setItem('adminLoginTime', Date.now());
-                                            window.location.href = 'admin.html';
-                                        }}
-                                        className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-yellow-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
-                                    >
-                                        <span className="text-xl">⚡</span>
-                                        Ingresar como Administrador
-                                    </button>
+                                    <div className="text-center p-3 bg-red-900/50 rounded-lg">
+                                        <p className="text-red-300 text-sm">
+                                            Para acceder como administrador, usá el panel dedicado:
+                                        </p>
+                                        <p className="text-amber-400 font-mono text-xs mt-1 break-all">
+                                            /LAG-barberia/admin-login.html
+                                        </p>
+                                    </div>
                                 )}
 
                                 {esBarbero && barberoInfo && !verificando && (
