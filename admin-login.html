@@ -270,5 +270,60 @@
             }, 30 * 60 * 1000);
         }
     </script>
+    <!-- BOTÓN DE INSTALACIÓN PWA - VERSIÓN FLOTANTE -->
+<div id="install-container" style="display: none;" class="fixed bottom-6 right-6 z-50">
+    <button id="install-button" class="bg-amber-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-amber-700 transition-transform hover:scale-110 relative group">
+        <span class="text-2xl">📲</span>
+        <span class="absolute right-full mr-3 bg-gray-800 text-amber-400 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity border border-amber-600">
+            Instalar App
+        </span>
+    </button>
+</div>
+
+<script>
+    // Sistema de instalación PWA con botón físico
+    let deferredPrompt;
+    const installContainer = document.getElementById('install-container');
+    const installButton = document.getElementById('install-button');
+
+    // Detectar cuando la app es instalable
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installContainer.style.display = 'block';
+        console.log('✅ App lista para instalar - Botón visible');
+    });
+
+    // Manejar clic en el botón
+    installButton.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+            console.log('⚠️ App no disponible para instalar');
+            return;
+        }
+        
+        // Mostrar el prompt de instalación
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`📱 Resultado instalación: ${outcome}`);
+        
+        // Ocultar el botón después de instalar
+        deferredPrompt = null;
+        installContainer.style.display = 'none';
+    });
+
+    // Verificar si ya está instalada
+    window.addEventListener('appinstalled', () => {
+        console.log('✅ App instalada correctamente');
+        installContainer.style.display = 'none';
+    });
+
+    // Opcional: Mostrar el botón si la app no está instalada pero es instalable
+    // (útil para debugging)
+    setTimeout(() => {
+        if (deferredPrompt) {
+            console.log('ℹ️ App instalable detectada, botón visible');
+        }
+    }, 3000);
+</script>
 </body>
 </html>
