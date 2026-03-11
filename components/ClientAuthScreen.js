@@ -1,4 +1,4 @@
-// components/ClientAuthScreen.js - VERSIÓN MODIFICADA (sin acceso admin)
+// components/ClientAuthScreen.js - VERSIÓN CON REDIRECCIÓN AL PANEL DE ADMIN
 
 function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [nombre, setNombre] = React.useState('');
@@ -12,7 +12,19 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
     const [esBarbero, setEsBarbero] = React.useState(false);
     const [barberoInfo, setBarberoInfo] = React.useState(null);
     const [esAdmin, setEsAdmin] = React.useState(false);
+    const [tieneSesionActiva, setTieneSesionActiva] = React.useState(false);
     const [imagenCargada, setImagenCargada] = React.useState(false);
+
+    // 🔥 Verificar si ya hay sesión activa de admin
+    React.useEffect(() => {
+        const adminAuth = localStorage.getItem('adminAuth') === 'true';
+        const loginTime = localStorage.getItem('adminLoginTime');
+        const isValidSession = loginTime && (Date.now() - parseInt(loginTime)) < 8 * 60 * 60 * 1000;
+        
+        if (adminAuth && isValidSession) {
+            setTieneSesionActiva(true);
+        }
+    }, []);
 
     // Cargar imagen de fondo
     React.useEffect(() => {
@@ -46,13 +58,26 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
         const numeroCompleto = `53${numeroLimpio}`;
         
         try {
-            // 🔥 NUEVO: Verificar si es ADMIN (dueño) - RECHAZAR ACCESO
+            // 🔥 VERIFICAR SI ES ADMIN (DUEÑO)
             if (numeroLimpio === '53357234') {
                 setEsAdmin(true);
                 setEsBarbero(false);
                 setBarberoInfo(null);
                 setClienteAutorizado(null);
-                setError('❌ Acceso restringido. Por favor, utiliza el panel de administración dedicado.');
+                
+                // Verificar si ya tiene sesión activa
+                const adminAuth = localStorage.getItem('adminAuth') === 'true';
+                const loginTime = localStorage.getItem('adminLoginTime');
+                const isValidSession = loginTime && (Date.now() - parseInt(loginTime)) < 8 * 60 * 60 * 1000;
+                
+                if (adminAuth && isValidSession) {
+                    setTieneSesionActiva(true);
+                    setError('✅ Sesión activa detectada. Podés ir directamente al panel.');
+                } else {
+                    setTieneSesionActiva(false);
+                    setError('👑 Número de administrador detectado');
+                }
+                
                 setVerificando(false);
                 return;
             }
@@ -165,6 +190,16 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
             const numeroCompleto = `53${numeroLimpio}`;
             onAccessGranted(clienteAutorizado.nombre, numeroCompleto);
         }
+    };
+
+    // 🔥 Función para ir al login de admin
+    const irAlLoginAdmin = () => {
+        window.location.href = '/LAG-barberia/admin-login.html';
+    };
+
+    // 🔥 Función para ir directamente al panel (si ya tiene sesión)
+    const irAlPanelAdmin = () => {
+        window.location.href = '/LAG-barberia/admin.html';
     };
 
     if (solicitudEnviada) {
@@ -324,18 +359,38 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                                 </div>
                             )}
 
-                            {esAdmin && !verificando && (
-                                <div className="bg-gradient-to-r from-red-900/80 to-red-800/80 backdrop-blur-sm border-2 border-red-500 rounded-lg p-4">
+                            {/* 🔥 NUEVO: Mensaje para admin sin sesión */}
+                            {esAdmin && !verificando && !tieneSesionActiva && (
+                                <div className="bg-gradient-to-r from-amber-900/80 to-amber-800/80 backdrop-blur-sm border-2 border-amber-500 rounded-lg p-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                                            ⚠️
+                                        <div className="w-12 h-12 bg-amber-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                            👑
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-red-300 font-bold text-lg">
-                                                Acceso restringido
+                                            <p className="text-amber-300 font-bold text-lg">
+                                                ¡Bienvenido Administrador!
                                             </p>
-                                            <p className="text-red-400 text-sm">
-                                                El administrador debe usar el panel dedicado.
+                                            <p className="text-amber-400 text-sm">
+                                                Hacé clic en el botón de abajo para acceder al panel.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 🔥 NUEVO: Mensaje para admin CON sesión activa */}
+                            {esAdmin && !verificando && tieneSesionActiva && (
+                                <div className="bg-gradient-to-r from-green-900/80 to-green-800/80 backdrop-blur-sm border-2 border-green-500 rounded-lg p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
+                                            ✅
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-green-300 font-bold text-lg">
+                                                ¡Sesión Activa!
+                                            </p>
+                                            <p className="text-green-400 text-sm">
+                                                Ya tenés una sesión iniciada. Podés ir directamente al panel.
                                             </p>
                                         </div>
                                     </div>
@@ -390,15 +445,28 @@ function ClientAuthScreen({ onAccessGranted, onGoBack }) {
                             )}
 
                             <div className="space-y-3 pt-2">
-                                {esAdmin && !verificando && (
-                                    <div className="text-center p-3 bg-red-900/50 rounded-lg">
-                                        <p className="text-red-300 text-sm">
-                                            Para acceder como administrador, usá el panel dedicado:
-                                        </p>
-                                        <p className="text-amber-400 font-mono text-xs mt-1 break-all">
-                                            /LAG-barberia/admin-login.html
-                                        </p>
-                                    </div>
+                                {/* 🔥 NUEVO: Botón para admin SIN sesión */}
+                                {esAdmin && !verificando && !tieneSesionActiva && (
+                                    <button
+                                        type="button"
+                                        onClick={irAlLoginAdmin}
+                                        className="w-full bg-gradient-to-r from-amber-600 to-amber-700 text-white py-4 rounded-xl font-bold hover:from-amber-700 hover:to-amber-800 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
+                                    >
+                                        <span className="text-xl">👑</span>
+                                        Ir al Login de Administrador
+                                    </button>
+                                )}
+
+                                {/* 🔥 NUEVO: Botón para admin CON sesión */}
+                                {esAdmin && !verificando && tieneSesionActiva && (
+                                    <button
+                                        type="button"
+                                        onClick={irAlPanelAdmin}
+                                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg text-lg"
+                                    >
+                                        <span className="text-xl">⚡</span>
+                                        Ir al Panel de Administración
+                                    </button>
                                 )}
 
                                 {esBarbero && barberoInfo && !verificando && (
